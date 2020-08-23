@@ -117,5 +117,5 @@ module.exports = async (metadata, data) => {
   // );
   // data = await image.getBufferAsync(Jimp.MIME_PNG);
 
-  return {fulldata};
+  return fulldata;
 }

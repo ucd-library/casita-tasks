@@ -20,3 +20,5 @@ let processor = new Processor({
   }
 })
 processor.pipe(fs.createReadStream(path.join(__dirname, 'testsecdecorded.dat')));
+
+setTimeout(() => process.exit(), 4000);
