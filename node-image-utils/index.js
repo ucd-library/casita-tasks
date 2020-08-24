@@ -3,9 +3,19 @@ const path = require('path');
 
 if( process.argv[2] === 'jp2-to-png' ) {
   jp2ToPng();
+} else if( process.argv[2] === 'reproject' ) {
+  reproject();
 } else {
   console.error('Unknown command: '+process.argv[2]);
   process.exit(-1);
+}
+
+async function reproject() {
+  let files = process.argv.splice(2, process.argv.length-2);
+  const CaReproject = require('./lib/ca-reproject');
+  const caReproject = new CaReproject(files);
+  await caReproject.loadFiles();
+  await caReproject.run();
 }
 
 async function jp2ToPng() {

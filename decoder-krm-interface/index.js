@@ -56,7 +56,7 @@ async function handleReq (req, res) {
     var [date, time] = date.toISOString().split('T');
 
     let basePath = path.resolve('/', 
-      (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/, '-'),
+      (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       date,
       time.split('.')[0].replace(/:/g, '-'),
       product.band,
