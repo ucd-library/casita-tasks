@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "fs-extra": "^9.0.1"
+    "fs-extra": "^9.0.1",
+    "pngjs": "^5.0.0"
   }
 }

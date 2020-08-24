@@ -56,7 +56,7 @@ async function handleReq (req, res) {
     var [date, time] = date.toISOString().split('T');
 
     let basePath = path.resolve('/', 
-      product.imageScale || product.label.toLowerCase().replace(/[^a-z0-9]+/, '-'),
+      (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/, '-'),
       date,
       time.split('.')[0].replace(/:/g, '-'),
       product.band,
@@ -64,7 +64,6 @@ async function handleReq (req, res) {
       'cells',
       header.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE+'-'+header.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE
     );
-    console.log(basePath);
 
     let data = req.body.fields;
     let formData = new FormData();
@@ -112,7 +111,7 @@ async function handleReq (req, res) {
     // }
 
 
-  } else if( req.body.fields.apid === '302' ) {
+  // } else if( req.body.fields.apid === '302' ) {
     // let data = lightningPayloadParser.parseFlashData(req.body.files.data.data);
 
     // let tmp = [];
@@ -122,9 +121,44 @@ async function handleReq (req, res) {
     // }
 
     // process.send({event: 'lightning-events', payload: {data: tmp, apid: req.body.fields.apid}});
-  } else if( req.body.fields.apid === '301' ) {
+  // } else if( req.body.fields.apid === '301' ) {
     // let data = lightningPayloadParser.parseEventData(req.body.files.data.data);
     // process.send({event: 'lightning-strike-count', payload: {data: data.length}});
+  } else {
+
+    let metadata = req.body.fields;
+    metadata.spacePacketHeaders = JSON.parse(metadata.spacePacketHeaders);
+    metadata.headers = JSON.parse(metadata.headers)
+
+    var date = new Date(946728000000 + metadata.headers.SECONDS_SINCE_EPOCH*1000);
+    var [date, time] = date.toISOString().split('T');
+
+    let product = apidUtils.get(req.body.fields.apid);
+
+    let basePath = path.resolve('/', 
+      (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      date,
+      time.split('.')[0].replace(/:/g, '-'),
+      req.body.fields.apid
+    );
+
+    let formData = new FormData();
+    formData.append('path', basePath);
+    formData.append('file', Buffer.from(JSON.stringify(metadata)), {
+      filename: 'metadata.json',
+      contentType: 'application/json'
+    });
+    await fetch('http://controller:3000', {method:'POST', body:formData});
+
+
+    let file = req.body.files.data || {};
+    formData = new FormData();
+    formData.append('path', basePath);
+    formData.append('file', file.data, {
+      filename: (file.filename || 'payload.bin'),
+      contentType: 'application/octet-stream'
+    });
+    await fetch('http://controller:3000', {method:'POST', body:formData});
   }
 }
 

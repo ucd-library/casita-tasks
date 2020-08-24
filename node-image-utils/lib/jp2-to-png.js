@@ -1,7 +1,7 @@
 const JpgImage = require('./jpxInt16');
 // const Jimp = require('jimp');
 const PNG = require('pngjs').PNG;
-const config = require('../config');
+const config = require('./config');
 
 let max = 0;
 let min = Number.MAX_SAFE_INTEGER;
@@ -25,7 +25,7 @@ module.exports = async (metadata, data) => {
 
   let rowOffset = 0;
   
-  let conversionFactor = config.worker16Conversion[metadata.apid];
+  let conversionFactor = config.worker16Conversion[metadata.apid] || 750;
 
   // let histo = {};
   let localmax = 0;
