@@ -1,5 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
+const CaReproject = require('./lib/ca-reproject');
+const jp2ToPngFn = require("./lib/jp2-to-png");
 
 if( process.argv[2] === 'jp2-to-png' ) {
   jp2ToPng();
@@ -12,7 +14,7 @@ if( process.argv[2] === 'jp2-to-png' ) {
 
 async function reproject() {
   let files = process.argv.splice(2, process.argv.length-2);
-  const CaReproject = require('./lib/ca-reproject');
+  
   const caReproject = new CaReproject(files);
   await caReproject.loadFiles();
   await caReproject.run();
@@ -29,8 +31,7 @@ async function jp2ToPng() {
     }
   }
 
-  const fn = require("./lib/jp2-to-png");
-  const compositePng = await fn(metadata, data);
+  const compositePng = await jp2ToPngFn(metadata, data);
 
   console.log('Writing file: '+path.join(rootDir, 'image.png'));
   await fs.writeFile(path.join(rootDir, 'image.png'), compositePng);

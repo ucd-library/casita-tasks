@@ -25,10 +25,14 @@ module.exports = async (metadata, data) => {
 
   let rowOffset = 0;
   
-  let conversionFactor = config.worker16Conversion[metadata.apid] || 750;
-
-  // let histo = {};
-  let localmax = 0;
+  if( !config.apidProducts[metadata.apid] ) {
+    console.warn(`No product definition for apid (${metadata.apid}), using full 16bit to 8bit conversion`);
+  } else {
+    console.log(`Using apid (${metadata.apid}) definition: ${JSON.stringify(config.apidProducts[metadata.apid])}`);
+  }
+  let productDef = config.apidProducts[metadata.apid] || {};
+  let bitMask = productDef.bitMask || 0xFFFF;
+  let maxValue = productDef.maxValue || 65536;
 
   for( let i = 0; i < fragmentCount; i++ ) {
     let fmetadata = JSON.parse(metadata[`fragment_headers_${i}`]).imagePayload;
@@ -62,36 +66,19 @@ module.exports = async (metadata, data) => {
     rowOffset = fmetadata.ROW_OFFSET_WITH_IMAGE_BLOCK-1;
 
     // fill fragment
-    let j;
+    let j, val;
     let crow = fmetadata.ROW_OFFSET_WITH_IMAGE_BLOCK*imageWidth*4;
     for( j = 0; j < tiles[0].length; j++ ) {
 
-      // min seems like: 32792
-      // max seems like: 33791, this is high, using a lower number
+      val = tiles[0][j] & bitMask;
+      // val = maxValue - val;
+      // debug
+      // console.log(dec2bin(tiles[0][j]), tiles[0][j], dec2bin(val), val);
+      val = Math.round((val / maxValue) * 255);
 
-      // let val = (tiles[0][j]/20) - 1550; // - (32500/8);
-      let val = Math.round(((tiles[0][j] - 32790) / conversionFactor) * 255);
-
-      // if( !histo[tiles[0][j]]) histo[tiles[0][j]] = 1;
-      // else histo[tiles[0][j]] += 1;
-      
-      // used to figure out above
-      if( metadata.apid === 'b1' ) {
-        if( max < tiles[0][j] ) max = tiles[0][j];
-        if( localmax < tiles[0][j] ) localmax = tiles[0][j];
-        if( min > tiles[0][j] ) min = tiles[0][j];
-      }
-      
+      // debugger;
       if( val > 255 ) val = 255;
       else if( val < 0 ) val = 0;
-
-      // if( (tiles[0][j]/20) > 1800 ) {
-      //   png.data[(crow)+(j*4)] = 0;
-      //   png.data[(crow)+(j*4)+1] = 0;
-      //   png.data[(crow)+(j*4)+2] = 0;
-      //   png.data[(crow)+(j*4)+3] = 0;
-      //   continue;
-      // }
 
       png.data[(crow)+(j*4)] = val;
       png.data[(crow)+(j*4)+1] = val;
@@ -103,19 +90,7 @@ module.exports = async (metadata, data) => {
     rowOffset += jpgImage.height;
   }
 
-
-  // console.log(
-  //   Math.min(... Object.keys(histo)),
-  //   Math.max(... Object.keys(histo))
-  // )
-
   let fulldata = PNG.sync.write(png);
-  // let image = await Jimp.read(fulldata);
-  // image.resize(
-  //   Math.ceil(imageWidth/config.imageScaleFactor), 
-  //   Math.ceil(imageHeight/config.imageScaleFactor)
-  // );
-  // data = await image.getBufferAsync(Jimp.MIME_PNG);
 
   return fulldata;
 }
