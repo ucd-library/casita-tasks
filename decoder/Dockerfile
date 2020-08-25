@@ -16,4 +16,4 @@ COPY test.js .
 ENV GRB_FILE ${GRB_FILE}
 ENV SSH_KEY_USERNAME ${SSH_KEY_USERNAME}
 
-CMD bash -c "ssh ${SSH_KEY_USERNAME}@grb-box.cstars.ucdavis.edu 'tail -f /grb/${GRB_FILE}/grbpackets.dat' | node index.js"
+CMD ./run.sh
