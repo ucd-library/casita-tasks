@@ -12,6 +12,7 @@ WORKDIR /service
 RUN npm install --save @ucd-lib/goes-r-packet-decoder@0.1.1
 COPY index.js .
 COPY test.js .
+COPY run.sh .
 
 ENV GRB_FILE ${GRB_FILE}
 ENV SSH_KEY_USERNAME ${SSH_KEY_USERNAME}
