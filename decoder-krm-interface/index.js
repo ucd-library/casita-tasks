@@ -1,12 +1,14 @@
 const app = require('express')();
 const http = require('http').createServer(app);
 const Busboy = require('busboy');
-const fetch = require('node-fetch');
+const _fetch = require('node-fetch');
 const FormData = require('form-data');
 const path = require('path');
 const cp = require('child_process');
 const {apidUtils} = require('@ucd-lib/goes-r-packet-decoder');
+const {logger, StartSubjectModel} = require('@ucd-lib/krm-node-utils');
 
+let model = new StartSubjectModel({groupId: 'decoder-krm-interface'});
 
 function parse(req, res, next) {
   let body = {
@@ -34,7 +36,11 @@ function parse(req, res, next) {
 
 app.post('/', parse, async (req, res) => {
   res.send('ack');
-  handleReq(req, res);
+  try {
+    await handleReq(req, res);
+  } catch(e) {
+    logger.error('Failed to proxy decoder request', e);
+  }
 });
 
 async function handleReq (req, res) {
@@ -66,36 +72,12 @@ async function handleReq (req, res) {
     );
 
     let data = req.body.fields;
-    let formData = new FormData();
-    formData.append('path', basePath);
-    formData.append('file', Buffer.from(JSON.stringify(data)), {
-      filename: 'fragment-metadata.json',
-      contentType: 'application/json'
-    });
-    await fetch('http://controller:3000', {method:'POST', body:formData});
+    await send(path.join(basePath, 'fragment-metadata.json'), JSON.stringify(data));
 
     for( let i = 0; i < count; i++ ) {
-      formData = new FormData();
-      formData.append('path', basePath+'/fragments/'+i);
-      formData.append('file', Buffer.from(req.body.fields['fragment_headers_'+i]), {
-        filename: `image-fragment-metadata.json`,
-        contentType: 'application/json'
-      });
-      await fetch('http://controller:3000', {method:'POST', body:formData});
+      await send(path.join(basePath, 'fragments', i+'', 'image-fragment-metadata.json'), req.body.fields['fragment_headers_'+i]);
 
-      if( !req.body.files['fragment_data_'+i] ) {
-        console.log('BAD!!', 'missing: '+i);
-        console.log(req.body.fields);
-        console.log(Object.keys(req.body.files))
-      }
-
-      formData = new FormData();
-      formData.append('path', basePath+'/fragments/'+i);
-      formData.append('file', req.body.files['fragment_data_'+i].data, {
-        filename: `image_fragment.jp2`,
-        contentType: 'image/x-jp2'
-      });
-      await fetch('http://controller:3000', {method:'POST', body:formData});
+      await send(path.join(basePath, 'fragments', i+'', 'image_fragment.jp2'), req.body.files['fragment_data_'+i].data);
     }
 
     // let payload = {
@@ -142,42 +124,22 @@ async function handleReq (req, res) {
       req.body.fields.apid
     );
 
-    let formData = new FormData();
-    formData.append('path', basePath);
-    formData.append('file', Buffer.from(JSON.stringify(metadata)), {
-      filename: 'metadata.json',
-      contentType: 'application/json'
-    });
-    await fetch('http://controller:3000', {method:'POST', body:formData});
-
+    await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
 
     let file = req.body.files.data || {};
-    formData = new FormData();
-    formData.append('path', basePath);
-    formData.append('file', file.data, {
-      filename: (file.filename || 'payload.bin'),
-      contentType: 'application/octet-stream'
-    });
-    await fetch('http://controller:3000', {method:'POST', body:formData});
+    await send(path.join(basePath, 'payload.bin'), file.data);
   }
 }
 
-// function initChildren() {
-//   for( let i = 0; i < workerCount; i++ ) {
-//     let worker = cp.fork(`${__dirname}/worker.js`);
-//     worker.on('message', msg => {
-//       process.send({event: 'boundary', payload: msg});
-//     });
-//     children.push(worker);
-//   }
-// }
+async function send(file, data) {
+  try {
+    await model.send(file, data);
+  } catch(e) {
+    logger.error('Decoder krm interface failed to send subject: '+file, e);
+  }
+}
 
-// function sendToWorker(msg) {
-//   children[currentChildIndex].send(msg);
-//   currentChildIndex++;
-//   if( currentChildIndex >= workerCount ) currentChildIndex = 0;
-// }
-// initChildren();
-
-
-http.listen(3000, () => console.log('goes-r receiver krm proxy listening on port: 3000'));
+http.listen(3000, async () => {
+  await model.connect();
+  logger.info('goes-r decoder krm proxy listening on port: 3000')
+});

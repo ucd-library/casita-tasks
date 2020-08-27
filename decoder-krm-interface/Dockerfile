@@ -1,4 +1,5 @@
-FROM node:14
+ARG NODEJS_BASE
+FROM ${NODEJS_BASE}
 
 RUN mkdir /service
 WORKDIR /service
