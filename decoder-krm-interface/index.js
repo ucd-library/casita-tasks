@@ -142,7 +142,11 @@ async function send(file, data) {
   }
 }
 
-http.listen(3000, async () => {
+(async function() {
+  // wait for kafka connection before we start http server
   await model.connect();
-  logger.info('goes-r decoder krm proxy listening on port: 3000')
-});
+
+  http.listen(3000, async () => {
+    logger.info('goes-r decoder krm proxy listening on port: 3000')
+  });
+})()

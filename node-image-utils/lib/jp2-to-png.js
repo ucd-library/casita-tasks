@@ -8,7 +8,7 @@ let min = Number.MAX_SAFE_INTEGER;
 
 module.exports = async (metadata, data) => {
   let fragmentCount = parseInt(metadata.fragmentsCount);
-  let imageMetadata = JSON.parse(metadata.fragment_headers_0).imagePayload;
+  let imageMetadata = metadata.fragment_headers_0.imagePayload;
   let imageHeight = imageMetadata.IMAGE_BLOCK_HEIGHT;
   let imageWidth = imageMetadata.IMAGE_BLOCK_WIDTH;
 
@@ -35,7 +35,7 @@ module.exports = async (metadata, data) => {
   let maxValue = productDef.maxValue || 65536;
 
   for( let i = 0; i < fragmentCount; i++ ) {
-    let fmetadata = JSON.parse(metadata[`fragment_headers_${i}`]).imagePayload;
+    let fmetadata = metadata[`fragment_headers_${i}`].imagePayload;
 
     // parse the jp2 file
     let jpgImage = new JpgImage();
