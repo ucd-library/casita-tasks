@@ -9,7 +9,10 @@ RUN ssh-keyscan grb-box.cstars.ucdavis.edu >> /root/.ssh/known_hosts
 RUN mkdir /service
 WORKDIR /service
 
-RUN npm install --save @ucd-lib/goes-r-packet-decoder@0.1.1
+COPY package.json .
+COPY package-lock.json .
+RUN npm install
+
 COPY index.js .
 COPY test.js .
 COPY run.sh .

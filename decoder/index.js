@@ -3,6 +3,7 @@ const Processor = require('@ucd-lib/goes-r-packet-decoder/lib/binary-stream-proc
 let target = process.env.TARGET_URL || 'http://localhost:3000'
 
 let processor = new Processor({
+  name : process.env.GRB_FILE,
   consoleLogStatus : false,
   imageBlock : {
     post : {

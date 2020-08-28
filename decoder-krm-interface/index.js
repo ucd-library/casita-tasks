@@ -72,10 +72,13 @@ async function handleReq (req, res) {
     );
 
     let data = req.body.fields;
+    for( let i = 0; i < count; i++ ) {
+      data['fragment_headers_'+i] = JSON.parse(data['fragment_headers_'+i]);
+    }
     await send(path.join(basePath, 'fragment-metadata.json'), JSON.stringify(data));
 
     for( let i = 0; i < count; i++ ) {
-      await send(path.join(basePath, 'fragments', i+'', 'image-fragment-metadata.json'), req.body.fields['fragment_headers_'+i]);
+      await send(path.join(basePath, 'fragments', i+'', 'image-fragment-metadata.json'), JSON.stringify(data['fragment_headers_'+i]));
 
       await send(path.join(basePath, 'fragments', i+'', 'image_fragment.jp2'), req.body.files['fragment_data_'+i].data);
     }

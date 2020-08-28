@@ -1,0 +1,17 @@
+{
+  "name": "casita-stream-status",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "stream-status": "bin/cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "jrmerz@ucdavis.edu",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^9.0.1"
+  }
+}

@@ -35,4 +35,5 @@ async function jp2ToPng() {
 
   console.log('Writing file: '+path.join(rootDir, 'image.png'));
   await fs.writeFile(path.join(rootDir, 'image.png'), compositePng);
+  await fs.remove(path.join(rootDir, 'fragments'));
 }
