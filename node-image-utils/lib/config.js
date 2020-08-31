@@ -13,97 +13,189 @@ const BAND_CHARACTERISTICS = {
     resolution: 1,
     bitDepth: 10,
     bitMask : 0x3FF,
-    maxValue : 1022
+    maxValue : 1022,
+    offsetBounds : {
+      min : -25.93664701,
+      max : 804.03605737
+    },
+    scale : 0.812106364,
+    offset: -25.93664701
   },
   2 : { 
     resolution: 0.5,
     bitDepth: 12,
     bitMask : 0xFFF,
-    maxValue : 4095
+    maxValue : 4095,
+    offsetBounds : {
+      min : -20.28991094,
+      max : 628.98723908
+    },
+    scale : 0.158592367,
+    offset: -20.28991094
   },
   3 : { 
     resolution: 1,
     bitDepth: 10,
     bitMask : 0x3FF,
-    maxValue : 1022
+    maxValue : 1022,
+    offsetBounds : {
+      min : -12.03764377,
+      max : 373.16695681
+    },
+    scale : 0.376912525,
+    offset : -12.03764377
   },
   4 : { 
     resolution: 2,
     bitDepth: 11,
     bitMask: 0x7FF,
-    maxValue : 2047
+    maxValue : 2047,
+    offsetBounds : {
+      min : -4.52236858,
+      max : 140.19342584
+    },
+    scale : 0.070731082,
+    offset : -4.52236858
   },
   5 : { 
     resolution: 1,
     bitDepth: 10,
     bitMask : 0x3FF,
-    maxValue : 1022
+    maxValue : 1022,
+    scale: 0.095800040,
+    offset: 3.05961376
   },
   6 : { 
     resolution: 2,
     bitDepth: 10,
     bitMask : 0x3FF,
-    maxValue : 1022
+    maxValue : 1022,
+    offsetBounds : {
+      min : -3.05961376,
+      max : 94.84802665
+    },
+    scale: 0.030088475,
+    offset: -0.96095066
   },
   7 : { 
     resolution: 2,
     bitDepth: 14,
     bitMask : 0x1FFF,
-    maxValue : 16383
+    maxValue : 16383,
+    offsetBounds : {
+      min : -0.96095066,
+      max : 29.78947040
+    },
+    scale : 0.001564351,
+    offset : 0.03760000
   },
   8 : { 
     resolution: 2,
     bitDepth: 12,
     bitMask : 0xFFF,
-    maxValue : 4095
+    maxValue : 4095,
+    offsetBounds : {
+      min : -0.03760000,
+      max : 25.58960000
+    },
+    scale : 0.007104763,
+    offset : -0.55860000
   },
   9 : { 
     resolution: 2,
     bitDepth: 11,
     bitMask: 0x7FF,
-    maxValue : 2047
+    maxValue : 2047,
+    offsetBounds : {
+      min : -0.82360000,
+      max : 45.29140000
+    },
+    scale : 0.022539101,
+    offset : -0.82360000
   },
   10 : { 
     resolution: 2,
     bitDepth: 12,
     bitMask : 0xFFF,
-    maxValue : 4095
+    maxValue : 4095,
+    offsetBounds : {
+      min : -0.95610000,
+      max : 81.09290000
+    },
+    scale : 0.020041280,
+    offset : -0.95610000
   },
   11 : { 
     resolution: 2,
     bitDepth: 12,
     bitMask : 0xFFF,
-    maxValue : 4095
+    maxValue : 4095,
+    offsetBounds : {
+      min : -1.30220000,
+      max : 135.26460000
+    },
+    scale : 0.033357792,
+    offset : -1.30220000
   },
   12 : { 
     resolution: 2,
     bitDepth: 11,
     bitMask: 0x7FF,
-    maxValue : 2047
+    maxValue : 2047,
+    offsetBounds : {
+      min : -1.53940000,
+      max : 109.84480000
+    },
+    scale : 0.054439980,
+    offset : -1.53940000
   },
   13 : { 
     resolution: 2,
     bitDepth: 12,
     bitMask : 0xFFF,
-    maxValue : 4095
+    maxValue : 4095,
+    offsetBounds : {
+      min : -1.64430000,
+      max : 185.56990000
+    },
+    scale : 0.045728920,
+    offset : -1.64430000
   },
   14 : { 
     resolution: 2,
     bitDepth: 12,
     bitMask : 0xFFF,
-    maxValue : 4095
+    maxValue : 4095,
+    offsetBounds : {
+      min : -1.71870000,
+      max : 200.90240000
+    },
+    scale : 0.049492208,
+    offset : -1.71870000
   },
   15 : { 
     resolution: 2,
     bitDepth: 12,
     bitMask : 0xFFF,
-    maxValue : 4095
+    maxValue : 4095,
+    offsetBounds : {
+      min : -1.75580000,
+      max : 214.30140000
+    },
+    scale : 0.052774108,
+    offset : -1.75580000
   },
   16 : { 
     resolution: 2,
     bitDepth: 10,
     bitMask : 0x3FF,
-    maxValue : 1022
+    maxValue : 1022,
+    offsetBounds : {
+      min : 5.23920000,
+      max : 174.69260000
+    },
+    scale : 0.176058513,
+    offset : -5.23920000
   }
 }
 
@@ -202,6 +294,23 @@ const config = {
     'cd' : BAND_CHARACTERISTICS['14'],
     'ce' : BAND_CHARACTERISTICS['15'],
     'cf' : BAND_CHARACTERISTICS['16'],
+
+    'd0' : BAND_CHARACTERISTICS['1'],
+    'd1' : BAND_CHARACTERISTICS['2'],
+    'd2' : BAND_CHARACTERISTICS['3'],
+    'd3' : BAND_CHARACTERISTICS['4'],
+    'd4' : BAND_CHARACTERISTICS['5'],
+    'd5' : BAND_CHARACTERISTICS['6'],
+    'd6' : BAND_CHARACTERISTICS['7'],
+    'd7' : BAND_CHARACTERISTICS['8'],
+    'd8' : BAND_CHARACTERISTICS['9'],
+    'd9' : BAND_CHARACTERISTICS['10'],
+    'da' : BAND_CHARACTERISTICS['11'],
+    'db' : BAND_CHARACTERISTICS['12'],
+    'dc' : BAND_CHARACTERISTICS['13'],
+    'dd' : BAND_CHARACTERISTICS['14'],
+    'de' : BAND_CHARACTERISTICS['15'],
+    'df' : BAND_CHARACTERISTICS['16'],
 
     'f0' : BAND_CHARACTERISTICS['1'],
     'f1' : BAND_CHARACTERISTICS['2'],

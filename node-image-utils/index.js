@@ -31,9 +31,15 @@ async function jp2ToPng() {
     }
   }
 
-  const compositePng = await jp2ToPngFn(metadata, data);
+  const images = await jp2ToPngFn(metadata, data);
 
   console.log('Writing file: '+path.join(rootDir, 'image.png'));
-  await fs.writeFile(path.join(rootDir, 'image.png'), compositePng);
-  await fs.remove(path.join(rootDir, 'fragments'));
+  await fs.writeFile(path.join(rootDir, 'image.png'), images.sciPng);
+
+  console.log('Writing file: '+path.join(rootDir, 'web.png'));
+  await fs.writeFile(path.join(rootDir, 'web.png'), images.webPng);
+
+  if( process.argv.includes('--rm-fragments') ) {
+    await fs.remove(path.join(rootDir, 'fragments'));
+  }
 }

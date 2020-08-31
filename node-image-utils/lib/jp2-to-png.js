@@ -1,6 +1,5 @@
 const JpgImage = require('./jpxInt16');
-// const Jimp = require('jimp');
-const PNG = require('pngjs').PNG;
+const {PNG} = require('pngjs');
 const config = require('./config');
 
 let max = 0;
@@ -13,15 +12,32 @@ module.exports = async (metadata, data) => {
   let imageWidth = imageMetadata.IMAGE_BLOCK_WIDTH;
 
   // create a blank png of same size
-  let png = new PNG({
+  // let png = new PNG({
+  //   colorType: 0,
+  //   inputColorType: 0,
+  //   // inputHasAlpha : false,
+  //   filterType: 4,
+  //   // bitDepth: 16,
+  //   height: imageHeight,
+  //   width: imageWidth
+  // });
+
+  let webPng = new PNG({
     colorType: 0,
     inputColorType: 0,
-    // inputHasAlpha : false,
-    filterType: 4,
-    // bitDepth: 16,
     height: imageHeight,
     width: imageWidth
   });
+  let sciPng = new PNG({
+    colorType: 0,
+    inputColorType: 0,
+    bitDepth : 16,
+    height: imageHeight,
+    width: imageWidth
+  });
+
+  sciPng.data = new Uint16Array(imageWidth*imageHeight);
+  webPng.data = Buffer.alloc(imageWidth*imageHeight);
 
   let rowOffset = 0;
   
@@ -33,6 +49,11 @@ module.exports = async (metadata, data) => {
   let productDef = config.apidProducts[metadata.apid] || {};
   let bitMask = productDef.bitMask || 0xFFFF;
   let maxValue = productDef.maxValue || 65536;
+  let scale = productDef.scale || 1;
+  let spread = maxValue;
+  if( productDef.offsetBounds ) {
+    spread = productDef.offsetBounds.max - productDef.offsetBounds.min;
+  }
 
   for( let i = 0; i < fragmentCount; i++ ) {
     let fmetadata = metadata[`fragment_headers_${i}`].imagePayload;
@@ -57,40 +78,56 @@ module.exports = async (metadata, data) => {
     // fill missing fragment(s)
     for( let j = rowOffset; j < fmetadata.ROW_OFFSET_WITH_IMAGE_BLOCK-1; j++ ) {
       for( let z = 0; z < imageWidth; z++ ) {
-        png.data[(j*imageWidth*4)+(z*4)] = 0;
-        png.data[(j*imageWidth*4)+(z*4)+1] = 0;
-        png.data[(j*imageWidth*4)+(z*4)+2] = 0;
-        png.data[(j*imageWidth*4)+(z*4)+3] = 0;
+        webPng.data[(j*imageWidth)+z] = 0;
+        sciPng.data[(j*imageWidth)+z] = 0;
+        // sciPng.data[(j*imageWidth*2)+(z+1)] = 0;
+        // png.data[(j*imageWidth*4)+(z*4)] = 0;
+        // png.data[(j*imageWidth*4)+(z*4)+1] = 0;
+        // png.data[(j*imageWidth*4)+(z*4)+2] = 0;
+        // png.data[(j*imageWidth*4)+(z*4)+3] = 0;
       }
     }
     rowOffset = fmetadata.ROW_OFFSET_WITH_IMAGE_BLOCK-1;
 
     // fill fragment
-    let j, val;
-    let crow = fmetadata.ROW_OFFSET_WITH_IMAGE_BLOCK*imageWidth*4;
+    let j, val, rval, gval, bval;
+    // let crow = fmetadata.ROW_OFFSET_WITH_IMAGE_BLOCK*imageWidth*4;
+    let crow = fmetadata.ROW_OFFSET_WITH_IMAGE_BLOCK*imageWidth;
     for( j = 0; j < tiles[0].length; j++ ) {
 
-      val = tiles[0][j] & bitMask;
-      // val = maxValue - val;
-      // debug
-      // console.log(dec2bin(tiles[0][j]), tiles[0][j], dec2bin(val), val);
-      val = Math.round((val / maxValue) * 255);
-
-      // debugger;
+      rval = tiles[0][j] & bitMask;
+      val = Math.round(((rval*scale) / spread) * 255);
+      // console.log(rval, val, scale, spread);
       if( val > 255 ) val = 255;
       else if( val < 0 ) val = 0;
 
-      png.data[(crow)+(j*4)] = val;
-      png.data[(crow)+(j*4)+1] = val;
-      png.data[(crow)+(j*4)+2] = val;
-      png.data[(crow)+(j*4)+3] = 255;
+      webPng.data[crow+j] = val;
+      sciPng.data[crow+j] = rval;
+      // sciPng.data[crow*2+j+1] = rval & 0x0000FFFF;
+      // png.data[(crow)+(j*4)+1] = val;
+      // png.data[(crow)+(j*4)+2] = val;
+      // png.data[(crow)+(j*4)+3] = 255;
     }
 
     // increment the current row we should be rendering
     rowOffset += jpgImage.height;
   }
 
-  let fulldata = PNG.sync.write(png);
+  // let sciPng = PNG.sync.write(png);
 
-  return fulldata;
+  return {
+    sciPng : PNG.sync.write(sciPng, {
+      colorType: 0,
+      inputColorType: 0,
+      bitDepth : 16,
+      height: imageHeight,
+      width: imageWidth
+    }),
+    webPng : PNG.sync.write(webPng, {
+      colorType: 0,
+      inputColorType: 0,
+      height: imageHeight,
+      width: imageWidth
+    })
+  };
 }
