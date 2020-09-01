@@ -15,7 +15,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ucd-lib/pngjs": "^5.0.0",
     "fs-extra": "^9.0.1",
-    "pngjs": "^5.0.0"
+    "pngjs": "^5.0.0",
+    "pngjs3": "^5.1.10"
   }
 }
