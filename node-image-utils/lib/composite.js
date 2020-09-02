@@ -6,8 +6,14 @@ const config = require('./config');
 class GRBCellComposite {
 
   async run(dir) {
+    if( path.parse(dir).base === 'image.png' ) {
+      dir = path.parse(dir).dir;
+    }
     if( !dir.match(/\/cells/) ) {
       dir = path.join(dir, 'cells');
+    }
+    if( !fs.existsSync(dir) ) {
+      throw new Error('Directory does not exist: '+dir);
     }
 
     let info = await this.getCompositeInfo(dir);

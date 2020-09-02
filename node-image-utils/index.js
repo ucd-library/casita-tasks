@@ -4,16 +4,24 @@ const CaReproject = require('./lib/ca-reproject');
 const jp2ToPngFn = require("./lib/jp2-to-png");
 const Composite = require('./lib/composite');
 
-if( process.argv[2] === 'jp2-to-png' ) {
-  jp2ToPng();
-} else if( process.argv[2] === 'composite' ) {
-  composite();
-} else if( process.agv[2] === 'reproject' ) {
-  reproject();
-} else {
-  console.error('Unknown command: '+process.argv[2]);
-  process.exit(-1);
-}
+(async function() {
+  try {
+    if( process.argv[2] === 'jp2-to-png' ) {
+      await jp2ToPng();
+    } else if( process.argv[2] === 'composite' ) {
+      await composite();
+    } else if( process.argv[2] === 'reproject' ) {
+      await reproject();
+    } else {
+      console.error('Unknown command: '+process.argv[2]);
+      process.exit(-1);
+    }
+  } catch(e) {
+    console.error('Failed to run command: ', process.argv, e);
+    process.exit(-1);
+  }
+})();
+
 
 async function composite() {
   let rootDir = process.argv.length > 2 ? process.argv[3] : process.cwd();
