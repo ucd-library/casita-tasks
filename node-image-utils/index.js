@@ -31,7 +31,7 @@ async function composite() {
     return;
   }
 
-  if( rootDir.match(/\/cells/) ) {
+  if( rootDir.match(/\/blocks/) ) {
     rootDir = path.resolve(rootDir, '..');
   }
 

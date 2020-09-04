@@ -3,14 +3,14 @@ const path = require('path');
 const {PNG} = require('@ucd-lib/pngjs');
 const config = require('./config');
 
-class GRBCellComposite {
+class GRBBlockComposite {
 
   async run(dir) {
     if( path.parse(dir).base === 'image.png' ) {
       dir = path.parse(dir).dir;
     }
-    if( !dir.match(/\/cells/) ) {
-      dir = path.join(dir, 'cells');
+    if( !dir.match(/\/blocks/) ) {
+      dir = path.join(dir, 'blocks');
     }
     if( !fs.existsSync(dir) ) {
       throw new Error('Directory does not exist: '+dir);
@@ -23,8 +23,8 @@ class GRBCellComposite {
     let webPngData = Buffer.alloc(info.width*info.height);
 
     let histogram = {};
-    for( let cell of info.cells ) {
-      await this.addCell(dir, cell, info.width, sciPngData, webPngData, histogram);
+    for( let block of info.blocks ) {
+      await this.addBlock(dir, block, info.width, sciPngData, webPngData, histogram);
       // break;
     }
 
@@ -81,29 +81,29 @@ class GRBCellComposite {
     };
   }
 
-  async addCell(dir, cell, compositeWidth, sciPngData, webPngData, histogram) {
-    if( !fs.existsSync(path.join(dir, cell, 'fragment-metadata.json')) ) {
-      console.warn('Failed to locate cell metadata: '+path.join(dir, cell, 'fragment-metadata.json'));
+  async addBlock(dir, block, compositeWidth, sciPngData, webPngData, histogram) {
+    if( !fs.existsSync(path.join(dir, block, 'fragment-metadata.json')) ) {
+      console.warn('Failed to locate block metadata: '+path.join(dir, block, 'fragment-metadata.json'));
       return;
     }
-    let cellMetadata = await this.readMetadata(
-      path.join(dir, cell, 'fragment-metadata.json')
+    let blockMetadata = await this.readMetadata(
+      path.join(dir, block, 'fragment-metadata.json')
     );
-    let imageMetadata = cellMetadata.fragment_headers_0.imagePayload;
+    let imageMetadata = blockMetadata.fragment_headers_0.imagePayload;
     
-    if( !fs.existsSync(path.join(dir, cell, 'image.png')) ) {
-      console.warn('Failed to locate cell data: '+path.join(dir, cell, 'image.png'));
+    if( !fs.existsSync(path.join(dir, block, 'image.png')) ) {
+      console.warn('Failed to locate block data: '+path.join(dir, block, 'image.png'));
       return;
     }
     let imageData = await this.readPng(
-      path.join(dir, cell, 'image.png')
+      path.join(dir, block, 'image.png')
     );
 
     let row = imageMetadata.UPPER_LOWER_LEFT_Y_COORDINATE;
     let col = imageMetadata.UPPER_LOWER_LEFT_X_COORDINATE;
     let rval, val;
 
-    let productDef = config.apidProducts[cellMetadata.apid] || {};
+    let productDef = config.apidProducts[blockMetadata.apid] || {};
     let maxValue = productDef.maxValue || 65536;
     let scale = productDef.scale || 1;
     let spread = maxValue;
@@ -168,32 +168,32 @@ class GRBCellComposite {
 
   async getCompositeInfo(dir) {
     let max = {x: 0, y: 0};
-    let cells = await fs.readdir(dir);
+    let blocks = await fs.readdir(dir);
     
-    if( !cells.length ) {
-      console.warn('No cells found in directory: '+dir);
+    if( !blocks.length ) {
+      console.warn('No blocks found in directory: '+dir);
       return
     }
 
-    for( let cell of cells ) {
-      let [x, y] = cell.split('-').map(coord => parseInt(coord));
+    for( let block of blocks ) {
+      let [x, y] = block.split('-').map(coord => parseInt(coord));
       
       if( x > max.x ) max.x = x;
       if( y > max.y ) max.y = y;
     }
 
-    if( !fs.existsSync(path.join(dir, cells[0], 'fragment-metadata.json')) ) {
-      console.warn('Failed to locate init cell metadata: '+path.join(dir, cells[0], 'fragment-metadata.json'));
+    if( !fs.existsSync(path.join(dir, blocks[0], 'fragment-metadata.json')) ) {
+      console.warn('Failed to locate init block metadata: '+path.join(dir, blocks[0], 'fragment-metadata.json'));
       return null;
     }
 
     let maxMetadata = await this.readMetadata(
-      path.join(dir, cells[0], 'fragment-metadata.json')
+      path.join(dir, blocks[0], 'fragment-metadata.json')
     );
     let imageMetadata = maxMetadata.fragment_headers_0.imagePayload;
     
     return {
-      cells,
+      blocks,
       width: max.x + imageMetadata.IMAGE_BLOCK_WIDTH,
       height: max.y + imageMetadata.IMAGE_BLOCK_HEIGHT
     }
@@ -201,4 +201,4 @@ class GRBCellComposite {
 
 }
 
-module.exports = new GRBCellComposite();
+module.exports = new GRBBlockComposite();

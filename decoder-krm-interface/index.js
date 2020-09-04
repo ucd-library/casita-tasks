@@ -9,6 +9,7 @@ const {apidUtils} = require('@ucd-lib/goes-r-packet-decoder');
 const {logger, StartSubjectModel} = require('@ucd-lib/krm-node-utils');
 
 let model = new StartSubjectModel({groupId: 'decoder-krm-interface'});
+let SATELLITE = process.env.SATELLITE || 'west';
 
 function parse(req, res, next) {
   let body = {
@@ -62,12 +63,13 @@ async function handleReq (req, res) {
     var [date, time] = date.toISOString().split('T');
 
     let basePath = path.resolve('/', 
+      SATELLITE,
       (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       date,
-      time.split('.')[0].replace(/:/g, '-'),
+      time.split('.')[0].replace(/:/g, '/'),
       product.band,
       req.body.fields.apid,
-      'cells',
+      'blocks',
       header.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE+'-'+header.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE
     );
 
@@ -83,32 +85,6 @@ async function handleReq (req, res) {
       await send(path.join(basePath, 'fragments', i+'', 'image_fragment.jp2'), req.body.files['fragment_data_'+i].data);
     }
 
-    // let payload = {
-    //   top: t, left: l, bottom: b, right: r, 
-    //   time: header.imagePayload.SECONDS_SINCE_EPOCH,
-    //   apid: req.body.fields.apid
-    // };
-
-    // if( config.goesProducts[req.body.fields.apid] ) {
-    //   sendToWorker(Object.assign({payload}, req.body));
-    // } else {
-    //   process.send({event: 'boundary', payload});
-    // }
-
-
-  // } else if( req.body.fields.apid === '302' ) {
-    // let data = lightningPayloadParser.parseFlashData(req.body.files.data.data);
-
-    // let tmp = [];
-    // for( let i = 0; i < data.length; i++ ) {
-    //   let latlng = await project(data[i].flash_lon, data[i].flash_lat);
-    //   tmp.push({lon: latlng[0], lat: latlng[1]});
-    // }
-
-    // process.send({event: 'lightning-events', payload: {data: tmp, apid: req.body.fields.apid}});
-  // } else if( req.body.fields.apid === '301' ) {
-    // let data = lightningPayloadParser.parseEventData(req.body.files.data.data);
-    // process.send({event: 'lightning-strike-count', payload: {data: data.length}});
   } else {
 
     let metadata = req.body.fields;
@@ -121,6 +97,7 @@ async function handleReq (req, res) {
     let product = apidUtils.get(req.body.fields.apid);
 
     let basePath = path.resolve('/', 
+      SATELLITE,
       (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       date,
       time.split('.')[0].replace(/:/g, '-'),
@@ -147,6 +124,6 @@ async function send(file, data) {
   await model.connect();
 
   http.listen(3000, async () => {
-    logger.info('goes-r decoder krm proxy listening on port: 3000')
+    logger.info('goes-r '+SATELLITE+' decoder krm proxy listening on port: 3000')
   });
 })()
