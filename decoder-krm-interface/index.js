@@ -61,12 +61,14 @@ async function handleReq (req, res) {
 
     var date = new Date(946728000000 + header.imagePayload.SECONDS_SINCE_EPOCH*1000);
     var [date, time] = date.toISOString().split('T');
+    time = time.replace(/\..*/, '');
 
     let basePath = path.resolve('/', 
       SATELLITE,
       (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       date,
-      time.split('.')[0].replace(/:/g, '/'),
+      time.split(':')[0],
+      time.split(':').splice(1,2).join('-'),
       product.band,
       req.body.fields.apid,
       'blocks',
@@ -93,6 +95,7 @@ async function handleReq (req, res) {
 
     var date = new Date(946728000000 + metadata.headers.SECONDS_SINCE_EPOCH*1000);
     var [date, time] = date.toISOString().split('T');
+    time = time.replace(/\..*/, '');
 
     let product = apidUtils.get(req.body.fields.apid);
 
@@ -100,7 +103,8 @@ async function handleReq (req, res) {
       SATELLITE,
       (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       date,
-      time.split('.')[0].replace(/:/g, '-'),
+      time.split(':')[0],
+      time.split(':').splice(1,2).join('-'),
       req.body.fields.apid
     );
 
