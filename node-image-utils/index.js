@@ -31,6 +31,9 @@ async function composite() {
     return;
   }
 
+  if( path.parse(rootDir).base === 'image.png' ) {
+    rootDir = path.parse(rootDir).dir;
+  }
   if( rootDir.match(/\/blocks/) ) {
     rootDir = path.resolve(rootDir, '..');
   }
