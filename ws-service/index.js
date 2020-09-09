@@ -36,8 +36,27 @@ io.on('connection', (socket) => {
     });
   });
 
+  socket.on('unlisten', (msg) => {
+    msg = JSON.parse(msg);
+    let subjects = msg.subjects || [];
+
+    let current = registrations[socket.id];
+    if( !current ) {
+      current = {
+        subjects : [],
+        socket : socket
+      }
+      registrations[socket.id] = current;
+    }
+
+    subjects.forEach(subject => {
+      let index = current.subjects.findIndex(ele => ele.href === subject);
+      if( index === -1 ) return;
+      current.subjects.splice(index, 1);
+    });
+  });
+
   socket.on('disconnect', () => {
-    console.log('removing', socket.id)
     if( registrations[socket.id] ) {
       delete registrations[socket.id];
     }

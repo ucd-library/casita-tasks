@@ -1,6 +1,8 @@
 ARG WORKER_BASE_IMAGE
 FROM ${WORKER_BASE_IMAGE}
 
+RUN apt-get update && apt-get install -y imagemagick
+
 RUN mkdir /command
 WORKDIR /command
 

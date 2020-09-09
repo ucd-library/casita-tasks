@@ -2,6 +2,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const CaReproject = require('./lib/ca-reproject');
 const jp2ToPngFn = require("./lib/jp2-to-png");
+const scaleFn = require('./lib/scale');
 const Composite = require('./lib/composite');
 
 (async function() {
@@ -12,6 +13,8 @@ const Composite = require('./lib/composite');
       await composite();
     } else if( process.argv[2] === 'reproject' ) {
       await reproject();
+    } else if( process.argv[2] === 'scale' ) {
+      await scale();
     } else {
       console.error('Unknown command: '+process.argv[2]);
       process.exit(-1);
@@ -22,6 +25,15 @@ const Composite = require('./lib/composite');
   }
 })();
 
+
+async function scale() {
+  let file = process.argv[3];
+  let band = process.argv[4];
+
+  let {stdout, stderr} = await scaleFn(file, band);
+  if( stderr ) console.error(stderr);
+  if( stdout ) console.log(stdout);
+}
 
 async function composite() {
   let rootDir = process.argv.length > 2 ? process.argv[3] : process.cwd();
