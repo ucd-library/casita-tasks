@@ -199,6 +199,8 @@ const BAND_CHARACTERISTICS = {
   }
 }
 
+// (1/resolution * 2)
+
 const BASE_CA_BLOCKS = [
   {top: 1314, left: 6328},
   {top: 1314, left: 7232},
