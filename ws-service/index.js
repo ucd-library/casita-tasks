@@ -11,49 +11,57 @@ const kafka = bus.kafka;
 const KAFKA_GROUP_ID = 'ws-service';
 
 io.on('connection', (socket) => {
-  logger.info('a user connected!', socket.id);
-  socket.on('chat', (msg) => {
-    console.log('message: ' + msg);
-  });
+  logger.info('a user socket connected:', socket.id);
 
   socket.on('listen', (msg) => {
-    msg = JSON.parse(msg);
-    let subjects = msg.subjects || [];
+    try {
+      let subjects = JSON.parse(msg);
 
-    let current = registrations[socket.id];
-    if( !current ) {
-      current = {
-        subjects : [],
-        socket : socket
+      let current = registrations[socket.id];
+      if( !current ) {
+        current = {
+          subjects : [],
+          socket : socket
+        }
+        registrations[socket.id] = current;
       }
-      registrations[socket.id] = current;
-    }
 
-    subjects.forEach(subject => {
-      let exists = current.subjects.find(ele => ele.href === subject);
-      if( exists ) return;
-      current.subjects.push(utils.subjectParser(subject));
-    });
+      subjects.forEach(subject => {
+        let exists = current.subjects.find(ele => ele.href === subject);
+        if( exists ) return;
+
+        let opts = subject.opts || {};
+        subject = utils.subjectParser(subject.subject);
+        subject.opts = opts;
+
+        current.subjects.push(subject);
+      });
+    } catch(e) {
+      logger.error('Failed to parse listen message: ', e);
+    }
   });
 
   socket.on('unlisten', (msg) => {
-    msg = JSON.parse(msg);
-    let subjects = msg.subjects || [];
+    try {
+      let subjects = JSON.parse(msg);
 
-    let current = registrations[socket.id];
-    if( !current ) {
-      current = {
-        subjects : [],
-        socket : socket
+      let current = registrations[socket.id];
+      if( !current ) {
+        current = {
+          subjects : [],
+          socket : socket
+        }
+        registrations[socket.id] = current;
       }
-      registrations[socket.id] = current;
-    }
 
-    subjects.forEach(subject => {
-      let index = current.subjects.findIndex(ele => ele.href === subject);
-      if( index === -1 ) return;
-      current.subjects.splice(index, 1);
-    });
+      subjects.forEach(subject => {
+        let index = current.subjects.findIndex(ele => ele.href === subject);
+        if( index === -1 ) return;
+        current.subjects.splice(index, 1);
+      });
+    } catch(e) {
+      logger.error('Failed to parse unlisten message: ', e);
+    }
   });
 
   socket.on('disconnect', () => {
@@ -81,18 +89,28 @@ http.listen(3000, () => {
   }]);
 
   await this.kafkaConsumer.consume(msg => {
-    let raw = msg.value.toString('utf-8');
-    msg = JSON.parse(raw);
+    try {
+      let raw = msg.value.toString('utf-8');
+      msg = JSON.parse(raw);
 
-    let id, reg, subject;
-    for( id in registrations ) {
-      reg = registrations[id];
-      for( subject of reg.subjects ) {
-        if( subject.path.regex.test(msg.subject) ) {
-          reg.socket.emit('message', raw);
-          break;
+      let id, reg, subject;
+      for( id in registrations ) {
+        reg = registrations[id];
+        for( subject of reg.subjects ) {
+          if( subject.path.regex.test(msg.subject) ) {
+
+            if( subject.opts.entireMessage ) {
+              reg.socket.emit('message', raw);
+            } else {
+              reg.socket.emit('message', {subject: msg.subject});
+            }
+
+            break;
+          }
         }
       }
+    } catch(e) {
+      logger.error('Failed to handle kafka message: ', msg, e);
     }
   });
 })();
