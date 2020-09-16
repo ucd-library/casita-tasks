@@ -5,11 +5,11 @@ const config = require('./config');
 
 module.exports = async function scale(file, band=1) {
   let info = config.bandResolutions[parseInt(band)];
-  let scale = (info.resolution * 25) / 100;
+  let scale = info.resolution;
 
+  file = path.join(path.parse(file).dir, 'web.png');
   let imageData = await readPng(file);
 
-  scale = (scale/100);
   let newSizeW = Math.floor(imageData.width * scale);
   let newSizeH = Math.floor(imageData.height * scale);
   let webPngData = Buffer.alloc(newSizeW*newSizeH);
@@ -17,7 +17,7 @@ module.exports = async function scale(file, band=1) {
   let row, col;
   for( row = 0; row < newSizeH; row++ ) {
     for( col = 0; col < newSizeW; col++ ) {
-      webPngData[(newSizeW*row)+col] = getPxData(imageData, row/scale, col/scale);
+      webPngData[(newSizeW*row)+col] = getPxData(imageData, Math.floor(row/scale), Math.floor(col/scale));
     }
   }
 
@@ -46,9 +46,9 @@ function getPxData(imageData, row, col) {
   for( i = -1; i <= 1; i++ ) {
     for( j = -1; j <= 1; j++ ) {
       if( row + i < 0 ) continue;
-      if( row + i >= imageData.width ) continue;
+      if( row + i >= imageData.height ) continue;
       if( col + j < 0 ) continue;
-      if( col + j >= imageData.height ) continue;
+      if( col + j >= imageData.width ) continue;
 
       loc = (imageData.width * (row+i)) + (col + j);
       sum += imageData.data[loc*4];
