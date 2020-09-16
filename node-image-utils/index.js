@@ -25,7 +25,6 @@ const Composite = require('./lib/composite');
   }
 })();
 
-
 async function scale() {
   let file = process.argv[3];
   let band = process.argv[4];

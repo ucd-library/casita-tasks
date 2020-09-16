@@ -100,7 +100,7 @@ http.listen(3000, () => {
           if( subject.path.regex.test(msg.subject) ) {
 
             if( subject.opts.entireMessage ) {
-              reg.socket.emit('message', raw);
+              reg.socket.emit('message', msg);
             } else {
               reg.socket.emit('message', {subject: msg.subject});
             }
