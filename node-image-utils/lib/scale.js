@@ -3,9 +3,11 @@ const path = require('path');
 const {PNG} = require('@ucd-lib/pngjs');
 const config = require('./config');
 
+const SCALE_FACTOR = 2;
+
 module.exports = async function scale(file, band=1) {
   let info = config.bandResolutions[parseInt(band)];
-  let scale = info.resolution;
+  let scale = info.resolution/SCALE_FACTOR;
 
   file = path.join(path.parse(file).dir, 'web.png');
   let imageData = await readPng(file);
