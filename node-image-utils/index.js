@@ -29,9 +29,15 @@ async function scale() {
   let file = process.argv[3];
   let band = process.argv[4];
 
-  let {stdout, stderr} = await scaleFn(file, band);
-  if( stderr ) console.error(stderr);
-  if( stdout ) console.log(stdout);
+  try {
+    let image = await scaleFn(file, band);
+    let newFile = path.join(path.parse(file).dir, 'web_scaled.png');
+    console.log('Writing scale file: '+newFile);
+    await fs.writeFile(newFile, image);
+  } catch(e) {
+    console.error('Failed to scale image: ', file, band, e);
+  }
+
 }
 
 async function composite() {

@@ -3,7 +3,7 @@ const path = require('path');
 const {PNG} = require('@ucd-lib/pngjs');
 const config = require('./config');
 
-module.exports = function scale(file, band=1) {
+module.exports = async function scale(file, band=1) {
   let info = config.bandResolutions[parseInt(band)];
   let scale = (info.resolution * 25) / 100;
 
