@@ -6,112 +6,87 @@ const FormData = require('form-data');
 const path = require('path');
 const cp = require('child_process');
 const {apidUtils} = require('@ucd-lib/goes-r-packet-decoder');
-const {logger, StartSubjectModel} = require('@ucd-lib/krm-node-utils');
+const {logger, bus, StartSubjectModel} = require('@ucd-lib/krm-node-utils');
+const config = require('./config');
+const kafka = bus.kafka;
 
 let model = new StartSubjectModel({groupId: 'decoder-krm-interface'});
+// TODO: the decoder should be including this information
 let SATELLITE = process.env.SATELLITE || 'west';
 
-function parse(req, res, next) {
-  let body = {
-    files : {},
-    fields : {}
+async function onMessage(msg) {
+  let length = msg.value.readUInt32BE(0);
+  let metadata = JSON.parse(
+    msg.value.slice(4, length).toString('utf-8')
+  );
+  let payload = null;
+
+  if( msg.value.length > length + 4 ) {
+    payload = msg.value.slice(length + 4, msg.value.length);
   }
 
-  var busboy = new Busboy({ headers: req.headers });
-  busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
-    body.files[fieldname] = {file, filename, encoding, mimetype, data: Buffer.alloc(0)}
-    file.on('data', data => {
-      body.files[fieldname].data = Buffer.concat([body.files[fieldname].data, data]);
-    });
-  });
-  busboy.on('field', function(fieldname, value, fieldnameTruncated, valueTruncated, encoding, mimetype) {
-    body.fields[fieldname] = value;
-  });
-  busboy.on('finish', () => {
-    req.body = body;
-    next();
-  });
-
-  req.pipe(busboy);
+  if( metadata.type === 'image' ) {
+    await handleImageMessage(metadata, payload)
+  } else {
+    await handleGenericMessage(metadata, payload);
+  }
 }
 
-app.post('/', parse, async (req, res) => {
-  res.send('ack');
-  try {
-    await handleReq(req, res);
-  } catch(e) {
-    logger.error('Failed to proxy decoder request', e);
-  }
-});
+async function handleGenericMessage(metadata, payload) {
+  var date = new Date(946728000000 + metadata.headers.SECONDS_SINCE_EPOCH*1000);
+  var [date, time] = date.toISOString().split('T');
+  time = time.replace(/\..*/, '');
 
-async function handleReq (req, res) {
-  if( req.body.fields.type === 'image' ) {
-    let count = parseInt(req.body.fields.fragmentsCount || 0);
-    if( count === 0 ) return;
+  let product = apidUtils.get(metadata.apid);
 
-    let product = apidUtils.get(req.body.fields.apid);
-    if( !product.imageScale && !product.label ) return;
+  let basePath = path.resolve('/', 
+    SATELLITE,
+    (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    date,
+    time.split(':')[0],
+    time.split(':').splice(1,2).join('-'),
+    req.body.fields.apid
+  );
 
-    let header = JSON.parse(req.body.fields['fragment_headers_0']);
+  await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
+  await send(path.join(basePath, 'payload.bin'), payload);
+}
 
-    let l = header.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE;
-    let t = header.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE;
-    let b = t + header.imagePayload.IMAGE_BLOCK_HEIGHT;
-    let r = l + header.imagePayload.IMAGE_BLOCK_WIDTH;
+async function handleImageMessage(metadata, payload) {
+  let product = apidUtils.get(metadata.apid);
+  if( !product.imageScale && !product.label ) return;
 
-    var date = new Date(946728000000 + header.imagePayload.SECONDS_SINCE_EPOCH*1000);
-    var [date, time] = date.toISOString().split('T');
-    time = time.replace(/\..*/, '');
+  var date = new Date(946728000000 + header.imagePayload.SECONDS_SINCE_EPOCH*1000);
+  var [date, time] = date.toISOString().split('T');
+  time = time.replace(/\..*/, '');
 
-    let basePath = path.resolve('/', 
-      SATELLITE,
-      (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      date,
-      time.split(':')[0],
-      time.split(':').splice(1,2).join('-'),
-      product.band,
-      req.body.fields.apid,
-      'blocks',
-      header.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE+'-'+header.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE
+  let basePath = path.resolve('/', 
+    SATELLITE,
+    (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    date,
+    time.split(':')[0],
+    time.split(':').splice(1,2).join('-'),
+    product.band,
+    req.body.fields.apid,
+    'blocks',
+    header.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE+'-'+header.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE
+  );
+
+  if( metadata.rootMetadata ) {
+    await send(
+      path.join(basePath, 'fragment-metadata.json'), 
+      JSON.stringify(metadata)
     );
-
-    let data = req.body.fields;
-    for( let i = 0; i < count; i++ ) {
-      data['fragment_headers_'+i] = JSON.parse(data['fragment_headers_'+i]);
-    }
-    await send(path.join(basePath, 'fragment-metadata.json'), JSON.stringify(data));
-
-    for( let i = 0; i < count; i++ ) {
-      await send(path.join(basePath, 'fragments', i+'', 'image-fragment-metadata.json'), JSON.stringify(data['fragment_headers_'+i]));
-
-      await send(path.join(basePath, 'fragments', i+'', 'image_fragment.jp2'), req.body.files['fragment_data_'+i].data);
-    }
-
   } else {
-
-    let metadata = req.body.fields;
-    metadata.spacePacketHeaders = JSON.parse(metadata.spacePacketHeaders);
-    metadata.headers = JSON.parse(metadata.headers)
-
-    var date = new Date(946728000000 + metadata.headers.SECONDS_SINCE_EPOCH*1000);
-    var [date, time] = date.toISOString().split('T');
-    time = time.replace(/\..*/, '');
-
-    let product = apidUtils.get(req.body.fields.apid);
-
-    let basePath = path.resolve('/', 
-      SATELLITE,
-      (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      date,
-      time.split(':')[0],
-      time.split(':').splice(1,2).join('-'),
-      req.body.fields.apid
+    await send(
+      path.join(basePath, 'fragments', metadata.index+'', 'image-fragment-metadata.json'), 
+      JSON.stringify(metadata)
     );
 
-    await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
-
-    let file = req.body.files.data || {};
-    await send(path.join(basePath, 'payload.bin'), file.data);
+    await send(
+      path.join(basePath, 'fragments', metadata.index+'', 'image_fragment.jp2'), 
+      payload
+    );
   }
 }
 
@@ -124,10 +99,21 @@ async function send(file, data) {
 }
 
 (async function() {
-  // wait for kafka connection before we start http server
   await model.connect();
 
-  http.listen(3000, async () => {
-    logger.info('goes-r '+SATELLITE+' decoder krm proxy listening on port: 3000')
+  let kafkaConsumer = new kafka.Consumer({
+    'group.id': config.decoder.groupId,
+    'metadata.broker.list': config.decoder.kafka.host+':'+config.config.decoder.kafka.port,
+    'enable.auto.commit': false,
+    'auto.offset.reset' : 'earliest'
   });
+
+  await kafkaConsumer.connect();
+  await kafkaConsumer.subscribe([config.decoder.kafka.topic]);
+
+  try {
+    await this.kafkaConsumer.consume(msg => await onMessage(msg));
+  } catch(e) {
+    logger.error('kafka consume error', e);
+  }
 })()
