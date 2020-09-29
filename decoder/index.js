@@ -1,20 +1,21 @@
 const Processor = require('@ucd-lib/goes-r-packet-decoder/lib/binary-stream-processor');
 
-let target = process.env.TARGET_URL || 'http://localhost:3000'
+let serverUrl = 'kafka:9200';
+if( process.env.DECODER_KAFKA_HOST && process.env.DECODER_KAFKA_PORT ) {
+  serverUrl = process.env.DECODER_KAFKA_HOST + ':' + process.env.DECODER_KAFKA_PORT;
+}
 
 let processor = new Processor({
   name : process.env.GRB_FILE,
   consoleLogStatus : false,
-  imageBlock : {
-    post : {
-      url : target
-    }
-  },
-  generic : {
-    post : {
-      url : target
+  kafka : {
+    server : {
+      'metadata.broker.list' : serverUrl
+    },
+    topic : {
+      topic : process.env.DECODER_KAFKA_TOPIC || 'goes-r-stream'
     }
   }
-})
+});
 
 processor.pipe();
