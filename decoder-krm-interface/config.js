@@ -1,4 +1,5 @@
 const {config} = require('@ucd-lib/krm-node-utils');
+const env = process.env;
 
 config.decoder = {
   groupId : 'decoder-krm-interface',

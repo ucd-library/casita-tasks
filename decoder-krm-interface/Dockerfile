@@ -9,5 +9,6 @@ COPY package-lock.json .
 RUN npm install
 
 COPY index.js .
+COPY config.js .
 
 CMD node index.js

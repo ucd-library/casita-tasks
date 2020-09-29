@@ -13,7 +13,11 @@ let processor = new Processor({
       'metadata.broker.list' : serverUrl
     },
     topic : {
-      topic : process.env.DECODER_KAFKA_TOPIC || 'goes-r-stream'
+      topic : process.env.DECODER_KAFKA_TOPIC || 'goes-r-stream',
+      num_partitions: 10,
+      options : {
+        'retention.ms' : 1000 * 60 * 15
+      }
     }
   }
 });

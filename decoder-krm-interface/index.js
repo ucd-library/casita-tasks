@@ -16,8 +16,9 @@ let SATELLITE = process.env.SATELLITE || 'west';
 
 async function onMessage(msg) {
   let length = msg.value.readUInt32BE(0);
+
   let metadata = JSON.parse(
-    msg.value.slice(4, length).toString('utf-8')
+    msg.value.slice(4, length+4).toString('utf-8')
   );
   let payload = null;
 
@@ -45,7 +46,7 @@ async function handleGenericMessage(metadata, payload) {
     date,
     time.split(':')[0],
     time.split(':').splice(1,2).join('-'),
-    req.body.fields.apid
+    metadata.apid
   );
 
   await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
@@ -56,7 +57,7 @@ async function handleImageMessage(metadata, payload) {
   let product = apidUtils.get(metadata.apid);
   if( !product.imageScale && !product.label ) return;
 
-  var date = new Date(946728000000 + header.imagePayload.SECONDS_SINCE_EPOCH*1000);
+  var date = new Date(946728000000 + metadata.imagePayload.SECONDS_SINCE_EPOCH*1000);
   var [date, time] = date.toISOString().split('T');
   time = time.replace(/\..*/, '');
 
@@ -67,9 +68,9 @@ async function handleImageMessage(metadata, payload) {
     time.split(':')[0],
     time.split(':').splice(1,2).join('-'),
     product.band,
-    req.body.fields.apid,
+    metadata.apid,
     'blocks',
-    header.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE+'-'+header.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE
+    metadata.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE+'-'+metadata.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE
   );
 
   if( metadata.rootMetadata ) {
@@ -103,16 +104,17 @@ async function send(file, data) {
 
   let kafkaConsumer = new kafka.Consumer({
     'group.id': config.decoder.groupId,
-    'metadata.broker.list': config.decoder.kafka.host+':'+config.config.decoder.kafka.port,
+    'metadata.broker.list': config.decoder.kafka.host+':'+config.decoder.kafka.port,
     'enable.auto.commit': false,
     'auto.offset.reset' : 'earliest'
   });
 
   await kafkaConsumer.connect();
   await kafkaConsumer.subscribe([config.decoder.kafka.topic]);
+  console.log(config.decoder.kafka.topic);
 
   try {
-    await this.kafkaConsumer.consume(msg => await onMessage(msg));
+    await kafkaConsumer.consume(async msg => await onMessage(msg));
   } catch(e) {
     logger.error('kafka consume error', e);
   }
