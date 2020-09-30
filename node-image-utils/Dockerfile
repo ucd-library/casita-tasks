@@ -13,6 +13,6 @@ RUN npm install
 COPY bin bin
 COPY lib lib
 COPY index.js .
-RUN npm install -g
+RUN npm link
 
 CMD node /service

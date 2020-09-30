@@ -31,7 +31,7 @@ async function scale() {
 
   try {
     let image = await scaleFn(file, band);
-    let newFile = path.join(path.parse(file).dir, 'web_scaled.png');
+    let newFile = path.join(path.parse(file).dir, 'web-scaled.png');
     console.log('Writing scale file: '+newFile);
     await fs.writeFile(newFile, image);
   } catch(e) {
@@ -75,10 +75,13 @@ async function jp2ToPng() {
   let metadata = require(rootDir+'/fragment-metadata.json');
   let data = {};
   for( let i = 0; i < metadata.fragmentsCount; i++ ) {
-    console.log('Reading file: '+path.join(rootDir, 'fragments', i+'', 'image_fragment.jp2'));
+    console.log('Reading file: '+path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'));
     data['fragment_data_'+i] = {
-      data : await fs.readFile(path.join(rootDir, 'fragments', i+'', 'image_fragment.jp2'))
+      data : await fs.readFile(path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'))
     }
+    metadata[`fragment_headers_${i}`] = JSON.parse(
+      await fs.readFile(path.join(rootDir, 'fragments', i+'', 'image-fragment-metadata.json'), 'utf-8')
+    );
   }
 
   const images = await jp2ToPngFn(metadata, data);

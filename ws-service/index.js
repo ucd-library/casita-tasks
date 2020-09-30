@@ -82,11 +82,7 @@ http.listen(3000, () => {
     'enable.auto.commit': true
   });
   await this.kafkaConsumer.connect();
-
-  await this.kafkaConsumer.assign([{
-    topic : config.kafka.topics.subjectReady,
-    partition : 0
-  }]);
+  await this.kafkaConsumer.subscribe([config.kafka.topics.subjectReady]);
 
   await this.kafkaConsumer.consume(msg => {
     try {

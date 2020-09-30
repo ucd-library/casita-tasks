@@ -9,7 +9,7 @@ module.exports = function scale(file, band=1) {
   let scale = (info.resolution * 25);
 
   let fileParsed = path.parse(file);
-  let outfile = path.join(fileParsed.dir, 'web_scaled.png');
+  let outfile = path.join(fileParsed.dir, 'web-scaled.png');
   file = path.join(fileParsed.dir, 'web.png');
 
   return new Promise((resolve, reject) => {

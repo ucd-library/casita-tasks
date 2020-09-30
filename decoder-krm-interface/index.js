@@ -85,7 +85,7 @@ async function handleImageMessage(metadata, payload) {
     );
 
     await send(
-      path.join(basePath, 'fragments', metadata.index+'', 'image_fragment.jp2'), 
+      path.join(basePath, 'fragments', metadata.index+'', 'image-fragment.jp2'), 
       payload
     );
   }
@@ -111,7 +111,6 @@ async function send(file, data) {
 
   await kafkaConsumer.connect();
   await kafkaConsumer.subscribe([config.decoder.kafka.topic]);
-  console.log(config.decoder.kafka.topic);
 
   try {
     await kafkaConsumer.consume(async msg => await onMessage(msg));

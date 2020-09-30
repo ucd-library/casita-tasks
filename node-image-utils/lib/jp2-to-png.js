@@ -7,7 +7,7 @@ let min = Number.MAX_SAFE_INTEGER;
 
 module.exports = async (metadata, data) => {
   let fragmentCount = parseInt(metadata.fragmentsCount);
-  let imageMetadata = metadata.fragment_headers_0.imagePayload;
+  let imageMetadata = metadata.imagePayload;
   let imageHeight = imageMetadata.IMAGE_BLOCK_HEIGHT;
   let imageWidth = imageMetadata.IMAGE_BLOCK_WIDTH;
 
