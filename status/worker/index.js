@@ -39,9 +39,9 @@ async function readJsonFile(file) {
       captureTime = new Date(946728000000 + data.headers.SECONDS_SINCE_EPOCH*1000);
     }
   } else if( data.type === 'image' ) {
-    if( data.fragment_headers_0 && 
-        data.fragment_headers_0.imagePayload && 
-        data.fragment_headers_0.imagePayload.SECONDS_SINCE_EPOCH ) {
+    if( data && 
+        data.imagePayload && 
+        data.imagePayload.SECONDS_SINCE_EPOCH ) {
       captureTime = new Date(946728000000 + data.fragment_headers_0.imagePayload.SECONDS_SINCE_EPOCH*1000);
     }
   }

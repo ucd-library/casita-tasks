@@ -89,10 +89,13 @@ http.listen(3000, () => {
       let raw = msg.value.toString('utf-8');
       msg = JSON.parse(raw);
 
+      console.log(msg.subject);
+
       let id, reg, subject;
       for( id in registrations ) {
         reg = registrations[id];
         for( subject of reg.subjects ) {
+          console.log(subject.path.regex);
           if( subject.path.regex.test(msg.subject) ) {
 
             if( subject.opts.entireMessage ) {

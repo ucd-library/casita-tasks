@@ -89,7 +89,7 @@ class GRBBlockComposite {
     let blockMetadata = await this.readMetadata(
       path.join(dir, block, 'fragment-metadata.json')
     );
-    let imageMetadata = blockMetadata.fragment_headers_0.imagePayload;
+    let imageMetadata = blockMetadata.imagePayload;
     
     if( !fs.existsSync(path.join(dir, block, 'image.png')) ) {
       console.warn('Failed to locate block data: '+path.join(dir, block, 'image.png'));
@@ -190,7 +190,7 @@ class GRBBlockComposite {
     let maxMetadata = await this.readMetadata(
       path.join(dir, blocks[0], 'fragment-metadata.json')
     );
-    let imageMetadata = maxMetadata.fragment_headers_0.imagePayload;
+    let imageMetadata = maxMetadata.imagePayload;
     
     return {
       blocks,
