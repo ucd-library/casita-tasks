@@ -1,6 +1,6 @@
 const Processor = require('@ucd-lib/goes-r-packet-decoder/lib/binary-stream-processor');
 
-let serverUrl = 'kafka:9200';
+let serverUrl = 'kafka:9092';
 if( process.env.DECODER_KAFKA_HOST && process.env.DECODER_KAFKA_PORT ) {
   serverUrl = process.env.DECODER_KAFKA_HOST + ':' + process.env.DECODER_KAFKA_PORT;
 }
