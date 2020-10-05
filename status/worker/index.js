@@ -42,7 +42,7 @@ async function readJsonFile(file) {
     if( data && 
         data.imagePayload && 
         data.imagePayload.SECONDS_SINCE_EPOCH ) {
-      captureTime = new Date(946728000000 + data.fragment_headers_0.imagePayload.SECONDS_SINCE_EPOCH*1000);
+      captureTime = new Date(946728000000 + data.imagePayload.SECONDS_SINCE_EPOCH*1000);
     }
   }
 
