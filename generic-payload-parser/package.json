@@ -1,14 +1,14 @@
 {
-  "name": "casita-goer-decoder",
+  "name": "generic-payload-parser",
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "jrmerz@ucdavis.edu",
   "license": "ISC",
   "dependencies": {
-    "@ucd-lib/goes-r-packet-decoder": "^0.4.0"
+    "@ucd-lib/goes-r-packet-decoder": "^0.3.3"
   }
 }
