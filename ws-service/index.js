@@ -27,7 +27,7 @@ io.on('connection', (socket) => {
       }
 
       subjects.forEach(subject => {
-        let exists = current.subjects.find(ele => ele.href === subject);
+        let exists = current.subjects.find(ele => ele.href === subject.subject);
         if( exists ) return;
 
         let opts = subject.opts || {};
