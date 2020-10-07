@@ -46,7 +46,9 @@ async function handleGenericMessage(metadata, payload) {
   }
   let basePath;
 
-  if( ms ) {
+  let productName = (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  if( ms && !productName.match(/^(mesoscale|conus|fulldisk|solar-imagery-euv-data)$/) ) {
     basePath = path.resolve('/', 
       SATELLITE,
       (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
