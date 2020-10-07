@@ -55,7 +55,7 @@ io.on('connection', (socket) => {
       }
 
       subjects.forEach(subject => {
-        let index = current.subjects.findIndex(ele => ele.href === subject);
+        let index = current.subjects.findIndex(ele => ele.href === subject.href);
         if( index === -1 ) return;
         current.subjects.splice(index, 1);
       });
