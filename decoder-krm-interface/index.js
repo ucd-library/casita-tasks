@@ -39,15 +39,33 @@ async function handleGenericMessage(metadata, payload) {
   time = time.replace(/\..*/, '');
 
   let product = apidUtils.get(metadata.apid);
+  let ms = false;
+  if( metadata.spacePacketHeaders && metadata.spacePacketHeaders && 
+    metadata.spacePacketHeaders.secondary ) {
+    ms = metadata.spacePacketHeaders.secondary.MILLISECONDS_OF_THE_DAY+'';
+  }
+  let basePath;
 
-  let basePath = path.resolve('/', 
-    SATELLITE,
-    (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-    date,
-    time.split(':')[0],
-    time.split(':').splice(1,2).join('-'),
-    metadata.apid
-  );
+  if( ms ) {
+    basePath = path.resolve('/', 
+      SATELLITE,
+      (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      date,
+      time.split(':')[0],
+      time.split(':').splice(1,2).join('-'),
+      ms,
+      metadata.apid
+    );
+  } else {
+    basePath = path.resolve('/', 
+      SATELLITE,
+      (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      date,
+      time.split(':')[0],
+      time.split(':').splice(1,2).join('-'),
+      metadata.apid
+    );
+  }
 
   await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
   await send(path.join(basePath, 'payload.bin'), payload);

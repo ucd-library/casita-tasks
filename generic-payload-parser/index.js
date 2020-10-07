@@ -8,6 +8,31 @@ let file = process.argv[2];
 let fileParsed = path.parse(file);
 let apid = fileParsed.dir.split('/').pop();
 
+// handle 301 (lightning event) summary
+if( apid === '301' && fileParsed.base === 'stats.json' ) {
+
+  let summary = {
+    total_energy : 0,
+    event_count : 0
+  }
+
+  let rootDir = path.resolve(fileParsed.dir, '..', '..');
+  let dirs = fs.readdirSync(rootDir);
+
+  for( let msdir of dirs ) {
+    if( msdir === 'summary' ) continue;
+    let data = JSON.parse(
+      fs.readFileSync(path.join(rootDir, msdir, '301', 'payload.json'), 'utf-8')
+    );
+    summary.event_count += data.length;
+    data.forEach(e => summary.total_energy += e.event_energy);
+  }
+
+  fs.writeFileSync(file, JSON.stringify(summary));
+  return;
+}
+
+
 if( fileParsed.base !== 'payload.bin' ) return;
 if( !APIDS.includes(apid) ) process.exit();
 
@@ -25,14 +50,6 @@ let outcontent = {};
     }
   } else if( apid === '301' ) {
     outcontent = lightningPayloadParser.parseEventData(data);
-
-    let summary = {
-      total_energy : 0,
-      event_count : outcontent.length
-    }
-    outcontent.forEach(e => summary.total_energy += e.event_energy);
-
-    fs.writeFileSync(path.join(fileParsed.dir, 'summary.json'), JSON.stringify(summary));
   }
 
   fs.writeFileSync(outfile, JSON.stringify(outcontent));
