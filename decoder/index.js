@@ -16,7 +16,8 @@ let processor = new Processor({
       topic : process.env.DECODER_KAFKA_TOPIC || 'goes-r-stream',
       num_partitions: 10,
       options : {
-        'retention.ms' : 1000 * 60 * 15
+        'retention.ms' : 1000 * 60 * 15,
+        'max.message.bytes' : 10000000
       }
     }
   }
