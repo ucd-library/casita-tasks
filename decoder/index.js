@@ -10,8 +10,8 @@ let processor = new Processor({
   consoleLogStatus : false,
   kafka : {
     server : {
-      'metadata.broker.list' : serverUrl
-      // 'message.max.bytes': 100000000+''
+      'metadata.broker.list' : serverUrl,
+      'message.max.bytes': 100000000+''
     },
     topic : {
       topic : process.env.DECODER_KAFKA_TOPIC || 'goes-r-stream',
