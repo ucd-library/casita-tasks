@@ -139,7 +139,7 @@ async function send(file, data) {
     // TODO: this is set in decoder/index.js as well.  need to update both. badness
     config : {
       'retention.ms' : (1000 * 60 * 60)+'',
-      'max.message.bytes' : 25000000+''
+      'max.message.bytes' : 100000000+''
     }
   }, {'metadata.broker.list': config.decoder.kafka.host+':'+config.decoder.kafka.port});
 

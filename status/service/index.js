@@ -9,7 +9,6 @@ const FILENAME = 'stream-status.json';
 const STATUS_FILE = path.join(config.fs.nfsRoot, FILENAME);
 
 app.all((req, res, next) => {
-  console.log(req.originalPath);
   next();
 })
 app.get('/_/status/test', (req, res) => {

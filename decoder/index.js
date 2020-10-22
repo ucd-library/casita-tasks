@@ -11,7 +11,7 @@ let processor = new Processor({
   kafka : {
     server : {
       'metadata.broker.list' : serverUrl
-      // 'message.max.bytes': 25000000+''
+      // 'message.max.bytes': 100000000+''
     },
     topic : {
       topic : process.env.DECODER_KAFKA_TOPIC || 'goes-r-stream',
@@ -20,7 +20,7 @@ let processor = new Processor({
       // TODO: this is set in decoder-krm-interface/index.js as well.  need to update both. badness
       config : {
         'retention.ms' : (1000 * 60 * 60)+'',
-        'max.message.bytes' : 25000000+''
+        'max.message.bytes' : 100000000+''
       }
     }
   }
