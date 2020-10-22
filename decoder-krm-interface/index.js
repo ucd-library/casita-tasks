@@ -101,9 +101,6 @@ async function handleImageMessage(metadata, payload) {
       JSON.stringify(metadata)
     );
   } else {
-    if( basePath.match(/fulldisk/) && basePath.match(/\/2\/91\//) ) {
-      console.log(metadata.debug, path.join(basePath, 'fragments', metadata.index+'', 'image-fragment.jp2'));
-    }
 
     await send(
       path.join(basePath, 'fragments', metadata.index+'', 'image-fragment-metadata.json'), 
@@ -128,7 +125,6 @@ async function send(file, data) {
 (async function() {
   await model.connect();
 
-  console.log(config.decoder.groupId);
   let kafkaConsumer = new kafka.Consumer({
     'group.id': config.decoder.groupId,
     'metadata.broker.list': config.decoder.kafka.host+':'+config.decoder.kafka.port,

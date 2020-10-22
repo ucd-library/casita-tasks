@@ -13,8 +13,7 @@ app.all((req, res, next) => {
   next();
 })
 app.get('/_/status/test', (req, res) => {
-  console.log('here');
-  res.send('test')
+  res.send('ok');
 })
 app.get('/_/status/channel/:channel/:expire?', handleRequest);
 
