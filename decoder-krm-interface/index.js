@@ -10,7 +10,9 @@ const {logger, bus, StartSubjectModel} = require('@ucd-lib/krm-node-utils');
 const config = require('./config');
 const kafka = bus.kafka;
 
-let model = new StartSubjectModel({groupId: 'decoder-krm-interface'});
+let model = new StartSubjectModel({
+  groupId: 'decoder-krm-interface'
+});
 // TODO: the decoder should be including this information
 let SATELLITE = process.env.SATELLITE || 'west';
 
@@ -99,6 +101,10 @@ async function handleImageMessage(metadata, payload) {
       JSON.stringify(metadata)
     );
   } else {
+    if( basePath.match(/fulldisk/) && basePath.match(/\/2\/91\//) ) {
+      console.log(metadata.debug, path.join(basePath, 'fragments', metadata.index+'', 'image-fragment.jp2'));
+    }
+
     await send(
       path.join(basePath, 'fragments', metadata.index+'', 'image-fragment-metadata.json'), 
       JSON.stringify(metadata)
@@ -122,6 +128,7 @@ async function send(file, data) {
 (async function() {
   await model.connect();
 
+  console.log(config.decoder.groupId);
   let kafkaConsumer = new kafka.Consumer({
     'group.id': config.decoder.groupId,
     'metadata.broker.list': config.decoder.kafka.host+':'+config.decoder.kafka.port,
@@ -129,11 +136,28 @@ async function send(file, data) {
     'auto.offset.reset' : 'earliest'
   });
 
+  await kafka.utils.ensureTopic({
+    topic: config.decoder.kafka.topic,
+    num_partitions: 10,
+    replication_factor: 1,
+    // TODO: this is set in decoder/index.js as well.  need to update both. badness
+    config : {
+      'retention.ms' : (1000 * 60 * 60)+'',
+      'max.message.bytes' : 25000000+''
+    }
+  }, {'metadata.broker.list': config.decoder.kafka.host+':'+config.decoder.kafka.port});
+
   await kafkaConsumer.connect();
   await kafkaConsumer.subscribe([config.decoder.kafka.topic]);
 
   try {
-    await kafkaConsumer.consume(async msg => await onMessage(msg));
+    await kafkaConsumer.consume(async msg => {
+      try {
+        await onMessage(msg);
+      } catch(e) {
+        logger.error('kafka message error', e);
+      }
+    });
   } catch(e) {
     logger.error('kafka consume error', e);
   }
