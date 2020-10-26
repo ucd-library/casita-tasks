@@ -9,6 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ucd-lib/goes-r-packet-decoder": "^0.4.1"
+    "@ucd-lib/goes-r-packet-decoder": "^0.4.2"
   }
 }
