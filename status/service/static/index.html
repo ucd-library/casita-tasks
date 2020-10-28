@@ -1,0 +1,56 @@
+<html>
+  <head>
+    <script type='text/javascript' src='https://www.gstatic.com/charts/loader.js'></script>
+    <script type='text/javascript'>
+      google.charts.load('current', {'packages':['annotatedtimeline']});
+      google.charts.setOnLoadCallback(drawChart);
+
+
+      async function drawChart() {
+        let response = await fetch('/_/status/timing/apid/91');
+        let rows = await response.json();
+
+        var data = new google.visualization.DataTable();
+        data.addColumn('date', 'Time');
+        data.addColumn('number', '91 - Time-To-Device');
+        data.addRows(rows.map(row => [new Date(row.serverTime), row.diff/1000]));
+
+        var chart = new google.visualization.AnnotatedTimeLine(document.getElementById('chart_div'));
+        chart.draw(data, {displayAnnotations: false});
+      }
+
+      // async function drawChart() {
+      //   let response = await fetch('/_/status/timing/91');
+      //   let rows = await response.json();
+
+      //   let apids = new Set();
+      //   rows.forEach(row => apids.add(row.apid));
+      //   apids = [...apids];
+      //   let columnLookup = {};
+      //   apids.forEach((apid, index) => columnLookup[apid] = {index, lastValue: -1});
+
+      //   var data = new google.visualization.DataTable();
+      //   data.addColumn('date', 'Time');
+      //   apids.forEach(apid => data.addColumn('number', apid));
+
+      //   data.addRows(rows.map(row => {
+      //     let resp = [new Date(row.serverTime)];
+      //     let item = columnLookup[row.apid];
+      //     item.lastValue = row.diff/1000;
+      //     apids.forEach((apid, i) => resp.push(i === item.index ? row.diff/1000 : 
+      //       (item.lastValue !== -1 ? item.lastValue : undefined)
+      //     ));
+      //     return resp
+      //   }));
+
+      //   console.log(rows.length);
+      //   var chart = new google.visualization.AnnotatedTimeLine(document.getElementById('chart_div'));
+      //   chart.draw(data, {displayAnnotations: false});
+      // }
+    </script>
+  </head>
+
+  <body>
+    <div id='chart_div' style='width: 700px; height: 240px;'></div>
+  </body>
+</html>

@@ -10,5 +10,6 @@ RUN npm install --production
 
 # COPY lib lib
 COPY index.js .
+COPY static static
 
 CMD node index.js

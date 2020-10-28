@@ -12,6 +12,7 @@
   "author": "jrmerz@ucdavis.edu",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/monitoring": "^2.1.2",
     "fs-extra": "^9.0.1"
   }
 }

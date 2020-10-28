@@ -1,68 +1,103 @@
 const fs = require('fs-extra');
 const path = require('path');
-const STREAMS = ['decoded', 'secdecoded'];
-const FILENAME = 'stream-status.json';
+const Worker = require('../service/lib/worker');
+const {state, config} = require('@ucd-lib/krm-node-utils');
+const monitoring = require('./lib/monitoring');
 
-let rootDir = process.argv[2];
-let metadataFile = process.argv[3];
+const mongo = state.mongo;
+const ObjectId = mongo.ObjectId;
 
-if( !metadataFile.startsWith(rootDir) ) {
-  metadataFile = path.join(rootDir, metadataFile);
+const COLLECTION = 'stream-status';
+const EXPIRE = 1000 * 60 * 60 * 24 * 7; // one week
+
+class StatusWorker extends Worker {
+
+  constructor() {
+    super();
+
+    this.ensureIndexes();
+    setInterval(() => this.cleanup(), 1000 * 60 * 60 * 1);
+  }
+
+  async exec(msg) {
+    let metadataFile = path.join(config.fs.nfsRoot, msg.data.command);
+    let data = await this.readJsonFile(metadataFile, 'utf-8');
+
+    let serverTime = new Date(msg.time);
+    let captureTime = null;
+    if( data.type === 'generic' ) {
+      if( data.headers && data.headers.SECONDS_SINCE_EPOCH ) {
+        captureTime = new Date(946728000000 + data.headers.SECONDS_SINCE_EPOCH*1000);
+      }
+    } else if( data.type === 'image' ) {
+      if( data && 
+          data.imagePayload && 
+          data.imagePayload.SECONDS_SINCE_EPOCH ) {
+        captureTime = new Date(946728000000 + data.imagePayload.SECONDS_SINCE_EPOCH*1000);
+      }
+    }
+
+    let statusUpdate = {
+      [`apid.${data.apid}`]: { serverTime, captureTime },
+      [`stream.${data.streamName}`] : { serverTime, captureTime }
+    };
+
+    let collection = await mongo.getCollection(COLLECTION);
+    let stdout = '';
+    let stderr = '';
+
+
+    monitoring.addTTD(data.apid, serverTime.getTime() - captureTime.getTime(), serverTime, data.streamName);
+
+    try {
+      await collection.insert({
+        apid : data.apid,
+        stream : data.streamName,
+        serverTime, captureTime,
+        file:  msg.data.command,
+        diff : serverTime.getTime() - captureTime.getTime()
+      });
+
+      await collection.updateOne(
+        { _id : 'overview' },
+        { $set: statusUpdate  },
+        { 
+          returnOriginal: false,
+          upsert: true
+        }
+      );
+      stdout = `success: ${data.streamName}, ${data.apid}`;
+    } catch(e) {
+      stderr = `failed: ${data.streamName}, ${data.apid}: ${e.message}`;
+    }
+
+    return {stdout, stderr};
+  }
+
+  async readJsonFile(file) {
+    return JSON.parse(await fs.readFile(file, 'utf-8'));
+  }
+
+  async cleanup() {
+    let collection = await mongo.getCollection(COLLECTION);
+    let d = new Date();
+    d.setTime(d.getTime() - EXPIRE);
+
+    await collection.remove({
+      serverTime : {$lt : d}
+    });
+  }
+
+  async ensureIndexes() {
+    let collection = await mongo.getCollection(COLLECTION);
+    collection.createIndex({stream: 1});
+    collection.createIndex({apid: 1});
+    collection.createIndex({serverTime: 1});
+    collection.createIndex({captureTime: 1});
+  }
+
+
 }
 
-function getCurrentStatus() {
-  let file = path.join(rootDir, FILENAME);
-  if( fs.existsSync(file) ) {
-    return readJsonFile(file);
-  }
-  
-  let data = {
-    stream : {},
-    apid : {}
-  }
-  STREAMS.forEach(s => data.stream[s] = {});
-  return data;
-}
-
-async function readJsonFile(file) {
-  return JSON.parse(await fs.readFile(file, 'utf-8'));
-}
-
-(async function() {
-  let data = await readJsonFile(metadataFile, 'utf-8');
-  let status = await getCurrentStatus();
-
-  let serverTime = new Date();
-  let captureTime = null;
-  if( data.type === 'generic' ) {
-    if( data.headers && data.headers.SECONDS_SINCE_EPOCH ) {
-      captureTime = new Date(946728000000 + data.headers.SECONDS_SINCE_EPOCH*1000);
-    }
-  } else if( data.type === 'image' ) {
-    if( data && 
-        data.imagePayload && 
-        data.imagePayload.SECONDS_SINCE_EPOCH ) {
-      captureTime = new Date(946728000000 + data.imagePayload.SECONDS_SINCE_EPOCH*1000);
-    }
-  }
-
-  if( data.apid ) {
-    if( !status.apid ) status.apid = {};
-    status.apid[data.apid] = {
-      serverTime, captureTime
-    }
-  }
-
-  if( data.streamName ) {
-    if( !status.stream ) status.stream = {};
-    status.stream[data.streamName] = {
-      serverTime, captureTime
-    }
-  }
-
-  await fs.writeFile(
-    path.join(rootDir, FILENAME),
-    JSON.stringify(status, '  ', '  ')
-  );
-
-})();
+let worker = new StatusWorker();
+worker.connect();

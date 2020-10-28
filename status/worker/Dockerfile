@@ -9,7 +9,8 @@ COPY package-lock.json .
 RUN npm install
 
 COPY bin bin
+COPY lib lib
 COPY index.js .
 RUN npm install -g
 
-CMD node /service
+CMD node /command
