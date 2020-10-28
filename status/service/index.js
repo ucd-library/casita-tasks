@@ -116,6 +116,7 @@ async function isChannelAlive(channel, expired) {
   let collection = await mongo.getCollection(COLLECTION);
   let status = await collection.findOne({_id: 'overview'});
 
+  if( !status ) return {channel, status: false};
   if( !status.stream ) return {channel, status: false};
   if( !status.stream[STREAMS[channel-1]] ) return {channel, status: false};
   let time = status.stream[STREAMS[channel-1]].serverTime;

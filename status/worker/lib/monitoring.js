@@ -11,12 +11,15 @@ class Monitoring {
     this.client = new monitoring.MetricServiceClient(clientConfig);
 
     this.maxTTD = {};
+    this.maxCPGT = {};
+
 
     this.TYPES = {
-      TTD : 'custom.googleapis.com/grb/time_to_disk'
+      TTD : 'custom.googleapis.com/grb/time_to_disk',
+      CPGT : 'custom.googleapis.com/krm/comp_png_gen_time'
     }
 
-    this.ensureTypes();
+    // this.ensureTypes();
 
     setInterval(() => this.write(), 1000 * 30);
   }
@@ -52,6 +55,37 @@ class Monitoring {
     };
 
     await this.client.createMetricDescriptor(ttd);
+
+    const cpgt = {
+      name: this.client.projectPath(config.google.projectId),
+      metricDescriptor: {
+        description: 'GRB jp2 composite and png conversion time',
+        displayName: 'PNG Conversion',
+        type: this.TYPES.CPGT,
+        metricKind: 'GAUGE',
+        valueType: 'INT64',
+        unit: '{ms}',
+        labels: [
+          {
+            key: 'env',
+            valueType: 'STRING',
+            description: 'CASITA ENV',
+          },
+          {
+            key: 'apid',
+            valueType: 'STRING',
+            description: 'GOES-R GRB APID',
+          },
+          {
+            key: 'block',
+            valueType: 'STRING',
+            description: 'Product top/left values',
+          }
+        ]
+      },
+    };
+
+    await this.client.createMetricDescriptor(cpgt);
   }
 
   addTTD(apid, ttd, time, channel) {
@@ -63,10 +97,22 @@ class Monitoring {
     this.maxTTD[apid] = {ttd, time, channel};
   }
 
+  addCPGT(apid, cpgt, time, block) {
+    if( !this.maxCPGT[apid] ) {
+      this.maxCPGT[apid] = {cpgt, time, block};
+      return;
+    }
+    if( this.maxCPGT[apid].cpgt > cpgt ) return;
+    this.maxCPGT[apid] = {cpgt, time, block};
+  }
+
   async write() {
     // write ttd metrics
-    for( let apid in this.maxTTD ) {
-      let value = this.maxTTD[apid];
+    let data = this.maxTTD;
+    this.maxTTD = {};
+
+    for( let apid in data ) {
+      let value = data[apid];
       if( value === null || value === undefined ) continue;
 
       let dataPoint = {
@@ -79,8 +125,7 @@ class Monitoring {
           int64Value: value.ttd+'',
         },
       };
-      this.maxTTD[apid] = null;
-    
+
       let timeSeriesData = {
         metric: {
           type: this.TYPES.TTD,
@@ -109,6 +154,56 @@ class Monitoring {
         let result = await this.client.createTimeSeries(request);
       } catch(e) {
         logger.warn('error writing ttd metric', e);
+      }
+    }
+
+    // write cpgt metrics
+    data = this.maxCPGT;
+    this.maxCPGT = {};
+
+    for( let apid in data ) {
+      let value = data[apid];
+      if( value === null || value === undefined ) continue;
+
+      let dataPoint = {
+        interval: {
+          endTime: {
+            seconds: value.time.getTime() / 1000,
+          },
+        },
+        value: {
+          int64Value: value.cpgt+'',
+        },
+      };
+
+      let timeSeriesData = {
+        metric: {
+          type: this.TYPES.CPGT,
+          labels: {
+            apid, 
+            block : value.block,
+            env : config.env || 'not-set'
+          },
+        },
+        resource: {
+          type: 'global',
+          labels: {
+            project_id: config.google.projectId,
+          },
+        },
+        points: [dataPoint],
+      };
+    
+      let request = {
+        name: this.client.projectPath(config.google.projectId),
+        timeSeries: [timeSeriesData],
+      };
+    
+      // Writes time series data
+      try {
+        let result = await this.client.createTimeSeries(request);
+      } catch(e) {
+        logger.warn('error writing cpgt metric', e);
       }
     }
   }

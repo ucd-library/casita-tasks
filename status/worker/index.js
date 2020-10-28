@@ -20,7 +20,39 @@ class StatusWorker extends Worker {
   }
 
   async exec(msg) {
-    let metadataFile = path.join(config.fs.nfsRoot, msg.data.command);
+    if( msg.data.command.type === 'time_to_disk' ) {
+      return this.timeToDisk(msg);
+    } else if( msg.data.command.type === 'comp_png_gen_time' ) {
+      return this.compPngGenTime(msg);
+    }
+
+    return {
+      stdout : '',
+      stderr : 'Unknown command type: '+msg.data.command.type
+    }
+  }
+
+  async compPngGenTime(msg) {
+    let pngFile = path.join(config.fs.nfsRoot, msg.data.command.file);
+    let dir = path.parse(pngFile).dir;
+    let metadataFile = path.join(dir, 'fragment-metadata.json');
+
+    let [satellite, scale, date, hour, minsec, band, apid, blocks, block] = msg.data.command.file.replace(/^\//, '').split('/');
+    let pngTime = (await fs.stat(pngFile)).ctime;
+    let mTime = (await fs.stat(metadataFile)).ctime;
+
+    monitoring.addCPGT(
+      apid, 
+      pngTime.getTime() - mTime.getTime(), 
+      new Date(), 
+      block
+    );
+
+    return {stdout : `success: ${data.apid}, ${block}`, stderr:''};
+  }
+
+  async timeToDisk(msg) {
+    let metadataFile = path.join(config.fs.nfsRoot, msg.data.command.file);
     let data = await this.readJsonFile(metadataFile, 'utf-8');
 
     let serverTime = new Date(msg.time);
