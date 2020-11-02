@@ -33,7 +33,7 @@ class Monitoring {
         type: this.TYPES.TTD,
         metricKind: 'GAUGE',
         valueType: 'INT64',
-        unit: '{ms}',
+        unit: 'ms',
         labels: [
           {
             key: 'env',
@@ -64,7 +64,7 @@ class Monitoring {
         type: this.TYPES.CPGT,
         metricKind: 'GAUGE',
         valueType: 'INT64',
-        unit: '{ms}',
+        unit: 'ms',
         labels: [
           {
             key: 'env',
