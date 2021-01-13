@@ -1,5 +1,11 @@
 #! /bin/bash
 
+
+if [[ -e "/root/ssh-key/docker.key" ]]; then
+  echo "Copying /root/ssh-key/docker.key to /root/.ssh/id_rsa"
+  cp /root/ssh-key/docker.key /root/.ssh/id_rsa 
+fi
+
 if [[ -e "/root/.ssh/id_rsa" ]]; then
   echo "Updating /root/.ssh/id_rsa permissions"
   chmod 600 /root/.ssh/id_rsa 
