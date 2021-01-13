@@ -1,11 +1,14 @@
 const {config, logger} = require('@ucd-lib/krm-node-utils');
 const monitoring = require('@google-cloud/monitoring');
+const fs = require('fs');
 
 class Monitoring {
 
   constructor() {
     let clientConfig = {};
-    if( config.google.serviceAccountFile ) {
+    if( config.google.serviceAccountFile && 
+      fs.existsSync(serviceAccountFile) &&
+      fs.lstatSync(config.google.serviceAccountFile).isFile() ) {
       clientConfig.keyFilename = config.google.serviceAccountFile;
     }
     this.client = new monitoring.MetricServiceClient(clientConfig);
