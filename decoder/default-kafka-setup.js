@@ -8,7 +8,7 @@ if( process.env.DECODER_KAFKA_HOST && process.env.DECODER_KAFKA_PORT ) {
 module.exports = {
   client : {
     'metadata.broker.list' : kafkaHost,
-    'message.max.bytes': 25000000+'', // must be a string
+    'message.max.bytes': 100000000+'', // must be a string
     'request.required.acks' : 1,
     'dr_cb': true, // delivery report
     'event_cb' : true,
