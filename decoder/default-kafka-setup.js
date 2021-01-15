@@ -33,6 +33,7 @@ module.exports = {
         if( err ) logger.error(`${process.env.GRB_FILE} kafka delivery report error`, err, report);
     },
     'event' : e => logger.info(`${process.env.GRB_FILE} kafka event`, e),
+    'event.log' : e => logger.error(`${process.env.GRB_FILE} kafka event.log`, e),
     'event.error' : e => logger.error(`${process.env.GRB_FILE} kafka event.error`, e),
     'event.stats' : e => logger.info('Kafka producer event.stats', e),
     'produce.error' : (e, msg) => {
