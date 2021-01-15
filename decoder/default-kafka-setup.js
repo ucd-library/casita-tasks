@@ -5,16 +5,21 @@ if( process.env.DECODER_KAFKA_HOST && process.env.DECODER_KAFKA_PORT ) {
   kafkaHost = process.env.DECODER_KAFKA_HOST + ':' + process.env.DECODER_KAFKA_PORT;
 }
 
+let clientOpts = {
+  'metadata.broker.list' : kafkaHost,
+  'message.max.bytes': 100000000+'', // must be a string
+  'request.required.acks' : 1,
+  'dr_cb': true, // delivery report
+  'event_cb' : true
+  // 'statistics.interval.ms' : 500 // for event.stats callback
+}
+if( process.env.KAFKA_CLIENT_DEBUG ) {
+  clientOpts.debug = process.env.KAFKA_CLIENT_DEBUG;
+}
+
+
 module.exports = {
-  client : {
-    'metadata.broker.list' : kafkaHost,
-    'message.max.bytes': 100000000+'', // must be a string
-    'request.required.acks' : 1,
-    'dr_cb': true, // delivery report
-    'event_cb' : true,
-    'debug' : process.env.KAFKA_CLIENT_DEBUG || ''
-    // 'statistics.interval.ms' : 500 // for event.stats callback
-  },
+  client : clientOpts,
   topic : {
     topic : process.env.DECODER_KAFKA_TOPIC || 'goes-r-stream',
     num_partitions: 10,
