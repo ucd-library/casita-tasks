@@ -22,7 +22,7 @@ module.exports = {
     config : {
       'retention.ms' : (1000 * 60 * 60)+'',
       // 'message.max.bytes': 25000000+''
-      // 'max.message.bytes' : 100000000+''
+      'max.message.bytes' : 100000000+''
     }
   },
   callbacks : {
