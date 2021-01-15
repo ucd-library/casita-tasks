@@ -11,7 +11,8 @@ module.exports = {
     'message.max.bytes': 25000000+'', // must be a string
     'request.required.acks' : 1,
     'dr_cb': true, // delivery report
-    'event_cb' : true
+    'event_cb' : true,
+    'debug' : process.env.KAFKA_CLIENT_DEBUG || ''
     // 'statistics.interval.ms' : 500 // for event.stats callback
   },
   topic : {
@@ -21,7 +22,6 @@ module.exports = {
     // TODO: this is set in decoder-krm-interface/index.js as well.  need to update both. badness
     config : {
       'retention.ms' : (1000 * 60 * 60)+'',
-      'debug' : process.env.KAFKA_CLIENT_DEBUG || '',
       // 'message.max.bytes': 25000000+''
       'max.message.bytes' : 100000000+''
     }
