@@ -22,7 +22,7 @@ class Monitoring {
       CPGT : 'custom.googleapis.com/krm/comp_png_gen_time'
     }
 
-    // this.ensureTypes();
+    this.ensureTypes();
 
     setInterval(() => this.write(), 1000 * 30);
   }
