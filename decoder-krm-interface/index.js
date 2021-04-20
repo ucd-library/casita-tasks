@@ -17,6 +17,8 @@ let model = new StartSubjectModel({
 let SATELLITE = process.env.SATELLITE || 'west';
 
 async function onMessage(msg) {
+  logger.debug('Reading message of length: '+ msg.value.length);
+
   let length = msg.value.readUInt32BE(0);
 
   let metadata = JSON.parse(
@@ -71,6 +73,8 @@ async function handleGenericMessage(metadata, payload) {
     );
   }
 
+  logger.debug('Sending generic:  '+ basePath);
+
   await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
   await send(path.join(basePath, 'payload.bin'), payload);
 }
@@ -94,6 +98,7 @@ async function handleImageMessage(metadata, payload) {
     'blocks',
     metadata.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE+'-'+metadata.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE
   );
+  logger.debug('Sending image:  '+ basePath);
 
   if( metadata.rootMetadata ) {
     await send(
