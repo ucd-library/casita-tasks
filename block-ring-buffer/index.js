@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const Worker = require('../service/lib/worker');
+const Worker = require('/service/lib/worker');
 const {config, logger} = require('@ucd-lib/krm-node-utils');
 const uuid = require('uuid');
 const pg = require('./lib/pg');
@@ -24,6 +24,7 @@ class BlockRingBufferWorker extends Worker {
   }
 
   async exec(msg) {
+    console.log(msg.data);
     await this.insert(msg.data.command.file);
   }
 
@@ -93,4 +94,5 @@ class BlockRingBufferWorker extends Worker {
 }
 
 let worker = new BlockRingBufferWorker();
-module.exports = worker;
+worker.connect();
+// module.exports = worker;
