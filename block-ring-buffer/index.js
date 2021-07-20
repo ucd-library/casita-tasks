@@ -25,7 +25,15 @@ class BlockRingBufferWorker extends Worker {
 
   async exec(msg) {
     console.log(msg.data);
-    await this.insert(msg.data.command.file);
+
+    let file = path.join(config.fs.nfsRoot, msg.data.ready[0].replace('file:///', ''));
+    console.log(file);
+
+    try {
+    await this.addFromNfs(file);
+    } catch(e) {
+      console.error(e);
+    }
   }
 
   async addFromNfs(file) {
@@ -33,11 +41,9 @@ class BlockRingBufferWorker extends Worker {
       logger.error('File does not exist: '+file);
       return;
     }
-
-    let pathInfo = path.parsea(file);
   
-    var [satellite, product, date, hour, minuteSecond, band, apid, blocks, blockXY] = pathInfo.path
-      .replace(config.fs.nfsRoot, '')
+    var [satellite, product, date, hour, minuteSecond, band, apid, blocks, blockXY] = file
+      .replace(config.fs.nfsRoot+'/', '')
       .split('/');
 
     let [x, y] = blockXY.split('-');
