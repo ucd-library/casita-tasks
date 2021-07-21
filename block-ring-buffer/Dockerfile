@@ -17,4 +17,4 @@ COPY lib lib
 COPY index.js .
 RUN npm link
 
-CMD node /service
+CMD node /command
