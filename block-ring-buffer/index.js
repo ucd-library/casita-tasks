@@ -24,15 +24,12 @@ class BlockRingBufferWorker extends Worker {
   }
 
   async exec(msg) {
-    console.log(msg.data);
-
     let file = path.join(config.fs.nfsRoot, msg.data.ready[0].replace('file:///', ''));
-    console.log(file);
 
     try {
-    await this.addFromNfs(file);
+      await this.addFromNfs(file);
     } catch(e) {
-      console.error(e);
+      logger.error(e);
     }
   }
 
