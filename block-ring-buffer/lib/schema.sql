@@ -22,7 +22,9 @@ AS $$
   ),
   latest AS (
     SELECT 
-      rast, blocks_ring_buffer_id AS rid 
+      rast, blocks_ring_buffer_id AS rid, date,
+      extract(hour from date ) as end, 
+      extract(hour from date - interval '2 hour') as start
     FROM latestId, blocks_ring_buffer WHERE 
       blocks_ring_buffer_id = rid
   ),
@@ -30,7 +32,10 @@ AS $$
     SELECT 
       rb.rast, blocks_ring_buffer_id AS rid 
     FROM blocks_ring_buffer rb, latest WHERE 
-      band = 7 AND x = x_in AND y = y_in AND product = product_in AND blocks_ring_buffer_id != latest.rid
+      band = 7 AND x = x_in AND y = y_in AND product = product_in AND 
+      blocks_ring_buffer_id != latest.rid AND
+      extract(hour from rb.date) >= latest.start AND
+      extract(hour from rb.date) <= latest.end 
   ),
   totalCount AS (
     SELECT count(*) AS v FROM rasters
