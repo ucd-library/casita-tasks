@@ -1,3 +1,6 @@
+ALTER DATABASE casita SET postgis.enable_outdb_rasters TO True;
+ALTER DATABASE casita SET postgis.gdal_enabled_drivers TO 'ENABLE_ALL';
+
 CREATE TABLE IF NOT EXISTS blocks_ring_buffer (
   blocks_ring_buffer_id SERIAL PRIMARY KEY,
   date timestamp NOT NULL,
@@ -11,7 +14,12 @@ CREATE TABLE IF NOT EXISTS blocks_ring_buffer (
   rast RASTER NOT NULL
 );
 
-CREATE OR REPLACE FUNCTION b7_variance_detection(x_in INTEGER, y_in INTEGER, product_in TEXT, stdevs INTEGER) RETURNS raster
+CREATE OR REPLACE FUNCTION b7_variance_detection(x_in INTEGER, y_in INTEGER, product_in TEXT, stdevs INTEGER) 
+RETURNS table (
+  blocks_ring_buffer_id INTEGER,
+  rast RASTER,
+  date DATE
+)
 AS $$
 
   WITH latestId AS (
@@ -74,7 +82,10 @@ AS $$
     FROM avgDiff ad, stdev sd	
   )
   SELECT 
-    ST_Reclass(v, 1, '1-65535: 1', '8BUI', 0) AS v 
-  FROM stdevRatio
+    rid AS blocks_ring_buffer_id,
+    ST_Reclass(v, 1, '1-65535: 1', '8BUI', 0) AS rast,
+    date
+  FROM 
+    stdevRatio, latest
 $$
 LANGUAGE SQL;

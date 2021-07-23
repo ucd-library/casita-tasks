@@ -7,9 +7,9 @@ pg.connect();
 
 function getClassified(x, y, product, stdev=20) {
   return pg.query(`with classified as (
-    select b7_variance_detection($1, $2, $3, $4)
-),
-select ST_AsPNG(v, 1) as png from classified`, [x, y, product, stdev]);
+    select * from b7_variance_detection($1, $2, $3, $4)
+)
+select ST_AsPNG(rast, 1) as png, date, blocks_ring_buffer_id from classified`, [x, y, product, stdev]);
 }
 
 function getAverage(x, y, product) {
@@ -31,15 +31,15 @@ function getAverage(x, y, product) {
     SELECT 
       rb.rast, blocks_ring_buffer_id AS rid 
     FROM blocks_ring_buffer rb, latest WHERE 
-      band = 7 AND x = x_in AND y = y_in AND product = product_in AND 
+      band = 7 AND x = $1 AND y = $2 AND product = $3 AND 
       blocks_ring_buffer_id != latest.rid AND
       extract(hour from rb.date) >= latest.start AND
       extract(hour from rb.date) <= latest.end 
   ),
   avg AS (
     SELECT ST_Union(rast, 'MEAN') AS v FROM rasters	
-  ),
-  select ST_AsPNG(v, 1) as png from avg`, [x, y, product]);
+  )
+  select ST_AsPNG(v, 1) as png, date, rid as blocks_ring_buffer_id from avg, latest`, [x, y, product]);
 }
 
 function getLatest(x, y, product) {
@@ -51,16 +51,16 @@ function getLatest(x, y, product) {
   ),
   latest AS (
     SELECT 
-      rast, blocks_ring_buffer_id AS rid, date
+      rast, blocks_ring_buffer_id, date
     FROM latestId, blocks_ring_buffer WHERE 
       blocks_ring_buffer_id = rid
-  ),
-  select ST_AsPNG(rast, 1) as png from latest`, [x, y, product]);
+  )
+  select ST_AsPNG(rast, 1) as png, date, blocks_ring_buffer_id from latest`, [x, y, product]);
 }
 
-app.get('/_/thermal-anomaly/png/:product/:x/:y/type', async (req, res) => {
+app.get('/_/thermal-anomaly/png/:product/:x/:y/:type', async (req, res) => {
   try {
-    let product = req.params.channel;
+    let product = req.params.product;
     let x = req.params.x;
     let y = req.params.y;
     let type = req.params.type;
@@ -76,6 +76,10 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/type', async (req, res) => {
       throw new Error(`Unknown type provided '${type}', should be: classified, average or current`);
     }
 
+    if( !resp.rows.length ) {
+      throw new Error(`Unable to find: x=${x} y=${y} product=${product}`);
+    }
+
     resp = resp.rows[0];
 
     let name = type+'.png';
@@ -83,13 +87,12 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/type', async (req, res) => {
       name = resp.date.toISOString().replace(/(:)+/g, '-').replace(/\..*/, '')+'-'+name;
     }
     if( resp.blocks_ring_buffer_id ) {
-      name = blocks_ring_buffer_id+'-'+name;
+      name = resp.blocks_ring_buffer_id+'-'+name;
     }
 
-
-    res.set(`Content-Disposition: attachment; filename="${name}"`);
-    res.set('Content-Type: application/png');
-    res.send(resp.rows[0].png);
+    res.set('Content-Disposition', `attachment; filename="${name}"`);
+    res.set('Content-Type', 'application/png');
+    res.send(resp.png);
     
 
   } catch(e) {
@@ -100,3 +103,5 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/type', async (req, res) => {
     });
   }
 });
+
+app.listen(3000, () => console.log('ring-buffer-service listening on port 3000'));

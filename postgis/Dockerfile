@@ -2,6 +2,8 @@ FROM postgres:13
 
 ENV POSTGRES_HOST_AUTH_METHOD=trust
 ENV POSTGRES_DB=casita
+ENV POSTGIS_ENABLE_OUTDB_RASTERS=1
+ENV POSTGIS_GDAL_ENABLED_DRIVERS=ENABLE_ALL
 
 RUN apt-get update \
       && apt-get install -y --no-install-recommends \
