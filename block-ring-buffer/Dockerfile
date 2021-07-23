@@ -15,6 +15,7 @@ RUN npm install
 
 COPY lib lib
 COPY index.js .
+COPY service.js .
 RUN npm link
 
 CMD node /command
