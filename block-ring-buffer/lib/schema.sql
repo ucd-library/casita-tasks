@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS blocks_ring_buffer (
   expire timestamp NOT NULL,
   rast RASTER NOT NULL
 );
-CREATE INDEX IF NOT EXISTS blocks_ring_buffer_date_idx ON blocks_ring_buffer USING gist(date);
+CREATE INDEX IF NOT EXISTS blocks_ring_buffer_date_idx ON blocks_ring_buffer (date);
 CREATE INDEX IF NOT EXISTS blocks_ring_buffer_product_idx ON blocks_ring_buffer (product);
 
 CREATE TABLE IF NOT EXISTS thermal_product (
@@ -29,7 +29,8 @@ CREATE OR REPLACE FUNCTION b7_variance_detection(x_in INTEGER, y_in INTEGER, pro
 RETURNS table (
   blocks_ring_buffer_id INTEGER,
   rast RASTER,
-  date DATE
+  date DATE,
+  expire DATE
 )
 AS $$
 
@@ -270,3 +271,44 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_thermal_classified_product( blocks_ring_buffer_id_in INTEGER, stddev_ratio INTEGER ) 
+RETURNS RASTER
+AS $$
+
+  WITH image AS (
+    SELECT 
+      rast
+    FROM blocks_ring_buffer WHERE 
+      blocks_ring_buffer_id = blocks_ring_buffer_id_in
+  ),
+  avg as (
+    SELECT 
+      rast
+    FROM thermal_product WHERE
+      blocks_ring_buffer_id = blocks_ring_buffer_id_in AND
+      product = 'average'
+  ),
+  stddev as (
+    SELECT 
+      rast
+    FROM thermal_product WHERE
+      blocks_ring_buffer_id = blocks_ring_buffer_id_in AND
+      product = 'stddev'
+  ),
+  avgDiff AS (
+    SELECT 
+      ST_MapAlgebra(a.rast, i.rast, '[rast2.val] - [rast1.val]') as rast
+    FROM avg a, image i	
+  ),
+  stdevRatio AS (
+    SELECT 
+      ST_MapAlgebra(ad.rast, sd.rast, 'FLOOR([rast1.val] / ([rast2.val]*' || stddev_ratio::TEXT || '))') AS v 
+    FROM avgDiff ad, stddev sd	
+  )
+  SELECT 
+    ST_Reclass(v, 1, '1-65535: 1', '8BUI', 0)
+  FROM 
+    stdevRatio
+$$
+LANGUAGE SQL;

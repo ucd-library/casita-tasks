@@ -88,68 +88,14 @@ class BlockRingBufferWorker extends Worker {
         '${expire}' as expire,
         rast 
       from temp 
-      limit 1`;
+      limit 1
+      RETURNING blocks_ring_buffer_id`;
   
-    await pg.query(cmd);
+    let resp = await pg.query(cmd);
     await pg.query(`drop table ${preloadTable}`);
 
-    await this.createProducts(meta.x, meta.y, meta.product);
+    await pg.query(`SELECT create_thermal_products(${resp.rows[0].blocks_ring_buffer_id});`);
     await pg.query(`DELETE from thermal_product where expire <= $1`, [new Date().toISOString()]);
-  }
-
-  /**
-   * TODO: this SHOULD be in new worker
-   */
-  async createProducts() {
-    await this.insertAverage(x, y, product);
-    await this.insertClassified(x, y, product);
-  }
-
-  async insertAverage(x, y, product) {
-    return pg.query(`WITH latestId AS (
-      SELECT 
-        MAX(blocks_ring_buffer_id) AS rid 
-      FROM blocks_ring_buffer WHERE 
-        band = 7 AND x = $1 AND y = $2 AND product = $3
-    ),
-    latest AS (
-      SELECT 
-        rast, blocks_ring_buffer_id AS rid, date, expire
-        extract(hour from date ) as end, 
-        extract(hour from date - interval '2 hour') as start
-      FROM latestId, blocks_ring_buffer WHERE 
-        blocks_ring_buffer_id = rid
-    ),
-    rasters AS (
-      SELECT 
-        rb.rast, blocks_ring_buffer_id AS rid 
-      FROM blocks_ring_buffer rb, latest WHERE 
-        band = 7 AND x = $1 AND y = $2 AND product = $3 AND 
-        blocks_ring_buffer_id != latest.rid AND
-        extract(hour from rb.date) >= latest.start AND
-        extract(hour from rb.date) <= latest.end 
-    ),
-    avg AS (
-      SELECT ST_Union(rast, 'MEAN') AS v FROM rasters	
-    )
-    INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast) 
-      select ST_AsPNG(v, 1) as rast, 
-      latest.expire as expire, 
-      'average' as product,
-      rid as blocks_ring_buffer_id 
-    from avg, latest`, [x, y, product]);
-  }
-
-  insertClassified(x, y, product, stdev=20) {
-    return pg.query(`with classified as (
-      select * from b7_variance_detection($1, $2, $3, $4)
-    )
-    INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
-    select 
-      ST_AsPNG(rast, 1) as rast, 
-      date, expire,
-      'classified' as product,
-      blocks_ring_buffer_id from classified`, [x, y, product, stdev]);
   }
 }
 

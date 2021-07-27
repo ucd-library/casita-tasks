@@ -59,49 +59,71 @@ function getLatest(x, y, product) {
 }
 
 app.get('/_/thermal-anomaly/products', async (req, res) => {
-  pg.query(`SELECT date, x, y, satellite, product, apid, band from blocks_ring_buffer`);
+  let resp = await pg.query(`SELECT date, x, y, satellite, product, apid, band from blocks_ring_buffer`);
+  res.json(resp.rows);
 });
 
 app.get('/_/thermal-anomaly/latest', async (req, res) => {
-  pg.query(`SELECT MAX(date) as date, x, y, satellite, product, apid, band from blocks_ring_buffer group by x, y, satellite, product, apid, band`);
+  let resp = await pg.query(`SELECT MAX(date) as date, x, y, satellite, product, apid, band from blocks_ring_buffer group by x, y, satellite, product, apid, band`);
+  res.json(resp.rows);
 });
 
 let types = ['average', 'min', 'max', 'stddev']
 app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) => {
   try {
     let product = req.params.product;
-    let x = req.params.x;
-    let y = req.params.y;
+    let x = parseInt(req.params.x);
+    let y = parseInt(req.params.y);
     let type = req.params.type;
     let date = req.params.date;
+    let ratio = parseInt(req.query.ratio || 20);
 
     pg.query(`SELECT * from `, [x, y, date, product]);
 
+    if( date === 'latest' ) {
+      let resp = await pg.query(`SELECT MAX(date) x, y, product, blocks_ring_buffer_id from blocks_ring_buffer group by x, y, satellite, product, apid, band`);
+      let row = resp.rows.find(row => row.x === x && row.y === y && row.product === product);
+      if( !row ) throw new Error(`Unable to find latest for x=${x} y=${y} product=${product}`);
+      date = row.date;
+    }
+
     let resp;
     if( type === 'classified' ) {
-      resp = await getClassified(x, y, product, req.query.stdev);
-    } else if( types.includes(type)  ) {
-      resp = await pg.query(`SELECT 
+      resp = await pg.query(`
+        WITH image AS (
+          SELECT blocks_ring_buffer_id FROM blocks_ring_buffer WHERE
+          x = $1 AND y = $2 AND product = $3 AND date = $4 
+        ),
+        classifed AS (
+          SELECT get_thermal_classified_product(image.blocks_ring_buffer_id, $5) as rast from image
+        )
+        SELECT 
           ST_AsPNG(rast, 1) AS png 
-        FROM thermal_products 
-        WHERE `);
+        FROM classifed
+        `, [x, y, product, date, ratio]);
+    } else if( types.includes(type)  ) {
+      resp = await pg.query(`
+        WITH image AS (
+          SELECT blocks_ring_buffer_id FROM blocks_ring_buffer WHERE
+          x = $1 AND y = $2 AND product = $3 AND date = $4 
+        )
+        SELECT 
+          ST_AsPNG(rast, 1) AS png 
+        FROM thermal_product tp, image
+        WHERE tp.blocks_ring_buffer_id = image.blocks_ring_buffer_id AND
+        tp.product = $5`, [x, y, product, date, type]);
     } else {
       throw new Error(`Unknown type provided '${type}', should be: classified, average or current`);
     }
 
     if( !resp.rows.length ) {
-      throw new Error(`Unable to find: x=${x} y=${y} product=${product}`);
+      throw new Error(`Unable to find: x=${x} y=${y} product=${product} type="${type}`);
     }
 
     resp = resp.rows[0];
 
-    let name = type+'.png';
-    if( resp.date ) {
-      name = resp.date.toISOString().replace(/(:)+/g, '-').replace(/\..*/, '')+'-'+name;
-    }
-    if( resp.blocks_ring_buffer_id ) {
-      name = resp.blocks_ring_buffer_id+'-'+name;
-    }
+    date = new Date(date).toISOString().replace(/(:)+/g, '-').replace(/\..*/, '');
+    let name = type+'-'+product+'-'+x+'-'+y+'-'+date+'.png';
 
     res.set('Content-Disposition', `attachment; filename="${name}"`);
     res.set('Content-Type', 'application/png');
