@@ -58,20 +58,33 @@ function getLatest(x, y, product) {
   select ST_AsPNG(rast, 1) as png, date, blocks_ring_buffer_id from latest`, [x, y, product]);
 }
 
-app.get('/_/thermal-anomaly/png/:product/:x/:y/:type', async (req, res) => {
+app.get('/_/thermal-anomaly/products', async (req, res) => {
+  pg.query(`SELECT date, x, y, satellite, product, apid, band from blocks_ring_buffer`);
+});
+
+app.get('/_/thermal-anomaly/latest', async (req, res) => {
+  pg.query(`SELECT MAX(date) as date, x, y, satellite, product, apid, band from blocks_ring_buffer group by x, y, satellite, product, apid, band`);
+});
+
+let types = ['average', 'min', 'max', 'stddev']
+app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) => {
   try {
     let product = req.params.product;
     let x = req.params.x;
     let y = req.params.y;
     let type = req.params.type;
+    let date = req.params.date;
+
+    pg.query(`SELECT * from `, [x, y, date, product]);
 
     let resp;
     if( type === 'classified' ) {
       resp = await getClassified(x, y, product, req.query.stdev);
-    } else if( type === 'average' ) {
-      resp = await getAverage(x, y, product, req.query.stdev);
-    } else if( type === 'latest' ) {
-      resp = await getLatest(x, y, product, req.query.stdev);
+    } else if( types.includes(type)  ) {
+      resp = await pg.query(`SELECT 
+          ST_AsPNG(rast, 1) AS png 
+        FROM thermal_products 
+        WHERE `);
     } else {
       throw new Error(`Unknown type provided '${type}', should be: classified, average or current`);
     }

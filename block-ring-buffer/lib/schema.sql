@@ -13,6 +13,17 @@ CREATE TABLE IF NOT EXISTS blocks_ring_buffer (
   expire timestamp NOT NULL,
   rast RASTER NOT NULL
 );
+CREATE INDEX IF NOT EXISTS blocks_ring_buffer_date_idx ON blocks_ring_buffer USING gist(date);
+CREATE INDEX IF NOT EXISTS blocks_ring_buffer_product_idx ON blocks_ring_buffer (product);
+
+CREATE TABLE IF NOT EXISTS thermal_product (
+  thermal_product_id SERIAL PRIMARY KEY,
+  blocks_ring_buffer_id INTEGER REFERENCES blocks_ring_buffer (blocks_ring_buffer_id),
+  product TEXT NOT NULL,
+  expire timestamp NOT NULL,
+  rast RASTER NOT NULL,
+  UNIQUE(blocks_ring_buffer_id, product)
+);
 
 CREATE OR REPLACE FUNCTION b7_variance_detection(x_in INTEGER, y_in INTEGER, product_in TEXT, stdevs INTEGER) 
 RETURNS table (
@@ -30,7 +41,7 @@ AS $$
   ),
   latest AS (
     SELECT 
-      rast, blocks_ring_buffer_id AS rid, date,
+      rast, blocks_ring_buffer_id AS rid, date, expire,
       extract(hour from date ) as end, 
       extract(hour from date - interval '2 hour') as start
     FROM latestId, blocks_ring_buffer WHERE 
@@ -84,8 +95,178 @@ AS $$
   SELECT 
     rid AS blocks_ring_buffer_id,
     ST_Reclass(v, 1, '1-65535: 1', '8BUI', 0) AS rast,
-    date
+    latest.date as date,
+    latest.expire as expire
   FROM 
     stdevRatio, latest
 $$
 LANGUAGE SQL;
+
+--- get the raster to use for stats
+CREATE OR REPLACE FUNCTION get_rasters_for_stats (
+  blocks_ring_buffer_id_in INTEGER
+) RETURNS table (
+  blocks_ring_buffer_id INTEGER
+) AS $$
+  WITH time_range AS (
+    SELECT 
+      date, product, band, x, y,
+      extract(hour from date + interval '1 hour') as end, 
+      extract(hour from date - interval '2 hour') as start
+    FROM blocks_ring_buffer WHERE 
+      blocks_ring_buffer_id_in = blocks_ring_buffer_id
+  )
+  SELECT 
+    rb.blocks_ring_buffer_id as blocks_ring_buffer_id
+  FROM 
+    blocks_ring_buffer rb, time_range 
+  WHERE 
+    rb.band = time_range.band AND 
+    rb.x = time_range.x AND 
+    rb.y = time_range.y AND 
+    rb.product = time_range.product AND 
+    rb.blocks_ring_buffer_id != blocks_ring_buffer_id_in AND
+    extract(hour from rb.date) >= time_range.start AND
+    extract(hour from rb.date) <= time_range.end AND
+    rb.date < time_range.date
+$$
+LANGUAGE SQL;
+
+CREATE OR REPLACE FUNCTION create_thermal_products ( 
+  blocks_ring_buffer_id_in INTEGER
+) RETURNS void
+AS $$
+DECLARE
+  average_id INTEGER;
+  max_id INTEGER;
+  min_id INTEGER;
+  stddev_id INTEGER;
+  rasters INTEGER;
+BEGIN
+
+  SELECT thermal_product_id INTO average_id 
+    FROM thermal_product
+    WHERE blocks_ring_buffer_id = blocks_ring_buffer_id_in
+    AND product = 'average';
+
+  SELECT thermal_product_id INTO max_id 
+    FROM thermal_product
+    WHERE blocks_ring_buffer_id = blocks_ring_buffer_id_in
+    AND product = 'max';
+
+  SELECT thermal_product_id INTO min_id 
+    FROM thermal_product
+    WHERE blocks_ring_buffer_id = blocks_ring_buffer_id_in
+    AND product = 'min';
+
+  SELECT thermal_product_id INTO stddev_id 
+    FROM thermal_product
+    WHERE blocks_ring_buffer_id = blocks_ring_buffer_id_in
+    AND product = 'stddev';
+
+  IF( average_id IS NOT NULL ) THEN
+    RAISE EXCEPTION 'Average product already exists for blocks_ring_buffer_id %s', blocks_ring_buffer_id_in;
+  END IF;
+
+  IF( max_id IS NOT NULL ) THEN
+    RAISE EXCEPTION 'Max product already exists for blocks_ring_buffer_id %s', blocks_ring_buffer_id_in;
+  END IF;
+
+  IF( min_id IS NOT NULL ) THEN
+    RAISE EXCEPTION 'Min product already exists for blocks_ring_buffer_id %s', blocks_ring_buffer_id_in;
+  END IF;
+
+  IF( stddev_id IS NOT NULL ) THEN
+    RAISE EXCEPTION 'Stddev product already exists for blocks_ring_buffer_id %s', blocks_ring_buffer_id_in;
+  END IF; 
+
+  -- AVERAGE
+  WITH input as (
+    SELECT * from blocks_ring_buffer where blocks_ring_buffer_id = blocks_ring_buffer_id_in
+  ),
+  rasters as (
+    SELECT rast FROM get_rasters_for_stats(blocks_ring_buffer_id_in) as stats
+    LEFT JOIN blocks_ring_buffer ON stats.blocks_ring_buffer_id = blocks_ring_buffer.blocks_ring_buffer_id
+  )
+  INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
+    SELECT 
+      i.blocks_ring_buffer_id as blocks_ring_buffer_id,
+      'average' as product,
+      i.expire as expire,
+      ST_Union(r.rast, 'MEAN') AS rast
+    FROM rasters r, input i
+    GROUP BY blocks_ring_buffer_id, expire;
+
+  -- MIN
+  WITH input as (
+    SELECT * from blocks_ring_buffer where blocks_ring_buffer_id = blocks_ring_buffer_id_in
+  ),
+  rasters as (
+    SELECT rast FROM get_rasters_for_stats(blocks_ring_buffer_id_in) as stats
+    LEFT JOIN blocks_ring_buffer ON stats.blocks_ring_buffer_id = blocks_ring_buffer.blocks_ring_buffer_id
+  )
+  INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
+    SELECT 
+      i.blocks_ring_buffer_id as blocks_ring_buffer_id,
+      'max' as product,
+      i.expire as expire,
+      ST_Union(r.rast, 'MAX') AS rast
+    FROM rasters r, input i
+    GROUP BY blocks_ring_buffer_id, expire;
+
+  -- MAX
+  WITH input as (
+    SELECT * from blocks_ring_buffer where blocks_ring_buffer_id = blocks_ring_buffer_id_in
+  ),
+  rasters as (
+    SELECT rast FROM get_rasters_for_stats(blocks_ring_buffer_id_in) as stats
+    LEFT JOIN blocks_ring_buffer ON stats.blocks_ring_buffer_id = blocks_ring_buffer.blocks_ring_buffer_id
+  )
+  INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
+    SELECT 
+      i.blocks_ring_buffer_id as blocks_ring_buffer_id,
+      'min' as product,
+      i.expire as expire,
+      ST_Union(r.rast, 'MIN') AS rast
+    FROM rasters r, input i
+    GROUP BY blocks_ring_buffer_id, expire;
+
+  -- STDDEV
+  WITH input as (
+    SELECT * from blocks_ring_buffer where blocks_ring_buffer_id = blocks_ring_buffer_id_in
+  ),
+  rasters as (
+    SELECT rast FROM get_rasters_for_stats(blocks_ring_buffer_id_in) as stats
+    LEFT JOIN blocks_ring_buffer ON stats.blocks_ring_buffer_id = blocks_ring_buffer.blocks_ring_buffer_id
+  ),
+  totalCount AS (
+    SELECT count(*) AS v FROM rasters
+  ),
+  total AS (
+    SELECT 
+      ST_AddBand(ST_MakeEmptyRaster(r.rast), 1, '16BUI'::TEXT, tc.v, -1) AS rast 
+    FROM rasters r, totalCount tc limit 1
+  ),
+  avg as (
+    SELECT * FROM thermal_product WHERE blocks_ring_buffer_id = blocks_ring_buffer_id_in AND product = 'average'
+  ),
+  difference AS (
+    SELECT 
+      ST_MapAlgebra(r.rast, a.rast, 'power([rast1.val] - [rast2.val], 2)') AS rast 
+    FROM rasters r, avg a
+  ),
+  sum AS (
+    SELECT 
+      ST_Union(d.rast, 'SUM') AS rast 
+    FROM difference d
+  )
+  INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
+    SELECT 
+      i.blocks_ring_buffer_id as blocks_ring_buffer_id,
+      'stddev' as product,
+      i.expire as expire,
+      ST_MapAlgebra(s.rast, t.rast, 'sqrt([rast1.val] / [rast2.val])') AS rast
+    FROM sum s, total t, input i;
+
+END;
+$$ LANGUAGE plpgsql;
