@@ -190,14 +190,6 @@ BEGIN
     LEFT JOIN blocks_ring_buffer ON stats.blocks_ring_buffer_id = blocks_ring_buffer.blocks_ring_buffer_id
   )
   INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
-  SELECT 
-    i.blocks_ring_buffer_id as blocks_ring_buffer_id,
-    'average' as product,
-    i.expire as expire,
-    ST_Union(ST_Reclass(r.rast, '0-65536:0-65536', '32BUI'), 'MEAN') AS rast
-  FROM rasters r, input i
-  GROUP BY blocks_ring_buffer_id, expire;
-  INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
     SELECT 
       i.blocks_ring_buffer_id as blocks_ring_buffer_id,
       'average' as product,
