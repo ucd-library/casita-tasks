@@ -5,66 +5,25 @@ const pg = require('./lib/pg');
 pg.connect();
 
 
-function getClassified(x, y, product, stdev=20) {
-  return pg.query(`with classified as (
-    select * from b7_variance_detection($1, $2, $3, $4)
-)
-select ST_AsPNG(rast, 1) as png, date, blocks_ring_buffer_id from classified`, [x, y, product, stdev]);
-}
-
-function getAverage(x, y, product) {
-  return pg.query(`WITH latestId AS (
-    SELECT 
-      MAX(blocks_ring_buffer_id) AS rid 
-    FROM blocks_ring_buffer WHERE 
-      band = 7 AND x = $1 AND y = $2 AND product = $3
-  ),
-  latest AS (
-    SELECT 
-      rast, blocks_ring_buffer_id AS rid, date,
-      extract(hour from date ) as end, 
-      extract(hour from date - interval '2 hour') as start
-    FROM latestId, blocks_ring_buffer WHERE 
-      blocks_ring_buffer_id = rid
-  ),
-  rasters AS (
-    SELECT 
-      rb.rast, blocks_ring_buffer_id AS rid 
-    FROM blocks_ring_buffer rb, latest WHERE 
-      band = 7 AND x = $1 AND y = $2 AND product = $3 AND 
-      blocks_ring_buffer_id != latest.rid AND
-      extract(hour from rb.date) >= latest.start AND
-      extract(hour from rb.date) <= latest.end 
-  ),
-  avg AS (
-    SELECT ST_Union(rast, 'MEAN') AS v FROM rasters	
-  )
-  select ST_AsPNG(v, 1) as png, date, rid as blocks_ring_buffer_id from avg, latest`, [x, y, product]);
-}
-
-function getLatest(x, y, product) {
-  return pg.query(`WITH latestId AS (
-    SELECT 
-      MAX(blocks_ring_buffer_id) AS rid 
-    FROM blocks_ring_buffer WHERE 
-      band = 7 AND x = $1 AND y = $2 AND product = $3
-  ),
-  latest AS (
-    SELECT 
-      rast, blocks_ring_buffer_id, date
-    FROM latestId, blocks_ring_buffer WHERE 
-      blocks_ring_buffer_id = rid
-  )
-  select ST_AsPNG(rast, 1) as png, date, blocks_ring_buffer_id from latest`, [x, y, product]);
-}
-
 app.get('/_/thermal-anomaly/products', async (req, res) => {
-  let resp = await pg.query(`SELECT date, x, y, satellite, product, apid, band from blocks_ring_buffer`);
+  let resp = await pg.query(`SELECT date, x, y, satellite, product, apid, band, blocks_ring_buffer_id from blocks_ring_buffer`);
   res.json(resp.rows);
 });
 
 app.get('/_/thermal-anomaly/latest', async (req, res) => {
-  let resp = await pg.query(`SELECT MAX(date) as date, x, y, satellite, product, apid, band from blocks_ring_buffer group by x, y, satellite, product, apid, band`);
+  let resp = await pg.query(`
+    WITH latest AS (
+      SELECT MAX(rb.date) as date, rb.x, rb.y, rb.satellite, rb.product, rb.apid, rb.band 
+      FROM thermal_product tp 
+      LEFT JOIN blocks_ring_buffer rb ON rb.blocks_ring_buffer_id = tp.blocks_ring_buffer_id
+      GROUP BY rb.x, rb.y, rb.satellite, rb.product, rb.apid, rb.band
+    )
+    SELECT 
+      latest.*, 
+      rb.blocks_ring_buffer_id,
+      '/_/thermal-anomaly/png/' || latest.product || '/' || latest.x || '/' || latest.y || '/' || to_char(latest.date , 'YYYY-MM-DD"T"HH24:MI:SS"') || '/[product]' as data_path
+    FROM latest, blocks_ring_buffer rb
+    WHERE rb.x = latest.x AND rb.y = latest.y AND rb.date = latest.date AND rb.product = latest.product`);
   res.json(resp.rows);
 });
 
@@ -77,8 +36,6 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     let type = req.params.type;
     let date = req.params.date;
     let ratio = parseInt(req.query.ratio || 20);
-
-    pg.query(`SELECT * from `, [x, y, date, product]);
 
     if( date === 'latest' ) {
       let resp = await pg.query(`SELECT MAX(date) x, y, product, blocks_ring_buffer_id from blocks_ring_buffer group by x, y, satellite, product, apid, band`);
@@ -127,6 +84,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
 
     res.set('Content-Disposition', `attachment; filename="${name}"`);
     res.set('Content-Type', 'application/png');
+    res.set('Content-Length', resp.png.length);
     res.send(resp.png);
     
 

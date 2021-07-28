@@ -113,7 +113,7 @@ CREATE OR REPLACE FUNCTION get_rasters_for_stats (
     SELECT 
       date, product, band, x, y,
       extract(hour from date + interval '1 hour') as end, 
-      extract(hour from date - interval '2 hour') as start
+      extract(hour from date) as start
     FROM blocks_ring_buffer WHERE 
       blocks_ring_buffer_id_in = blocks_ring_buffer_id
   )
@@ -190,11 +190,23 @@ BEGIN
     LEFT JOIN blocks_ring_buffer ON stats.blocks_ring_buffer_id = blocks_ring_buffer.blocks_ring_buffer_id
   )
   INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
+  SELECT 
+    i.blocks_ring_buffer_id as blocks_ring_buffer_id,
+    'average' as product,
+    i.expire as expire,
+    ST_Union(ST_Reclass(r.rast, '0-65536:0-65536', '32BUI'), 'MEAN') AS rast
+  FROM rasters r, input i
+  GROUP BY blocks_ring_buffer_id, expire;
+  INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
     SELECT 
       i.blocks_ring_buffer_id as blocks_ring_buffer_id,
       'average' as product,
       i.expire as expire,
-      ST_Union(r.rast, 'MEAN') AS rast
+      ST_Reclass(
+        ST_Union(
+          ST_Reclass(r.rast, '0-65536:0-65536', '32BUI')
+        , 'MEAN')
+      , '0-65536:0-65536', '16BUI') AS rast
     FROM rasters r, input i
     GROUP BY blocks_ring_buffer_id, expire;
 
@@ -245,7 +257,7 @@ BEGIN
   ),
   total AS (
     SELECT 
-      ST_AddBand(ST_MakeEmptyRaster(r.rast), 1, '16BUI'::TEXT, tc.v, -1) AS rast 
+      ST_AddBand(ST_MakeEmptyRaster(r.rast), 1, '32BUI'::TEXT, tc.v, -1) AS rast 
     FROM rasters r, totalCount tc limit 1
   ),
   avg as (
@@ -253,7 +265,11 @@ BEGIN
   ),
   difference AS (
     SELECT 
-      ST_MapAlgebra(r.rast, a.rast, 'power([rast1.val] - [rast2.val], 2)') AS rast 
+      ST_MapAlgebra(
+        ST_Reclass(r.rast, '0-65536:0-65536', '32BUI'), 
+        ST_Reclass(a.rast, '0-65536:0-65536', '32BUI'), 
+        'power([rast1.val] - [rast2.val], 2)'
+      ) AS rast 
     FROM rasters r, avg a
   ),
   sum AS (
@@ -266,7 +282,10 @@ BEGIN
       i.blocks_ring_buffer_id as blocks_ring_buffer_id,
       'stddev' as product,
       i.expire as expire,
-      ST_MapAlgebra(s.rast, t.rast, 'sqrt([rast1.val] / [rast2.val])') AS rast
+      ST_Reclass(
+        ST_MapAlgebra(s.rast, t.rast, 'sqrt([rast1.val] / [rast2.val])'),
+        '0-65536:0-65536', '16BUI'
+      ) AS rast
     FROM sum s, total t, input i;
 
 END;
