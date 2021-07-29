@@ -112,7 +112,7 @@ CREATE OR REPLACE FUNCTION get_rasters_for_stats (
   WITH time_range AS (
     SELECT 
       date, product, band, x, y,
-      extract(hour from date + interval '1 hour') as end, 
+      extract(hour from date) as end, 
       extract(hour from date) as start
     FROM blocks_ring_buffer WHERE 
       blocks_ring_buffer_id_in = blocks_ring_buffer_id
