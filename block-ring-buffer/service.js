@@ -27,7 +27,7 @@ app.get('/_/thermal-anomaly/latest', async (req, res) => {
   res.json(resp.rows);
 });
 
-let types = ['average', 'min', 'max', 'stddev']
+let types = ['average', 'min', 'max', 'stddev', 'raw']
 app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) => {
   try {
     let product = req.params.product;
@@ -37,7 +37,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     let date = req.params.date;
     let ratio = parseInt(req.query.ratio || 20);
 
-    if( date === 'latest' ) {
+    if( date === 'raw' ) {
       let resp = await pg.query(`SELECT MAX(date) x, y, product, blocks_ring_buffer_id from blocks_ring_buffer group by x, y, satellite, product, apid, band`);
       let row = resp.rows.find(row => row.x === x && row.y === y && row.product === product);
       if( !row ) throw new Error(`Unable to find latest for x=${x} y=${y} product=${product}`);
@@ -70,7 +70,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
         WHERE tp.blocks_ring_buffer_id = image.blocks_ring_buffer_id AND
         tp.product = $5`, [x, y, product, date, type]);
     } else {
-      throw new Error(`Unknown type provided '${type}', should be: classified, average or current`);
+      throw new Error(`Unknown type provided '${type}', should be: classified, average, min, max or raw`);
     }
 
     if( !resp.rows.length ) {
