@@ -107,4 +107,11 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
   }
 });
 
+
+app.get('/_/thermal-anomaly/px-values/:id/:x/:y', async (req, res) => {
+  let resp = await pg.query(`SELECT * FROM get_blocks_px_values(${req.params.id}, ${req.params.x}, ${req.params.y})`);
+  res.json(resp.rows);
+});
+
+
 app.listen(3000, () => console.log('ring-buffer-service listening on port 3000'));

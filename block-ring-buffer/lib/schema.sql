@@ -323,3 +323,25 @@ AS $$
     stdevRatio
 $$
 LANGUAGE SQL;
+
+CREATE OR REPLACE FUNCTION get_blocks_px_values (
+  blocks_ring_buffer_id_in INTEGER,
+  x_in INTEGER,
+  y_in INTEGER
+) RETURNS table (
+  value INTEGER,
+  blocks_ring_buffer_id INTEGER,
+  date TIMESTAMP
+) AS $$
+
+  WITH ids AS (
+    SELECT get_rasters_for_stats(blocks_ring_buffer_id_in) AS id
+  )
+  SELECT 
+    ST_Value(rast, x_in, y_in) as value,  blocks_ring_buffer_id, date 
+  FROM 
+    blocks_ring_buffer, ids 
+  WHERE blocks_ring_buffer_id = id;
+
+$$
+LANGUAGE SQL;
