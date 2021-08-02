@@ -97,7 +97,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     res.set('Content-Disposition', `attachment; filename="${name}"`);
     res.set('Content-Type', 'application/png');
     res.set('Content-Length', resp.png.length);
-    res.set('x-blocks-ring-buffer-id', blocks_ring_buffer_id);
+    res.set('x-blocks-ring-buffer-id', resp.blocks_ring_buffer_id);
     res.set('Cache-control', 'public, max-age=21600')
     res.send(resp.png);
     
