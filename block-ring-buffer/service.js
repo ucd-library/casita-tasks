@@ -62,7 +62,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     } else if( type === 'raw' ) {
       resp = await pg.query(`
         WITH image AS (
-          SELECT rast FROM blocks_ring_buffer WHERE
+          SELECT rast, blocks_ring_buffer_id FROM blocks_ring_buffer WHERE
           x = $1 AND y = $2 AND product = $3 AND date = $4 
         )
         SELECT 
