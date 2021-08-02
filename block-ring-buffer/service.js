@@ -115,13 +115,19 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
 app.get('/_/thermal-anomaly/px-values/:id/:x/:y', async (req, res) => {
   let resp;
 
+
   if( req.query.all === 'true' ) {
+    console.log([req.params.id, req.params.x, req.params.y]);
     resp = await pg.query(`
     WITH start AS (
       SELECT date, x, y, product from blocks_ring_buffer where blocks_ring_buffer_id = $1
     ),
     rasters AS (
-      SELECT blocks_ring_buffer.* from blocks_ring_buffer, start 
+      SELECT 
+        blocks_ring_buffer.blocks_ring_buffer_id as blocks_ring_buffer_id,
+        blocks_ring_buffer.rast as rast,
+        blocks_ring_buffer.date as date
+      from blocks_ring_buffer, start 
       where blocks_ring_buffer.date <= start.date
       AND blocks_ring_buffer.x = start.x
       AND blocks_ring_buffer.y = start.y
