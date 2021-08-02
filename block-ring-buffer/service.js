@@ -57,7 +57,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
         SELECT 
           ST_AsPNG(rast, 1) AS png,
           image.blocks_ring_buffer_id AS blocks_ring_buffer_id
-        FROM classifed
+        FROM classifed, image
         `, [x, y, product, date, ratio]);
     } else if( type === 'raw' ) {
       resp = await pg.query(`
