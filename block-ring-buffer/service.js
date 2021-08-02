@@ -37,12 +37,12 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     let date = req.params.date;
     let ratio = parseInt(req.query.ratio || 20);
 
-    if( date === 'raw' ) {
-      let resp = await pg.query(`SELECT MAX(date) x, y, product, blocks_ring_buffer_id from blocks_ring_buffer group by x, y, satellite, product, apid, band`);
-      let row = resp.rows.find(row => row.x === x && row.y === y && row.product === product);
-      if( !row ) throw new Error(`Unable to find latest for x=${x} y=${y} product=${product}`);
-      date = row.date;
-    }
+    // if( date === 'raw' ) {
+    //   let resp = await pg.query(`SELECT MAX(date) x, y, product, blocks_ring_buffer_id from blocks_ring_buffer group by x, y, satellite, product, apid, band`);
+    //   let row = resp.rows.find(row => row.x === x && row.y === y && row.product === product);
+    //   if( !row ) throw new Error(`Unable to find latest for x=${x} y=${y} product=${product}`);
+    //   date = row.date;
+    // }
 
     let resp;
     if( type === 'classified' ) {
@@ -55,7 +55,8 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
           SELECT get_thermal_classified_product(image.blocks_ring_buffer_id, $5) as rast from image
         )
         SELECT 
-          ST_AsPNG(rast, 1) AS png 
+          ST_AsPNG(rast, 1) AS png,
+          image.blocks_ring_buffer_id AS blocks_ring_buffer_id
         FROM classifed
         `, [x, y, product, date, ratio]);
     } else if( type === 'raw' ) {
@@ -65,7 +66,8 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
           x = $1 AND y = $2 AND product = $3 AND date = $4 
         )
         SELECT 
-          ST_AsPNG(rast, 1) AS png 
+          ST_AsPNG(rast, 1) AS png,
+          image.blocks_ring_buffer_id AS blocks_ring_buffer_id
         FROM image`, [x, y, product, date]);
     } else if( types.includes(type)  ) {
       resp = await pg.query(`
@@ -74,7 +76,8 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
           x = $1 AND y = $2 AND product = $3 AND date = $4 
         )
         SELECT 
-          ST_AsPNG(rast, 1) AS png 
+          ST_AsPNG(rast, 1) AS png,
+          image.blocks_ring_buffer_id AS blocks_ring_buffer_id
         FROM thermal_product tp, image
         WHERE tp.blocks_ring_buffer_id = image.blocks_ring_buffer_id AND
         tp.product = $5`, [x, y, product, date, type]);
@@ -94,6 +97,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     res.set('Content-Disposition', `attachment; filename="${name}"`);
     res.set('Content-Type', 'application/png');
     res.set('Content-Length', resp.png.length);
+    res.set('x-blocks-ring-buffer-id', blocks_ring_buffer_id);
     res.set('Cache-control', 'public, max-age=21600')
     res.send(resp.png);
     
