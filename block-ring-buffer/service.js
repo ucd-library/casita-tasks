@@ -113,7 +113,31 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
 
 
 app.get('/_/thermal-anomaly/px-values/:id/:x/:y', async (req, res) => {
-  let resp = await pg.query(`SELECT * FROM get_blocks_px_values(${req.params.id}, ${req.params.x}, ${req.params.y})`);
+  let resp;
+
+  if( req.query.all === 'true' ) {
+    resp = await pg.query(`
+    WITH start AS (
+      SELECT date, x, y, product from blocks_ring_buffer where blocks_ring_buffer_id = $1
+    ),
+    rasters AS (
+      SELECT blocks_ring_buffer.* from blocks_ring_buffer, start 
+      where blocks_ring_buffer.date <= start.date
+      AND blocks_ring_buffer.x = start.x
+      AND blocks_ring_buffer.y = start.y
+      AND blocks_ring_buffer.product = start.product
+    )
+    SELECT 
+      ST_Value(rast, $2, $3) as value,  blocks_ring_buffer_id, date 
+    FROM 
+      rasters;
+  `, [req.params.id, req.params.x, req.params.y]);
+  } else {
+    resp = await pg.query(
+      `SELECT * FROM get_blocks_px_values($1, $2, $3)`,
+      [req.params.id, req.params.x, req.params.y]
+    );
+  }
   res.json(resp.rows);
 });
 
