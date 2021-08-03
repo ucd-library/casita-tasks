@@ -345,3 +345,37 @@ CREATE OR REPLACE FUNCTION get_blocks_px_values (
 
 $$
 LANGUAGE SQL;
+
+CREATE OR REPLACE FUNCTION get_all_blocks_px_values (
+  blocks_ring_buffer_id_in INTEGER,
+  x_in INTEGER,
+  y_in INTEGER
+) RETURNS table (
+  value INTEGER,
+  blocks_ring_buffer_id INTEGER,
+  date TIMESTAMP
+) AS $$
+
+  WITH start AS (
+    SELECT date, x, y, product
+    FROM  blocks_ring_buffer
+    WHERE blocks_ring_buffer_id = blocks_ring_buffer_id_in
+  ),
+  rasters AS (
+    SELECT 
+      blocks_ring_buffer.blocks_ring_buffer_id as blocks_ring_buffer_id,
+      blocks_ring_buffer.rast as rast,
+      blocks_ring_buffer.date as date
+    from blocks_ring_buffer, start 
+    where blocks_ring_buffer.date <= start.date
+    AND blocks_ring_buffer.x = start.x
+    AND blocks_ring_buffer.y = start.y
+    AND blocks_ring_buffer.product = start.product
+  )
+  SELECT 
+    ST_Value(rast, x_in, y_in) as value, blocks_ring_buffer_id, date 
+  FROM 
+    rasters;
+
+$$
+LANGUAGE SQL;
