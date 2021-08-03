@@ -202,24 +202,24 @@ BEGIN
     FROM rasters r, input i
     GROUP BY blocks_ring_buffer_id, expire;
 
-  -- MIN
-  -- WITH input as (
-  --   SELECT * from blocks_ring_buffer where blocks_ring_buffer_id = blocks_ring_buffer_id_in
-  -- ),
-  -- rasters as (
-  --   SELECT rast FROM get_rasters_for_stats(blocks_ring_buffer_id_in) as stats
-  --   LEFT JOIN blocks_ring_buffer ON stats.blocks_ring_buffer_id = blocks_ring_buffer.blocks_ring_buffer_id
-  -- )
-  -- INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
-  --   SELECT 
-  --     i.blocks_ring_buffer_id as blocks_ring_buffer_id,
-  --     'max' as product,
-  --     i.expire as expire,
-  --     ST_Union(r.rast, 'MAX') AS rast
-  --   FROM rasters r, input i
-  --   GROUP BY blocks_ring_buffer_id, expire;
-
   -- MAX
+  WITH input as (
+    SELECT * from blocks_ring_buffer where blocks_ring_buffer_id = blocks_ring_buffer_id_in
+  ),
+  rasters as (
+    SELECT rast FROM get_rasters_for_stats(blocks_ring_buffer_id_in) as stats
+    LEFT JOIN blocks_ring_buffer ON stats.blocks_ring_buffer_id = blocks_ring_buffer.blocks_ring_buffer_id
+  )
+  INSERT INTO thermal_product (blocks_ring_buffer_id, product, expire, rast)
+    SELECT 
+      i.blocks_ring_buffer_id as blocks_ring_buffer_id,
+      'max' as product,
+      i.expire as expire,
+      ST_Union(r.rast, 'MAX') AS rast
+    FROM rasters r, input i
+    GROUP BY blocks_ring_buffer_id, expire;
+
+  -- MIN
   WITH input as (
     SELECT * from blocks_ring_buffer where blocks_ring_buffer_id = blocks_ring_buffer_id_in
   ),
