@@ -95,9 +95,11 @@ class BlockRingBufferWorker extends Worker {
     await pg.query(`drop table ${preloadTable}`);
 
     let priorHourDate = new Date(meta.date.getTime() - 1000 * 60 * 60);
-    await pg.query(`SELECT create_hourly_max('${meta.product}', ${meta.x}, ${meta.y}, '${priorHourDate.toISOString()}')`);
+    resp = await pg.query(`SELECT create_hourly_max('${meta.product}', ${meta.x}, ${meta.y}, '${priorHourDate.toISOString()}') as blocks_ring_buffer_grouped_id`);
 
-    await pg.query(`SELECT create_thermal_grouped_products(${resp.rows[0].blocks_ring_buffer_id});`);
+    if( resp.rows[0].blocks_ring_buffer_grouped_id !== -1) {
+      await pg.query(`SELECT create_thermal_grouped_products(${resp.rows[0].blocks_ring_buffer_grouped_id});`);
+    }
 
     await pg.query(`DELETE from blocks_ring_buffer_grouped where expire <= $1`, [new Date().toISOString()]);
   }

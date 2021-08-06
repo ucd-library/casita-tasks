@@ -354,30 +354,24 @@ BEGIN
     WHERE blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
     AND type = 'amax-max';
 
-  SELECT blocks_ring_buffer_grouped_id INTO min_id 
-    FROM blocks_ring_buffer_grouped
-    WHERE blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
-    AND type = 'amax-min';
-
   SELECT blocks_ring_buffer_grouped_id INTO stddev_id 
     FROM blocks_ring_buffer_grouped
     WHERE blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
     AND type = 'amax-stddev';
 
   IF( average_id IS NOT NULL ) THEN
-    RAISE EXCEPTION 'Average product already exists for blocks_ring_buffer_grouped_id %s', blocks_ring_buffer_grouped_id_in;
+    RAISE WARNING 'Average product already exists for blocks_ring_buffer_grouped_id %s', blocks_ring_buffer_grouped_id_in;
+    RETURN;
   END IF;
 
   IF( max_id IS NOT NULL ) THEN
-    RAISE EXCEPTION 'Max product already exists for blocks_ring_buffer_grouped_id %s', blocks_ring_buffer_grouped_id_in;
-  END IF;
-
-  IF( min_id IS NOT NULL ) THEN
-    RAISE EXCEPTION 'Min product already exists for blocks_ring_buffer_grouped_id %s', blocks_ring_buffer_grouped_id_in;
+    RAISE WARNING 'Max product already exists for blocks_ring_buffer_grouped_id %s', blocks_ring_buffer_grouped_id_in;
+    RETURN;
   END IF;
 
   IF( stddev_id IS NOT NULL ) THEN
-    RAISE EXCEPTION 'Stddev product already exists for blocks_ring_buffer_grouped_id %s', blocks_ring_buffer_grouped_id_in;
+    RAISE WARNING 'Stddev product already exists for blocks_ring_buffer_grouped_id %s', blocks_ring_buffer_grouped_id_in;
+    RETURN;
   END IF; 
 
   -- AVERAGE
@@ -591,7 +585,7 @@ CREATE OR REPLACE FUNCTION create_hourly_max (
   x_in INTEGER,
   y_in INTEGER,
   date_in TIMESTAMP
-) RETURNS void AS $$
+) RETURNS INTEGER AS $$
   DECLARE
     brbgid INTEGER;
   BEGIN
@@ -608,7 +602,7 @@ CREATE OR REPLACE FUNCTION create_hourly_max (
   
   IF( brbgid IS NOT NULL ) THEN
     RAISE WARNING 'Max product already exists for blocks_ring_buffer % % % %', product_in, x_in, y_in, date_in;
-    RETURN;
+    RETURN -1;
   END IF;
 
   WITH rasters AS (
@@ -635,7 +629,19 @@ CREATE OR REPLACE FUNCTION create_hourly_max (
   FROM rasters
   GROUP BY x, y, product, apid, band, satellite;
 
+  SELECT
+    blocks_ring_buffer_grouped_id into brbgid
+  FROM 
+    blocks_ring_buffer_grouped
+  WHERE
+    x = x_in AND y = y_in AND
+    product = product_in AND 
+    date = date_trunc('hour', date_in) AND
+    type = 'max';
+
   RAISE INFO 'Create Max product for blocks_ring_buffer % % % %', product_in, x_in, y_in, date_in;
+
+  RETURN brbgid;
 END;
 $$ LANGUAGE plpgsql;
 
