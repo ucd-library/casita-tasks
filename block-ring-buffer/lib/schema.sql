@@ -354,6 +354,11 @@ BEGIN
     WHERE blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
     AND type = 'amax-max';
 
+  SELECT blocks_ring_buffer_grouped_id INTO max_id 
+    FROM blocks_ring_buffer_grouped
+    WHERE blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
+    AND type = 'amax-min';
+
   SELECT blocks_ring_buffer_grouped_id INTO stddev_id 
     FROM blocks_ring_buffer_grouped
     WHERE blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
@@ -366,6 +371,11 @@ BEGIN
 
   IF( max_id IS NOT NULL ) THEN
     RAISE WARNING 'Max product already exists for blocks_ring_buffer_grouped_id %s', blocks_ring_buffer_grouped_id_in;
+    RETURN;
+  END IF;
+
+  IF( min_id IS NOT NULL ) THEN
+    RAISE WARNING 'Min product already exists for blocks_ring_buffer_grouped_id %s', blocks_ring_buffer_grouped_id_in;
     RETURN;
   END IF;
 
@@ -425,6 +435,31 @@ BEGIN
       'amax-max' as type,
       i.expire as expire,
       ST_Union(r.rast, 'MAX') AS rast
+    FROM rasters r, input i
+    GROUP BY hdate, i.x, i.y, i.satellite, i.product, i.apid, i.band, i.expire;
+
+  -- MIN
+  WITH input as (
+    SELECT *, date_trunc('hour', date) as hdate from blocks_ring_buffer_grouped 
+    where blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in AND
+    type = 'min'
+  ),
+  rasters as (
+    SELECT * FROM get_rasters_for_group_stats(blocks_ring_buffer_grouped_id_in) as stats
+    LEFT JOIN blocks_ring_buffer_grouped ON blocks_ring_buffer_grouped.blocks_ring_buffer_grouped_id = stats.blocks_ring_buffer_grouped_id
+  )
+  INSERT INTO blocks_ring_buffer_grouped (date, x, y, satellite, product, apid, band, type, expire, rast)
+    SELECT 
+      hdate as date,
+      i.x as x,
+      i.y as y,
+      i.satellite as satellite,
+      i.product as product,
+      i.apid as apid,
+      i.band as band,
+      'amax-min' as type,
+      i.expire as expire,
+      ST_Union(r.rast, 'MIN') AS rast
     FROM rasters r, input i
     GROUP BY hdate, i.x, i.y, i.satellite, i.product, i.apid, i.band, i.expire;
 
@@ -625,7 +660,7 @@ CREATE OR REPLACE FUNCTION create_hourly_max (
     x, y, satellite, product, apid, band,
     ST_Union(rast, 'max') as rast, 
     'max' as type,
-    CURRENT_TIMESTAMP as expire
+    (date_in + interval '10 days') as expire
   FROM rasters
   GROUP BY x, y, product, apid, band, satellite;
 
@@ -644,12 +679,3 @@ CREATE OR REPLACE FUNCTION create_hourly_max (
   RETURN brbgid;
 END;
 $$ LANGUAGE plpgsql;
-
-
-with dates as (
-  select date_trunc('hour', date) as date, x, y, product from blocks_ring_buffer
-),
-grouped as (
-select date, x, y, product from dates  group by date,x, y, product order by date
-)
-select count(*) from grouped;
