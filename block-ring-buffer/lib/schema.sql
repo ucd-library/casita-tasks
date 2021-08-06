@@ -160,8 +160,8 @@ CREATE OR REPLACE FUNCTION get_rasters_for_group_stats (
   WITH time_range AS (
     SELECT 
       date, product, band, x, y,
-      extract(hour from date) + 2 as end, 
-      extract(hour from date) - 2 as start
+      extract(hour from date) + 4 as end, 
+      extract(hour from date) as start
     FROM blocks_ring_buffer_grouped WHERE 
       blocks_ring_buffer_grouped_id_in = blocks_ring_buffer_grouped_id
   )
@@ -541,6 +541,52 @@ AS $$
     FROM thermal_product WHERE
       blocks_ring_buffer_id = blocks_ring_buffer_id_in AND
       product = 'stddev'
+  ),
+  avgDiff AS (
+    SELECT 
+      ST_MapAlgebra(a.rast, i.rast, '[rast2.val] - [rast1.val]') as rast
+    FROM avg a, image i	
+  ),
+  stdevRatio AS (
+    SELECT 
+      ST_MapAlgebra(ad.rast, sd.rast, 'FLOOR([rast1.val] / ([rast2.val]*' || stddev_ratio::TEXT || '))') AS v 
+    FROM avgDiff ad, stddev sd	
+  )
+  SELECT 
+    ST_Reclass(v, 1, '1-65535: 1', '8BUI', 0)
+  FROM 
+    stdevRatio
+$$
+LANGUAGE SQL;
+
+
+CREATE OR REPLACE FUNCTION get_grouped_classified_product( blocks_ring_buffer_id_in INTEGER, stddev_ratio INTEGER ) 
+RETURNS RASTER
+AS $$
+
+  WITH image AS (
+    SELECT 
+      rast, x, y, date, product
+    FROM blocks_ring_buffer WHERE 
+      blocks_ring_buffer_id = blocks_ring_buffer_id_in
+  ),
+  avg as (
+    SELECT 
+      br.rast
+    FROM blocks_ring_buffer_grouped br, image WHERE
+      br.x = image.x AND
+      br.y = image.y AND
+      br.product = image.product AND
+      br.type = 'amax-average'
+  ),
+  stddev as (
+    SELECT 
+      br.rast
+    FROM blocks_ring_buffer_grouped br, image WHERE
+      br.x = image.x AND
+      br.y = image.y AND
+      br.product = image.product AND
+      br.type = 'amax-stddev'
   ),
   avgDiff AS (
     SELECT 
