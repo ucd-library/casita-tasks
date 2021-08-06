@@ -6,7 +6,7 @@ pg.connect();
 
 
 app.get('/_/thermal-anomaly/products', async (req, res) => {
-  let resp = await pg.query(`SELECT date, x, y, satellite, product, apid, band, blocks_ring_buffer_id from blocks_ring_buffer`);
+  let resp = await pg.query(`SELECT date, x, y, satellite, product, apid, band, blocks_ring_buffer_grouped_id from blocks_ring_buffer_grouped`);
   res.json(resp.rows);
 });
 
@@ -14,15 +14,14 @@ app.get('/_/thermal-anomaly/latest', async (req, res) => {
   let resp = await pg.query(`
     WITH latest AS (
       SELECT MAX(rb.date) as date, rb.x, rb.y, rb.satellite, rb.product, rb.apid, rb.band 
-      FROM thermal_product tp 
-      LEFT JOIN blocks_ring_buffer rb ON rb.blocks_ring_buffer_id = tp.blocks_ring_buffer_id
+      FROM blocks_ring_buffer_grouped rb
       GROUP BY rb.x, rb.y, rb.satellite, rb.product, rb.apid, rb.band
     )
     SELECT 
       latest.*, 
       rb.blocks_ring_buffer_id,
       '/_/thermal-anomaly/png/' || latest.product || '/' || latest.x || '/' || latest.y || '/' || to_char(latest.date , 'YYYY-MM-DD"T"HH24:MI:SS"') || '/[product]' as data_path
-    FROM latest, blocks_ring_buffer rb
+    FROM latest, blocks_ring_buffer_grouped rb
     WHERE rb.x = latest.x AND rb.y = latest.y AND rb.date = latest.date AND rb.product = latest.product`);
   res.json(resp.rows);
 });
@@ -48,7 +47,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     if( type === 'classified' ) {
       resp = await pg.query(`
         WITH image AS (
-          SELECT blocks_ring_buffer_id FROM blocks_ring_buffer WHERE
+          SELECT blocks_ring_buffer_grouped_id FROM blocks_ring_buffer WHERE
           x = $1 AND y = $2 AND product = $3 AND date = $4 
         ),
         classifed AS (
