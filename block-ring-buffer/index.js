@@ -66,8 +66,12 @@ class BlockRingBufferWorker extends Worker {
     let isoDate = meta.date.toISOString();
     let expire = new Date(meta.date.getTime() + (1000 * 60 * 60 * 24 * BUFFER_SIZE)).toISOString();
     
-  
-    await pg.query(`DELETE from ${TABLE} where expire <= $1`, [new Date().toISOString()]);
+    try {
+      await pg.query(`DELETE from thermal_product where expire <= $1 cascade`, [new Date().toISOString()]);
+    } catch(e) {}
+    try {
+      await pg.query(`DELETE from ${TABLE} where expire <= $1 cascade`, [new Date().toISOString()]);
+    } catch(e) {}
   
     let cmd = `
     with temp as (

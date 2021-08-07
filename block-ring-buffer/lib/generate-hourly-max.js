@@ -17,7 +17,7 @@ const pg = require('./pg');
 
   let r = await pg.query(`select 
   blocks_ring_buffer_grouped_id
-from blocks_ring_buffer_grouped where type = 'max'`);
+from blocks_ring_buffer_grouped where type = 'max' order by date`);
   let rows = r.rows;
 
   for( let row of rows ) {
