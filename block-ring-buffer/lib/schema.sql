@@ -577,7 +577,7 @@ AS $$
       br.x = image.x AND
       br.y = image.y AND
       br.product = image.product AND
-      br.type = 'amax-average'
+      br.type = 'amax-max'
   ),
   stddev as (
     SELECT 
