@@ -1,7 +1,7 @@
 const {Client} = require('pg');
 const path = require('path');
 const fs = require('fs');
-// const {logger} = require('@ucd-lib/krm-node-utils');
+const {logger} = require('@ucd-lib/krm-node-utils');
 
 
 class PG {
@@ -15,7 +15,7 @@ class PG {
     });
 
     this.client.on('end', () => {
-      // logger.info('Disconnected from postgresql');
+      logger.info('Disconnected from postgresql');
       this.connected = false;
     });
   }
@@ -28,7 +28,7 @@ class PG {
     } else {
       this.connecting = this.client.connect();
       await this.connecting;
-      // logger.info('Connected from postgresql');
+      logger.info('Connected from postgresql');
       this.connecting = null;
       this.connected = true;
     }
