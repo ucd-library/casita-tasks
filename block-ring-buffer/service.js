@@ -26,7 +26,7 @@ app.get('/_/thermal-anomaly/latest', async (req, res) => {
   res.json(resp.rows);
 });
 
-let types = ['average', 'min', 'max', 'stddev', 'raw']
+let types = ['amax-average', 'amax-max', 'amax-min', 'average', 'min', 'max', 'stddev', 'raw']
 app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) => {
   try {
     let product = req.params.product;
@@ -126,6 +126,24 @@ app.get('/_/thermal-anomaly/px-values/:id/:x/:y', async (req, res) => {
 
   res.json(resp.rows);
 });
+
+// app.get('/_/thermal-anomaly/px-values/grouped/:id/:x/:y', async (req, res) => {
+//   let resp;
+
+//   if( req.query.all === 'true' ) {
+//     resp = await pg.query(
+//       `SELECT * FROM get_all_blocks_px_values($1, $2, $3)`, 
+//       [req.params.id, req.params.x, req.params.y]
+//     );
+//   } else {
+//     resp = await pg.query(
+//       `SELECT * FROM get_blocks_px_values($1, $2, $3)`,
+//       [req.params.id, req.params.x, req.params.y]
+//     );
+//   }
+
+//   res.json(resp.rows);
+// });
 
 
 app.listen(3000, () => console.log('ring-buffer-service listening on port 3000'));
