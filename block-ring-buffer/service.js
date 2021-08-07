@@ -75,7 +75,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
         ),
         image AS (
           SELECT blocks_ring_buffer_grouped_id, rast FROM blocks_ring_buffer_grouped, input_hack WHERE
-          x = $1 AND y = $2 AND product = $3 AND date = date_trunc('hour', input_hack.date) AND type = $5
+          x = $1 AND y = $2 AND product = $3 AND blocks_ring_buffer_grouped.date = date_trunc('hour', input_hack.date) AND type = $5
         )
         SELECT 
           ST_AsPNG(rast, 1) AS png,
