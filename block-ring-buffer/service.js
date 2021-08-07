@@ -55,7 +55,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
         )
         SELECT 
           ST_AsPNG(rast, 1) AS png,
-          image.blocks_ring_buffer_id AS blocks_ring_buffer_id
+          image.blocks_ring_buffer_grouped_id AS blocks_ring_buffer_grouped_id
         FROM classifed, image
         `, [x, y, product, date, ratio]);
     } else if( type === 'raw' ) {
@@ -71,15 +71,13 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     } else if( types.includes(type)  ) {
       resp = await pg.query(`
         WITH image AS (
-          SELECT blocks_ring_buffer_id FROM blocks_ring_buffer WHERE
-          x = $1 AND y = $2 AND product = $3 AND date = $4 
+          SELECT blocks_ring_buffer_grouped_id, rast FROM blocks_ring_buffer_grouped WHERE
+          x = $1 AND y = $2 AND product = $3 AND date = $4 AND type = $5
         )
         SELECT 
           ST_AsPNG(rast, 1) AS png,
-          image.blocks_ring_buffer_id AS blocks_ring_buffer_id
-        FROM thermal_product tp, image
-        WHERE tp.blocks_ring_buffer_id = image.blocks_ring_buffer_id AND
-        tp.product = $5`, [x, y, product, date, type]);
+          image.blocks_ring_buffer_grouped_id AS blocks_ring_buffer_grouped_id
+        FROM image`, [x, y, product, date, type]);
     } else {
       throw new Error(`Unknown type provided '${type}', should be: classified, average, min, max or raw`);
     }
