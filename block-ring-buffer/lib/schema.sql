@@ -342,26 +342,44 @@ DECLARE
   min_id INTEGER;
   stddev_id INTEGER;
   rasters INTEGER;
+  x_in INTEGER;
+  y_in INTEGER;
+  product_in TEXT;
+  date_in TIMESTAMP;
 BEGIN
+
+  SELECT 
+    br.x, br.y, br.product, br.date INTO x_in, y_in, product_in, date_in
+    FROM blocks_ring_buffer_grouped br
+    WHERE br.blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
+    AND type = 'max';
 
   SELECT blocks_ring_buffer_grouped_id INTO average_id 
     FROM blocks_ring_buffer_grouped
-    WHERE blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
+    WHERE 
+    x = x_in AND y = y_in AND product = product_in 
+    AND date = date_in
     AND type = 'amax-average';
 
   SELECT blocks_ring_buffer_grouped_id INTO max_id 
     FROM blocks_ring_buffer_grouped
-    WHERE blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
+    WHERE
+    x = x_in AND y = y_in AND product = product_in 
+    AND date = date_in
     AND type = 'amax-max';
 
   SELECT blocks_ring_buffer_grouped_id INTO max_id 
     FROM blocks_ring_buffer_grouped
-    WHERE blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
+    WHERE
+    x = x_in AND y = y_in AND product = product_in 
+    AND date = date_in
     AND type = 'amax-min';
 
   SELECT blocks_ring_buffer_grouped_id INTO stddev_id 
     FROM blocks_ring_buffer_grouped
-    WHERE blocks_ring_buffer_grouped_id = blocks_ring_buffer_grouped_id_in
+    WHERE
+    x = x_in AND y = y_in AND product = product_in 
+    AND date = date_in
     AND type = 'amax-stddev';
 
   IF( average_id IS NOT NULL ) THEN

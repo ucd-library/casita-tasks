@@ -51,7 +51,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
           x = $1 AND y = $2 AND product = $3 AND date = $4 
         ),
         classifed AS (
-          SELECT get_thermal_classified_product(image.blocks_ring_buffer_id, $5) as rast from image
+          SELECT get_grouped_classified_product(image.blocks_ring_buffer_id, $5) as rast from image
         )
         SELECT 
           ST_AsPNG(rast, 1) AS png,
