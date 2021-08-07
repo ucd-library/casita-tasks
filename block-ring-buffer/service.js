@@ -6,15 +6,15 @@ pg.connect();
 
 
 app.get('/_/thermal-anomaly/products', async (req, res) => {
-  let resp = await pg.query(`SELECT date, x, y, satellite, product, apid, band, blocks_ring_buffer_grouped_id from blocks_ring_buffer_grouped`);
+  let resp = await pg.query(`SELECT date, x, y, satellite, product, apid, band, blocks_ring_buffer_id from blocks_ring_buffer`);
   res.json(resp.rows);
 });
 
 app.get('/_/thermal-anomaly/latest', async (req, res) => {
   let resp = await pg.query(`
     WITH latest AS (
-      SELECT MAX(rb.date) as date, rb.x, rb.y, rb.satellite, rb.product, rb.apid, rb.band 
-      FROM blocks_ring_buffer_grouped rb
+      SELECT MAX(rb.date) as date, rb.x, rb.y, rb.satellite, rb.product, rb.apid, rb.band
+      FROM blocks_ring_buffer rb
       GROUP BY rb.x, rb.y, rb.satellite, rb.product, rb.apid, rb.band
     )
     SELECT 
@@ -47,7 +47,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     if( type === 'classified' ) {
       resp = await pg.query(`
         WITH image AS (
-          SELECT blocks_ring_buffer_grouped_id FROM blocks_ring_buffer WHERE
+          SELECT blocks_ring_buffer_id FROM blocks_ring_buffer WHERE
           x = $1 AND y = $2 AND product = $3 AND date = $4 
         ),
         classifed AS (
@@ -55,7 +55,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
         )
         SELECT 
           ST_AsPNG(rast, 1) AS png,
-          image.blocks_ring_buffer_grouped_id AS blocks_ring_buffer_grouped_id
+          image.blocks_ring_buffer_id AS blocks_ring_buffer_id
         FROM classifed, image
         `, [x, y, product, date, ratio]);
     } else if( type === 'raw' ) {
@@ -72,7 +72,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
       resp = await pg.query(`
         WITH image AS (
           SELECT blocks_ring_buffer_grouped_id, rast FROM blocks_ring_buffer_grouped WHERE
-          x = $1 AND y = $2 AND product = $3 AND date = $4 AND type = $5
+          x = $1 AND y = $2 AND product = $3 AND date = date_trunc('hour', $4) AND type = $5
         )
         SELECT 
           ST_AsPNG(rast, 1) AS png,
