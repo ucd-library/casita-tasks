@@ -160,8 +160,8 @@ CREATE OR REPLACE FUNCTION get_rasters_for_group_stats (
   WITH time_range AS (
     SELECT 
       date, product, band, x, y,
-      extract(hour from date) + 4 as end, 
-      extract(hour from date) as start
+      extract(hour from date) + 2 as end, 
+      extract(hour from date) - 2 as start
     FROM blocks_ring_buffer_grouped WHERE 
       blocks_ring_buffer_grouped_id_in = blocks_ring_buffer_grouped_id
   )
