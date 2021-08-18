@@ -1,6 +1,9 @@
 const express = require('express')
 const app = express();
 const pg = require('./lib/pg');
+const cors = require('cors');
+
+app.use(cors());
 
 pg.connect();
 
@@ -14,19 +17,19 @@ app.get('/_/thermal-anomaly/latest', async (req, res) => {
   let resp = await pg.query(`
     WITH latest AS (
       SELECT MAX(rb.date) as date, rb.x, rb.y, rb.satellite, rb.product, rb.apid, rb.band
-      FROM blocks_ring_buffer rb
+      FROM blocks_ring_buffer_grouped rb
       GROUP BY rb.x, rb.y, rb.satellite, rb.product, rb.apid, rb.band
     )
     SELECT 
       latest.*, 
-      rb.blocks_ring_buffer_id,
+      rb.blocks_ring_buffer_grouped_id,
       '/_/thermal-anomaly/png/' || latest.product || '/' || latest.x || '/' || latest.y || '/' || to_char(latest.date , 'YYYY-MM-DD"T"HH24:MI:SS"') || '/[product]' as data_path
     FROM latest, blocks_ring_buffer_grouped rb
     WHERE rb.x = latest.x AND rb.y = latest.y AND rb.date = latest.date AND rb.product = latest.product`);
   res.json(resp.rows);
 });
 
-let types = ['amax-average', 'amax-max', 'amax-min', 'average', 'min', 'max', 'stddev', 'raw']
+let types = ['amax-average','amax-stddev',  'amax-max', 'amax-min', 'average', 'min', 'max', 'stddev', 'raw']
 app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) => {
   try {
     let product = req.params.product;
@@ -70,12 +73,9 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
         FROM image`, [x, y, product, date]);
     } else if( types.includes(type)  ) {
       resp = await pg.query(`
-        WITH input_hack AS (
-          select $4 as date
-        ),
-        image AS (
-          SELECT blocks_ring_buffer_grouped_id, rast FROM blocks_ring_buffer_grouped, input_hack WHERE
-          x = $1 AND y = $2 AND product = $3 AND blocks_ring_buffer_grouped.date = date_trunc('hour', input_hack.date) AND type = $5
+        WITH image AS (
+          SELECT blocks_ring_buffer_grouped_id, rast FROM blocks_ring_buffer_grouped WHERE
+          x = $1 AND y = $2 AND product = $3 AND date = date_trunc('hour', $4::timestamp) AND type = $5
         )
         SELECT 
           ST_AsPNG(rast, 1) AS png,

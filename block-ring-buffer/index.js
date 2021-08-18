@@ -19,7 +19,11 @@ class BlockRingBufferWorker extends Worker {
 
   async ensureSchema() {
     await pg.connect();
-    let schema = fs.readFileSync(path.join(__dirname, 'lib', 'schema.sql'), 'utf-8');
+
+    let schema = fs.readFileSync(path.join(__dirname, 'lib', 'sql', 'schema.sql'), 'utf-8');
+    await pg.query(schema);
+
+    schema = fs.readFileSync(path.join(__dirname, 'lib', 'sql', 'grouped-schema.sql'), 'utf-8');
     await pg.query(schema);
   }
 
