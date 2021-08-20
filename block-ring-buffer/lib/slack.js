@@ -1,24 +1,13 @@
 const { IncomingWebhook } = require('@slack/webhook');
-const { CloudBuildClient } = require('@google-cloud/cloudbuild');
 const {SecretManagerServiceClient} = require('@google-cloud/secret-manager');
-const { Storage } = require('@google-cloud/storage');
-const fetch = require('node-fetch');
 
-const url = process.env.SLACK_WEBHOOK_URL;
-const webhook = new IncomingWebhook(url);
+let webhook;
 const secretClient = new SecretManagerServiceClient();
 const SECRET_NAME = 'slack-goesr-thermal-event-webook';
 
 // subscribeSlack is the main function called by Cloud Functions.
-module.exports = async sendMessage(data) => {
-  const msg = createSlackMessage(data);
-  const metadata = await getBuildInformation(build);
-
-
-  // Send message to Slack.
-  const message = createSlackMessage(build, metadata);
-  await webhook.send(message);
-
+async function sendMessage(data) {
+  await webhook.send(createSlackMessage(data));
 };
 
 async function loadLatestSecret(name) {
@@ -29,19 +18,18 @@ async function loadLatestSecret(name) {
 }
 
 // createSlackMessage creates a message from a build object.
-const createSlackMessage = (build, metadata) => {
-
+const createSlackMessage = (data) => {
  return {
-    text: `${title}Build ${build.id} - ${build.status}
-${substitutions}${imagesText}`,
+    text: `️‍🔥 New Thermal Event - ${JSON.stringify(data)}`,
     mrkdwn: true,
-    attachments: [
-      {
-        title: 'Build logs',
-        title_link: build.logUrl,
-        fields: []
-      }
-    ]
+    attachments: []
   };
-  return message;
 }
+
+(async function() {
+  let url = process.env.SLACK_WEBHOOK_URL;
+  if( !url ) url = await loadLatestSecret(SECRET_NAME);
+  webhook = new IncomingWebhook(url);
+})();
+
+module.exports = sendMessage;

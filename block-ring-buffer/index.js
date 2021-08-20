@@ -6,6 +6,7 @@ const uuid = require('uuid');
 const pg = require('./lib/pg');
 const exec = require('./lib/exec');
 const EventDetection = require('./lib/detection');
+const sendSlackMessage = require('./lib/slack');
 const PRELOAD_TABLE_PREFIX = 'raster';
 const BUFFER_SIZE = 10; // in days
 const TABLE = 'public.blocks_ring_buffer';
@@ -112,7 +113,15 @@ class BlockRingBufferWorker extends Worker {
       await pg.query(`SELECT create_thermal_grouped_products(${resp.rows[0].blocks_ring_buffer_grouped_id});`);
     }
 
-    this.detection.addClassifiedPixels(blocks_ring_buffer_id);
+    try {
+      let eventSet = await this.detection.addClassifiedPixels(blocks_ring_buffer_id);
+      let newEvents = Array.from(eventSet.new);
+      for( let data of newEvents ) {
+        await sendSlackMessage(data);
+      }
+    } catch(e) {
+      console.error(e);
+    }
 
     await pg.query(`DELETE from blocks_ring_buffer_grouped where expire <= $1`, [new Date().toISOString()]);
   }

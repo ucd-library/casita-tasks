@@ -96,6 +96,8 @@ class EventDetection {
         console.error(e);
       }
     }
+
+    return eventSet;
   }
 
   async findActiveEvents(info) {
