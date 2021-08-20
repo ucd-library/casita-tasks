@@ -117,7 +117,7 @@ class EventDetection {
 
     await this.addToActiveThermalEvent(resp.rows, id, info);
 
-    return resp.rows[0].thermal_event_id;
+    return resp.rows[0];
   }
 
   async addToActiveThermalEvent(events, id, info) {
@@ -136,7 +136,7 @@ class EventDetection {
       ${info.pixel.x}, ${info.pixel.y}, ${value}
     )`);
 
-    return event.thermal_event_id;
+    return event;
   }
 
   async getValue(id, x, y) {
