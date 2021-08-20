@@ -5,6 +5,7 @@ const {config, logger} = require('@ucd-lib/krm-node-utils');
 const uuid = require('uuid');
 const pg = require('./lib/pg');
 const exec = require('./lib/exec');
+const EventDetection = require('./lib/detection');
 const PRELOAD_TABLE_PREFIX = 'raster';
 const BUFFER_SIZE = 10; // in days
 const TABLE = 'public.blocks_ring_buffer';
@@ -15,6 +16,7 @@ class BlockRingBufferWorker extends Worker {
   constructor() {
     super();
     this.ensureSchema();
+    this.detection = new EventDetection();
   }
 
   async ensureSchema() {
@@ -70,9 +72,9 @@ class BlockRingBufferWorker extends Worker {
     let isoDate = meta.date.toISOString();
     let expire = new Date(meta.date.getTime() + (1000 * 60 * 60 * 24 * BUFFER_SIZE)).toISOString();
     
-    try {
-      await pg.query(`DELETE from thermal_product where expire <= $1 cascade`, [new Date().toISOString()]);
-    } catch(e) {}
+    // try {
+    //   await pg.query(`DELETE from thermal_product where expire <= $1 cascade`, [new Date().toISOString()]);
+    // } catch(e) {}
     try {
       await pg.query(`DELETE from ${TABLE} where expire <= $1 cascade`, [new Date().toISOString()]);
     } catch(e) {}
@@ -101,6 +103,7 @@ class BlockRingBufferWorker extends Worker {
   
     let resp = await pg.query(cmd);
     await pg.query(`drop table ${preloadTable}`);
+    let blocks_ring_buffer_id = resp.rows[0].blocks_ring_buffer_id;
 
     let priorHourDate = new Date(meta.date.getTime() - 1000 * 60 * 60);
     resp = await pg.query(`SELECT create_hourly_max('${meta.product}', ${meta.x}, ${meta.y}, '${priorHourDate.toISOString()}') as blocks_ring_buffer_grouped_id`);
@@ -108,6 +111,8 @@ class BlockRingBufferWorker extends Worker {
     if( resp.rows[0].blocks_ring_buffer_grouped_id !== -1) {
       await pg.query(`SELECT create_thermal_grouped_products(${resp.rows[0].blocks_ring_buffer_grouped_id});`);
     }
+
+    this.detection.addClassifiedPixels(blocks_ring_buffer_id);
 
     await pg.query(`DELETE from blocks_ring_buffer_grouped where expire <= $1`, [new Date().toISOString()]);
   }
