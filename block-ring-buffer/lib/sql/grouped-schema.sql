@@ -290,7 +290,7 @@ AS $$
   ),
   stdevRatio AS (
     SELECT 
-      ST_MapAlgebra(ad.rast, sd.rast, 'FLOOR([rast1.val] / GREATEST(([rast2.val]*' || stddev_ratio::TEXT || '), 1))') AS v 
+      ST_MapAlgebra(ad.rast, sd.rast, 'FLOOR([rast1.val] / GREATEST(( LEAST([rast2.val], 500) *' || stddev_ratio::TEXT || '), 1))') AS v 
     FROM avgDiff ad, stddev sd	
   )
   SELECT 
