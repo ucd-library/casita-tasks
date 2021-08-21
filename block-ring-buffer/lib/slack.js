@@ -1,8 +1,14 @@
 const { IncomingWebhook } = require('@slack/webhook');
 const {SecretManagerServiceClient} = require('@google-cloud/secret-manager');
+const fs = require('fs');
+
+let gConfig = {};
+if( fs.existsSync('/etc/google/service-account.json') ) {
+  gConfig.keyFilename = '/etc/google/service-account.json';
+}
 
 let webhook;
-const secretClient = new SecretManagerServiceClient();
+const secretClient = new SecretManagerServiceClient(gConfig);
 const SECRET_NAME = 'slack-goesr-thermal-event-webook';
 
 // subscribeSlack is the main function called by Cloud Functions.
