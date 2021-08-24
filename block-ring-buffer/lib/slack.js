@@ -26,7 +26,8 @@ async function loadLatestSecret(name) {
 // createSlackMessage creates a message from a build object.
 const createSlackMessage = (data) => {
  return {
-    text: `️‍🔥 New Thermal Event - ${JSON.stringify(data)}`,
+    text: `️‍🔥 New Thermal Event - ${JSON.stringify(data)} - 
+    https://data.casita.library.ucdavis.edu/_/thermal-anomaly/kml/data?thermal_event_id=${data.thermal_event_id}`,
     mrkdwn: true,
     attachments: []
   };

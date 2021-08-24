@@ -2,6 +2,7 @@ const express = require('express')
 const app = express();
 const pg = require('./lib/pg');
 const cors = require('cors');
+const kml = require('./lib/kml');
 
 app.use(cors());
 
@@ -129,6 +130,27 @@ app.get('/_/thermal-anomaly/px-values/:id/:x/:y', async (req, res) => {
 
   res.json(resp.rows);
 });
+
+app.get('/_/thermal-anomaly/kml/data', async (req, res) => {
+  let where = '';
+  let params = [];
+  let nameExtra = ' - '+req.query.thermal_event_id;
+
+  if( req.query.thermal_event_id ) {
+    where = 'where thermal_event_id = $1';
+    params.push(req.query.thermal_event_id);
+  }
+
+  let resp = await pg.query(
+    `SELECT * FROM thermal_event_px ${where}`,
+    params
+  );
+
+  res.set('content-type', 'application/vnd.google-earth.kml+xml');
+  res.set('Content-Disposition', `attachment; filename="thermal-events${nameExtra}.kml"`);
+  res.send(kml(resp.rows));
+});
+
 
 // app.get('/_/thermal-anomaly/px-values/grouped/:id/:x/:y', async (req, res) => {
 //   let resp;
