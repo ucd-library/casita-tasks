@@ -134,11 +134,12 @@ app.get('/_/thermal-anomaly/px-values/:id/:x/:y', async (req, res) => {
 app.get('/_/thermal-anomaly/kml/data', async (req, res) => {
   let where = '';
   let params = [];
-  let nameExtra = ' - '+req.query.thermal_event_id;
+  let nameExtra = '';
 
   if( req.query.thermal_event_id ) {
     where = 'where thermal_event_id = $1';
     params.push(req.query.thermal_event_id);
+    nameExtra = '-'+req.query.thermal_event_id;
   }
 
   let resp = await pg.query(
@@ -150,6 +151,34 @@ app.get('/_/thermal-anomaly/kml/data', async (req, res) => {
   res.set('Content-Disposition', `attachment; filename="thermal-events${nameExtra}.kml"`);
   res.send(kml(resp.rows));
 });
+
+app.get('/_/thermal-anomaly/kml/network', async (req, res) => {
+  let param = '';
+  let nameExtra = '-'+req.query.thermal_event_id;
+
+  if( req.query.thermal_event_id ) {
+    params.push(req.query.thermal_event_id);
+    nameExtra = '-'+req.query.thermal_event_id;
+    param = '?thermal_event_id='+req.query.thermal_event_id;
+  }
+
+  res.set('content-type', 'application/vnd.google-earth.kml+xml');
+  res.set('Content-Disposition', `attachment; filename="thermal-events${nameExtra}.kml"`);
+  res.send(`<?xml version="1.0" encoding="UTF-8"?> 
+  <kml xmlns="http://earth.google.com/kml/2.0"> <Document>
+  
+  <NetworkLink> 
+    <Url>
+      <href>https://data.casita.library.ucdavis.edu/_/thermal-anomaly/kml/data${param}</href>
+    </Url> 
+    <refreshMode>onInterval</refreshMode> 
+    <refreshInterval>600</refreshInterval> 
+  </NetworkLink>
+  
+  </Document> </kml>`);
+});
+
+
 
 
 // app.get('/_/thermal-anomaly/px-values/grouped/:id/:x/:y', async (req, res) => {
