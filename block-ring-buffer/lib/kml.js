@@ -2,13 +2,13 @@ const project = require('./project');
 const HOUR = 1000 * 60 * 60;
 
 const COLOR_RAMP = {
-  1000 : '0000ff',
-  1500 : '005dff',
-  2000 : '00a6ff',
-  2500 : '00d7fe',
-  3000 : '00fffe',
-  4000 : '87ffff',
-  5000 : 'ffffff'
+  2000 : '0000ff',
+  3000 : '005dff',
+  4000 : '00a6ff',
+  5000 : '00d7fe',
+  6000 : '00fffe',
+  7000 : '87ffff',
+  8000 : 'ffffff'
 }
 
 module.exports = function(points, opts) {
