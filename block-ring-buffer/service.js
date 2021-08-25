@@ -154,10 +154,10 @@ app.get('/_/thermal-anomaly/kml/data', async (req, res) => {
 
 app.get('/_/thermal-anomaly/kml/network', async (req, res) => {
   let param = '';
-  let nameExtra = '-'+req.query.thermal_event_id;
+  let nameExtra = '';
 
   if( req.query.thermal_event_id ) {
-    nameExtra = '-'+req.query.thermal_event_id;
+    nameExtra = '-network-'+req.query.thermal_event_id;
     param = '?thermal_event_id='+req.query.thermal_event_id;
   }
 
