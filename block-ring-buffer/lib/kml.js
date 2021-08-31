@@ -57,10 +57,10 @@ function header(title='GOES-R Thermal Detection') {
 }
 
 function point(point) {
-  let tl = project(point.world_x, point.world_y+1);
-  let tr = project(point.world_x+1, point.world_y+1);
-  let br = project(point.world_x+1, point.world_y+2);
-  let bl = project(point.world_x, point.world_y+2);
+  let tl = project(point.world_x, point.world_y);
+  let tr = project(point.world_x+1, point.world_y);
+  let br = project(point.world_x+1, point.world_y+1);
+  let bl = project(point.world_x, point.world_y+1);
 
   let ele = Math.floor(point.value);
 
