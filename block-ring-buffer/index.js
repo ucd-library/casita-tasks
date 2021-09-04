@@ -124,6 +124,7 @@ class BlockRingBufferWorker extends Worker {
     }
 
     await pg.query(`DELETE from blocks_ring_buffer_grouped where expire <= $1`, [new Date().toISOString()]);
+    await pg.query(`DELETE from blocks_ring_buffer where expire <= $1`, [new Date().toISOString()]);
   }
 }
 
