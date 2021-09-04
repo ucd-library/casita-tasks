@@ -114,6 +114,24 @@ class BlockRingBufferWorker extends Worker {
     }
 
     try {
+      // expire old thermal events
+      await pg.query(`with active_events as (
+        select * from thermal_event where active = true
+      ),
+      last_event as (
+        select max(px.date) as max, px.thermal_event_id 
+        from thermal_event_px px
+        right join active_events ae on ae.thermal_event_id = px.thermal_event_id
+        group by px.thermal_event_id
+      ),
+      expired as (
+        select max, thermal_event_id from last_event where max <= NOW() - INTERVAL '7 DAY'
+      )
+      update thermal_event set active = false 
+      FROM expired 
+      WHERE expired.thermal_event_id = thermal_event.thermal_event_id`);
+      
+
       let eventSet = await this.detection.addClassifiedPixels(blocks_ring_buffer_id);
       let newEvents = Array.from(eventSet.new);
       for (let data of newEvents) {
@@ -131,3 +149,5 @@ class BlockRingBufferWorker extends Worker {
 let worker = new BlockRingBufferWorker();
 worker.connect();
 // module.exports = worker;
+
+
