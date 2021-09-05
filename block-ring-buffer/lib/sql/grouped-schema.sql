@@ -45,6 +45,31 @@ CREATE OR REPLACE FUNCTION get_rasters_for_group_stats (
 $$
 LANGUAGE SQL;
 
+CREATE OR REPLACE FUNCTION get_all_grouped_px_values (
+  product_in TEXT,
+  block_x_in INTEGER,
+  block_y_in INTEGER,
+  type_in TEXT,
+  px_x_in INTEGER,
+  px_y_in INTEGER
+) RETURNS table (
+  value INTEGER,
+  blocks_ring_buffer_grouped_id INTEGER,
+  date TIMESTAMP
+) AS $$
+
+  SELECT 
+    ST_Value(rast, px_x_in, px_y_in) as value,
+    blocks_ring_buffer_grouped_id,
+    date
+  FROM blocks_ring_buffer_grouped 
+  WHERE x = block_x_in AND y = block_y_in
+  AND product = product_in AND type = type_in
+  ORDER BY date;
+
+$$
+LANGUAGE SQL;
+
 
 CREATE OR REPLACE FUNCTION create_thermal_grouped_products ( 
   blocks_ring_buffer_grouped_id_in INTEGER

@@ -113,20 +113,14 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
 });
 
 
-app.get('/_/thermal-anomaly/px-values/:id/:x/:y', async (req, res) => {
+app.get('/_/thermal-anomaly/px-values/:product/:blockx/:blocky/:type/:pxx/:pxy', async (req, res) => {
   let resp;
 
-  if( req.query.all === 'true' ) {
-    resp = await pg.query(
-      `SELECT * FROM get_all_blocks_px_values($1, $2, $3)`, 
-      [req.params.id, req.params.x, req.params.y]
-    );
-  } else {
-    resp = await pg.query(
-      `SELECT * FROM get_blocks_px_values($1, $2, $3)`,
-      [req.params.id, req.params.x, req.params.y]
-    );
-  }
+  resp = await pg.query(
+    `SELECT * FROM get_all_grouped_px_values($1, $2, $3, $4, $5, $6)`, 
+    [req.params.product, req.params.blockx, req.params.blocky, 
+      req.params.type, req.params.pxx, req.params.pxy]
+  );
 
   res.json(resp.rows);
 });
