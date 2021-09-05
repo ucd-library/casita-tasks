@@ -49,7 +49,7 @@ class EventDetection {
     this.groupRadius = 5;
   }
 
-  async addClassifiedPixels(id, classifier=3) {
+  async addClassifiedPixels(id, classifier=4) {
     let resp = await pg.query(
       `select * from ST_PixelOfValue(get_grouped_classified_product($1, $2), 1);`,
       [id, classifier]
