@@ -38,6 +38,7 @@ CREATE OR REPLACE FUNCTION get_rasters_for_group_stats (
     rb.x = time_range.x AND 
     rb.y = time_range.y AND 
     rb.product = time_range.product AND 
+    type = 'max' AND
     date_trunc('day', rb.date) != date_trunc('day', time_range.date) AND
     extract(hour from rb.date) >= time_range.start AND
     extract(hour from rb.date) <= time_range.end AND
