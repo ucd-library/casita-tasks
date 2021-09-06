@@ -170,7 +170,7 @@ class EventDetection {
           ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING thermal_event_px_product_id`,
           [
             row.date, info.satellite, info.product, type, info.apid, info.band,
-            info.block.x, info.block.y, info.pixel.x, info.pixel.y, value
+            info.block.x, info.block.y, info.pixel.x, info.pixel.y, row.value
           ]);
         } catch(e) {
           console.error(e);
