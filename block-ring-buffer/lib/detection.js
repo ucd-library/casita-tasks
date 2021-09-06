@@ -185,7 +185,7 @@ class EventDetection {
       }
 
       try {
-        await pg.query(`INSERT INFO thermal_event_px_history
+        await pg.query(`INSERT INTO thermal_event_px_history
         (thermal_event_px_id, thermal_event_px_product_id) VALUES
         ($1, $2)`, [thermal_event_px_id, existsResp.rows[0].thermal_event_px_product_id])
       } catch(e) {
