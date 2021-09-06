@@ -160,16 +160,23 @@ class EventDetection {
       let existsResp = await pg.query(`SELECT * from thermal_event_px_product where
       date = $1 AND satellite = $2 AND band = $3 AND product = $4 AND block_x = $5 
       AND block_y = $6 AND type = $7 AND pixel_x = $8 AND pixel_y = $9`,
-      [row.date, info.satellite, info.band, info.product, info.block.x, info.block.y,
+      [row.date.toISOString(), info.satellite, info.band, info.product, info.block.x, info.block.y,
         type, info.pixel.x, info.pixel.y]);
 
       if( !existsResp.rows.length ) {
         try {
+          console.log(`INSERT INTO thermal_event_px_product 
+            (date, satellite, product, type, apid, band, block_x, block_y, pixel_x, pixel_y, value) VALUES
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING thermal_event_px_product_id`,
+            [
+              row.date.toISOString(), info.satellite, info.product, type, info.apid, info.band,
+              info.block.x, info.block.y, info.pixel.x, info.pixel.y, row.value
+            ], row);
           existsResp = await pg.query(`INSERT INTO thermal_event_px_product 
           (date, satellite, product, type, apid, band, block_x, block_y, pixel_x, pixel_y, value) VALUES
           ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING thermal_event_px_product_id`,
           [
-            row.date, info.satellite, info.product, type, info.apid, info.band,
+            row.date.toISOString(), info.satellite, info.product, type, info.apid, info.band,
             info.block.x, info.block.y, info.pixel.x, info.pixel.y, row.value
           ]);
         } catch(e) {
