@@ -159,7 +159,7 @@ class EventDetection {
     for( let row in resp.rows ) {
       let existsResp = await pg.query(`SELECT * from thermal_event_px_product where
       date = $1 AND satellite = $2 AND band = $3 AND product = $4 AND block_x = $5 
-      AND block_y = $6 AND type $7 AND pixel_x = $8 AND pixel_y = $9`,
+      AND block_y = $6 AND type = $7 AND pixel_x = $8 AND pixel_y = $9`,
       [row.date, info.satellite, info.band, info.product, info.block.x, info.block.y,
         type, info.pixel.x, info.pixel.y]);
 
