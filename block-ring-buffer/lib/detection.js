@@ -165,13 +165,6 @@ class EventDetection {
 
       if( !existsResp.rows.length ) {
         try {
-          console.log(`INSERT INTO thermal_event_px_product 
-            (date, satellite, product, type, apid, band, block_x, block_y, pixel_x, pixel_y, value) VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING thermal_event_px_product_id`,
-            [
-              row.date.toISOString(), info.satellite, info.product, type, info.apid, info.band,
-              info.block.x, info.block.y, info.pixel.x, info.pixel.y, row.value
-            ], row);
           existsResp = await pg.query(`INSERT INTO thermal_event_px_product 
           (date, satellite, product, type, apid, band, block_x, block_y, pixel_x, pixel_y, value) VALUES
           ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING thermal_event_px_product_id`,

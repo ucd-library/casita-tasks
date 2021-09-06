@@ -70,8 +70,12 @@ CREATE INDEX IF NOT EXISTS thermal_event_px_product_y_idx ON thermal_event_px_pr
 CREATE TABLE IF NOT EXISTS thermal_event_px_history (
   thermal_event_px_history_id SERIAL PRIMARY KEY,
   thermal_event_px_id INTEGER REFERENCES thermal_event_px NOT NULL,
-  thermal_event_px_product_id INTEGER REFERENCES thermal_event_px_product NOT NULL
+  thermal_event_px_product_id INTEGER REFERENCES thermal_event_px_product NOT NULL,
   UNIQUE(thermal_event_px_id, thermal_event_px_product_id)
 );
 CREATE INDEX IF NOT EXISTS thermal_event_px_history_px_id_idx ON thermal_event_px_history (thermal_event_px_id);
 CREATE INDEX IF NOT EXISTS thermal_event_px_history_product_id_idx ON thermal_event_px_history (thermal_event_px_product_id);
+
+CREATE OR REPLACE VIEW thermal_event_history AS
+  SELECT h.thermal_event_px_id, p.* FROM thermal_event_px_history h
+  LEFT JOIN thermal_event_px_product p ON p.thermal_event_px_product_id = h.thermal_event_px_product_id;
