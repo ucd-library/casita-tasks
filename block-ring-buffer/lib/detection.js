@@ -47,6 +47,7 @@ class EventDetection {
 
   constructor() {
     this.groupRadius = 5;
+    this.historyTypes = ['amax-average', 'amax-stddev', 'max'];
   }
 
   async addClassifiedPixels(id, classifier=4) {
@@ -127,16 +128,63 @@ class EventDetection {
 
     console.log('Adding thermal pixel for', event, info);
 
-    await pg.query(`INSERT INTO thermal_event_px (
+    let resp = await pg.query(`INSERT INTO thermal_event_px (
       thermal_event_id, date, satellite, product, apid, band,
       world_x, world_y, block_x, block_y, pixel_x, pixel_y, value
     ) VALUES (
       ${event.thermal_event_id}, '${info.date.toISOString()}', '${info.satellite}', '${info.product}',
       '${info.apid}', ${info.band}, ${info.world.x}, ${info.world.y}, ${info.block.x}, ${info.block.y},
       ${info.pixel.x}, ${info.pixel.y}, ${value}
-    )`);
+    ) RETURNING thermal_event_px_id`);
+
+    // now check add pixels used;
+    for( let type of this.historyTypes ) {
+      try {
+        await this.addPxHistory(resp.rows[0].thermal_event_px_id, info, type);
+      } catch(e) {
+        console.error(e);
+      }
+    }
 
     return event;
+  }
+
+  async addPxHistory(thermal_event_px_id, info, type) {
+    let resp = await pg.query(
+      `SELECT * FROM get_all_grouped_px_values($1, $2, $3, $4, $5, $6)`, 
+      [info.product, info.block.x, info.block.y, 
+        type, info.pixel.x, info.pixel.y]
+    );
+
+    for( let row in resp.rows ) {
+      let existsResp = await pg.query(`SELECT * from thermal_event_px_product where
+      date = $1 AND satellite = $2 AND band = $3 AND product = $4 AND block_x = $5 
+      AND block_y = $6 AND type $7 AND pixel_x = $8 AND pixel_y = $9`,
+      [row.date, info.satellite, info.band, info.product, info.block.x, info.block.y,
+        type, info.pixel.x, info.pixel.y]);
+
+      if( !existsResp.rows.length ) {
+        try {
+          existsResp = await pg.query(`INSERT INTO thermal_event_px_product 
+          (date, satellite, product, type, apid, band, block_x, block_y, pixel_x, pixel_y, value) VALUES
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING thermal_event_px_product_id`,
+          [
+            row.date, info.satellite, info.product, type, info.apid, info.band,
+            info.block.x, info.block.y, info.pixel.x, info.pixel.y, value
+          ]);
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      try {
+        await pg.query(`INSERT INFO thermal_event_px_history
+        (thermal_event_px_id, thermal_event_px_product_id) VALUES
+        ($1, $2)`, [thermal_event_px_id, existsResp.rows[0].thermal_event_px_product_id])
+      } catch(e) {
+        console.error(e);
+      }
+    }
   }
 
   async getValue(id, x, y) {
