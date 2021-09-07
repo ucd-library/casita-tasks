@@ -125,6 +125,47 @@ app.get('/_/thermal-anomaly/px-values/:product/:blockx/:blocky/:type/:pxx/:pxy',
   res.json(resp.rows);
 });
 
+app.get('/_/thermal-anomaly/thermal-event-px/:id', async (req, res) => {
+  let data = {};
+
+  let resp = await pg.query(`select * from thermal_event_px where thermal_event_px_id = $1;`, [req.params.id])
+  if( !resp.rows.length ) {
+    return res.status(500, {error: true, message: 'unknown thermal_event_px_id: '+req.params.id});
+  }
+  data.pixel = resp.rows[0];
+
+  resp = await pg.query(
+    `select * from thermal_event_history where thermal_event_px_id = $1;`, 
+    [req.params.id]
+  );
+
+  if( resp.rows.length ) {
+    data.results = resp.rows;
+    data.historical = true;
+  } else {
+    data.results = [];
+    data.historical = false;
+    let historyTypes = ['amax-average', 'amax-stddev', 'max'];
+    for( let type of historyTypes ) {
+      resp = await pg.query(
+        `SELECT * FROM get_all_grouped_px_values($1, $2, $3, $4, $5, $6)`, 
+        [data.pixel.product, data.pixel.block.x, data.pixel.block.y, 
+          type, data.pixel.pixel.x, data.pixel.pixel.y]
+      );
+      data.results = [...data.results, ...resp.rows];
+    }
+  }
+
+  let tmp = {};
+  data.results.forEach(item => {
+    if( !tmp[item.date.toISOString()] ) tmp[item.date.toISOString()] = {date: item.date.toISOString()};
+    tmp[item.date.toISOString()][item.type] = item.value;
+  });
+  data.data = Object.values(tmp);
+
+  res.json(data);
+});
+
 app.get('/_/thermal-anomaly/kml/data', async (req, res) => {
   let where = '';
   let params = [];
