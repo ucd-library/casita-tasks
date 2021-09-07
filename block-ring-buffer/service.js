@@ -162,6 +162,7 @@ app.get('/_/thermal-anomaly/thermal-event-px/:id', async (req, res) => {
     tmp[item.date.toISOString()][item.type] = item.value;
   });
   data.data = Object.values(tmp);
+  delete data.results;
 
   res.json(data);
 });
