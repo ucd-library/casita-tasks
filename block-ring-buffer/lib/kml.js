@@ -112,6 +112,9 @@ function point(point) {
     <Data name="Thermal Event Pixel ID">
       <value>${point.thermal_event_px_id}</value>
     </Data>
+    <Data name="Thermal Event Pixel Chart">
+      <value>https://casita-thermal-px-chart-akwemh35fa-uc.a.run.app/thermal-event-px/${point.thermal_event_px_id}</value>
+    </Data>
   </ExtendedData>
   <Style>
     <PolyStyle>
