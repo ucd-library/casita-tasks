@@ -129,10 +129,12 @@ class EventDetection {
     console.log('Adding thermal pixel for', event, info);
 
     let resp = await pg.query(`INSERT INTO thermal_event_px (
-      thermal_event_id, date, satellite, product, apid, band,
+      thermal_event_id, goesr_raster_block_id, date, satellite, product, apid, band,
       world_x, world_y, block_x, block_y, pixel_x, pixel_y, value
     ) VALUES (
-      ${event.thermal_event_id}, '${info.date.toISOString()}', '${info.satellite}', '${info.product}',
+      ${event.thermal_event_id}, 
+      get_block_product_id('${info.satellite}', '${info.product}', ${info.band}, ${info.block.x}, ${info.block.y}),
+      '${info.date.toISOString()}', '${info.satellite}', '${info.product}',
       '${info.apid}', ${info.band}, ${info.world.x}, ${info.world.y}, ${info.block.x}, ${info.block.y},
       ${info.pixel.x}, ${info.pixel.y}, ${value}
     ) RETURNING thermal_event_px_id`);

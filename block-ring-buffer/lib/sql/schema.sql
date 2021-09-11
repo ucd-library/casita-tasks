@@ -17,6 +17,44 @@ CREATE INDEX IF NOT EXISTS blocks_ring_buffer_date_idx ON blocks_ring_buffer (da
 CREATE INDEX IF NOT EXISTS blocks_ring_buffer_product_idx ON blocks_ring_buffer (product);
 CREATE INDEX IF NOT EXISTS blocks_ring_buffer_rast_idx  ON blocks_ring_buffer USING GIST (ST_ConvexHull(rast));
 
+CREATE TABLE IF NOT EXISTS goesr_raster_block (
+  goesr_raster_block_id SERIAL PRIMARY KEY,
+  x INTEGER NOT NULL,
+  y INTEGER NOT NULL,
+  satellite TEXT NOT NULL,
+  product TEXT NOT NULL,
+  apid TEXT NOT NULL,
+  band INTEGER NOT NULL,
+  UNIQUE(x, y, satellite, product, apid, band)
+);
+CREATE INDEX IF NOT EXISTS goesr_raster_block_product_idx ON goesr_raster_block (product);
+CREATE INDEX IF NOT EXISTS goesr_raster_block_x_idx ON goesr_raster_block (x);
+CREATE INDEX IF NOT EXISTS goesr_raster_block_y_idx ON goesr_raster_block (y);
+
+CREATE OR REPLACE FUNCTION get_block_product_id (
+  satellite_in TEXT, product_in TEXT, band_in INTEGER, x_in INTEGER, y_in INTEGER
+) RETURNS INTEGER AS $$ 
+DECLARE
+  grbid INTEGER;
+BEGIN
+
+  SELECT goesr_raster_block_id INTO grbid
+  WHERE satellite = satellite_in AND product = product_in AND
+  band = band_in and x = x_in and y = y_in;
+
+  IF ( grbid IS NULL ) THEN
+    INSERT INTO goesr_raster_block_id( satellite, product, band, x, y)
+    VALUES (satellite_in, product_in, band_in, x_in, y_in);
+
+    SELECT goesr_raster_block_id INTO grbid
+    WHERE satellite = satellite_in AND product = product_in AND
+    band = band_in and x = x_in and y = y_in;
+  END IF;
+
+  RETURN grbid;
+END;
+$$ LANGUAGE plpgsql;
+
 -- access by px
 CREATE OR REPLACE FUNCTION get_blocks_px_values (
   blocks_ring_buffer_id_in INTEGER,
