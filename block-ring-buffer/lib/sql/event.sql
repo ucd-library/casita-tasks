@@ -12,18 +12,11 @@ CREATE TABLE IF NOT EXISTS thermal_event_px (
   thermal_event_id INTEGER REFERENCES thermal_event NOT NULL,
   goesr_raster_block_id INTEGER REFERENCES goesr_raster_block,
   date timestamp NOT NULL,
-  satellite TEXT NOT NULL,
-  product TEXT NOT NULL,
-  apid TEXT NOT NULL,
-  band INTEGER NOT NULL,
   world_x INTEGER NOT NULL,
   world_y INTEGER NOT NULL,
-  block_x INTEGER NOT NULL,
-  block_y INTEGER NOT NULL,
   pixel_x INTEGER NOT NULL,
   pixel_y INTEGER NOT NULL,
   value INTEGER NOT NULL,
-  goesr_raster_block INTEGER REFERENCES goesr_raster_block
   UNIQUE(thermal_event_id, date, world_x, world_y)
 );
 CREATE INDEX IF NOT EXISTS thermal_event_px_id_idx ON thermal_event_px (thermal_event_id);
@@ -34,10 +27,10 @@ CREATE OR REPLACE VIEW active_thermal_events AS
   SELECT
     te.thermal_event_id,
     te.created,
-    tep.satellite,
-    tep.product,
-    tep.apid,
-    tep.band,
+    b.satellite,
+    b.product,
+    b.apid,
+    b.band,
     te.active,
     tep.world_x,
     tep.world_y,
@@ -45,18 +38,14 @@ CREATE OR REPLACE VIEW active_thermal_events AS
     tep.date
   FROM thermal_event te 
   LEFT JOIN thermal_event_px tep ON te.thermal_event_id = tep.thermal_event_id
+  LEFT JOIN goesr_raster_block b ON tep.goesr_raster_block_id = b.goesr_raster_block_id
   WHERE te.active = true;
 
 CREATE TABLE IF NOT EXISTS thermal_event_px_product (
   thermal_event_px_product_id SERIAL PRIMARY KEY,
+  goesr_raster_block_id INTEGER REFERENCES goesr_raster_block,
   date timestamp NOT NULL,
-  satellite TEXT NOT NULL,
-  product TEXT NOT NULL,
   type TEXT NOT NULL,
-  apid TEXT NOT NULL,
-  band INTEGER NOT NULL,
-  block_x INTEGER NOT NULL,
-  block_y INTEGER NOT NULL,
   pixel_x INTEGER NOT NULL,
   pixel_y INTEGER NOT NULL,
   value INTEGER NOT NULL,
@@ -64,9 +53,6 @@ CREATE TABLE IF NOT EXISTS thermal_event_px_product (
 );
 CREATE INDEX IF NOT EXISTS thermal_event_px_product_id_idx ON thermal_event_px_product (thermal_event_px_product_id);
 CREATE INDEX IF NOT EXISTS thermal_event_px_product_type_idx ON thermal_event_px_product (date);
-CREATE INDEX IF NOT EXISTS thermal_event_px_product_product_idx ON thermal_event_px_product (product);
-CREATE INDEX IF NOT EXISTS thermal_event_px_product_x_idx ON thermal_event_px_product (block_x);
-CREATE INDEX IF NOT EXISTS thermal_event_px_product_y_idx ON thermal_event_px_product (block_y);
 
 CREATE TABLE IF NOT EXISTS thermal_event_px_history (
   thermal_event_px_history_id SERIAL PRIMARY KEY,

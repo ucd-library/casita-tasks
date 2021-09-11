@@ -129,13 +129,12 @@ class EventDetection {
     console.log('Adding thermal pixel for', event, info);
 
     let resp = await pg.query(`INSERT INTO thermal_event_px (
-      thermal_event_id, goesr_raster_block_id, date, satellite, product, apid, band,
-      world_x, world_y, block_x, block_y, pixel_x, pixel_y, value
+      thermal_event_id, goesr_raster_block_id, date, 
+      world_x, world_y, pixel_x, pixel_y, value
     ) VALUES (
       ${event.thermal_event_id}, 
       get_block_product_id('${info.satellite}', '${info.product}', ${info.band}, ${info.block.x}, ${info.block.y}),
-      '${info.date.toISOString()}', '${info.satellite}', '${info.product}',
-      '${info.apid}', ${info.band}, ${info.world.x}, ${info.world.y}, ${info.block.x}, ${info.block.y},
+      '${info.date.toISOString()}', ${info.world.x}, ${info.world.y},
       ${info.pixel.x}, ${info.pixel.y}, ${value}
     ) RETURNING thermal_event_px_id`);
 
@@ -160,19 +159,21 @@ class EventDetection {
 
     for( let row of resp.rows ) {
       let existsResp = await pg.query(`SELECT * from thermal_event_px_product where
-      date = $1 AND satellite = $2 AND band = $3 AND product = $4 AND block_x = $5 
-      AND block_y = $6 AND type = $7 AND pixel_x = $8 AND pixel_y = $9`,
+      date = $1 AND 
+      goesr_raster_block_id = get_block_product_id($2, $4, $3, $5, $6)
+      AND type = $7 AND pixel_x = $8 AND pixel_y = $9`,
       [row.date.toISOString(), info.satellite, info.band, info.product, info.block.x, info.block.y,
         type, info.pixel.x, info.pixel.y]);
 
       if( !existsResp.rows.length ) {
         try {
           existsResp = await pg.query(`INSERT INTO thermal_event_px_product 
-          (date, satellite, product, type, apid, band, block_x, block_y, pixel_x, pixel_y, value) VALUES
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING thermal_event_px_product_id`,
+          (date, goesr_raster_block_id, type, pixel_x, pixel_y, value) VALUES
+          ($1, get_block_product_id($2, $3, $4, $5, $6), $7, $8, $9, $10) RETURNING thermal_event_px_product_id`,
           [
-            row.date.toISOString(), info.satellite, info.product, type, info.apid, info.band,
-            info.block.x, info.block.y, info.pixel.x, info.pixel.y, row.value
+            row.date.toISOString(), 
+            info.satellite, info.product, info.band, info.block.x, info.block.y,
+            type, info.pixel.x, info.pixel.y, row.value
           ]);
         } catch(e) {
           console.error(e);

@@ -39,14 +39,16 @@ DECLARE
 BEGIN
 
   SELECT goesr_raster_block_id INTO grbid
+  FROM goesr_raster_block
   WHERE satellite = satellite_in AND product = product_in AND
   band = band_in and x = x_in and y = y_in;
 
   IF ( grbid IS NULL ) THEN
-    INSERT INTO goesr_raster_block_id( satellite, product, band, x, y)
+    INSERT INTO goesr_raster_block ( satellite, product, band, x, y)
     VALUES (satellite_in, product_in, band_in, x_in, y_in);
 
     SELECT goesr_raster_block_id INTO grbid
+    FROM goesr_raster_block
     WHERE satellite = satellite_in AND product = product_in AND
     band = band_in and x = x_in and y = y_in;
   END IF;
