@@ -152,8 +152,8 @@ app.get('/_/thermal-anomaly/thermal-event-px/:id', async (req, res) => {
     for (let type of historyTypes) {
       resp = await pg.query(
         `SELECT * FROM get_all_grouped_px_values($1, $2, $3, $4, $5, $6)`,
-        [data.pixel.product, data.pixel.block.x, data.pixel.block.y,
-          type, data.pixel.pixel.x, data.pixel.pixel.y]
+        [data.pixel.product, data.pixel.block_x, data.pixel.block_y,
+          type, data.pixel.pixel_x, data.pixel.pixel_y]
       );
       data.results = [...data.results, ...resp.rows];
     }
