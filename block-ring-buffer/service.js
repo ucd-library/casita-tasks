@@ -179,7 +179,7 @@ app.get('/_/thermal-anomaly/kml/data', async (req, res) => {
   }
 
   let resp = await pg.query(
-    `SELECT px.*, b.satellite, b.product, b.apid, b.band, b.x as band_x, b.y as band_y FROM thermal_event_px px, goesr_raster_block b 
+    `SELECT px.*, b.satellite, b.product, b.apid, b.band, b.x as block_x, b.y as block_y FROM thermal_event_px px, goesr_raster_block b 
     where b.goesr_raster_block_id = px.goesr_raster_block_id ${where}`,
     params
   );
