@@ -30,7 +30,7 @@ app.get('/_/thermal-anomaly/latest', async (req, res) => {
   res.json(resp.rows);
 });
 
-let types = ['amax-average','amax-stddev',  'amax-max', 'amax-min', 'average', 'min', 'max', 'stddev', 'raw']
+let types = ['amax-average', 'amax-stddev', 'amax-max', 'amax-min', 'average', 'min', 'max', 'stddev', 'raw']
 app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) => {
   try {
     let product = req.params.product;
@@ -48,7 +48,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     // }
 
     let resp;
-    if( type === 'classified' ) {
+    if (type === 'classified') {
       resp = await pg.query(`
         WITH image AS (
           SELECT blocks_ring_buffer_id FROM blocks_ring_buffer WHERE
@@ -62,7 +62,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
           image.blocks_ring_buffer_id AS blocks_ring_buffer_id
         FROM classifed, image
         `, [x, y, product, date, ratio]);
-    } else if( type === 'raw' ) {
+    } else if (type === 'raw') {
       resp = await pg.query(`
         WITH image AS (
           SELECT rast, blocks_ring_buffer_id FROM blocks_ring_buffer WHERE
@@ -72,7 +72,7 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
           ST_AsPNG(rast, 1) AS png,
           image.blocks_ring_buffer_id AS blocks_ring_buffer_id
         FROM image`, [x, y, product, date]);
-    } else if( types.includes(type)  ) {
+    } else if (types.includes(type)) {
       resp = await pg.query(`
         WITH image AS (
           SELECT blocks_ring_buffer_grouped_id, rast FROM blocks_ring_buffer_grouped WHERE
@@ -86,14 +86,14 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
       throw new Error(`Unknown type provided '${type}', should be: classified, average, min, max or raw`);
     }
 
-    if( !resp.rows.length ) {
+    if (!resp.rows.length) {
       throw new Error(`Unable to find: x=${x} y=${y} product=${product} type="${type}`);
     }
 
     resp = resp.rows[0];
 
     date = new Date(date).toISOString().replace(/(:)+/g, '-').replace(/\..*/, '');
-    let name = type+'-'+product+'-'+x+'-'+y+'-'+date+'.png';
+    let name = type + '-' + product + '-' + x + '-' + y + '-' + date + '.png';
 
     res.set('Content-Disposition', `attachment; filename="${name}"`);
     res.set('Content-Type', 'application/png');
@@ -101,13 +101,13 @@ app.get('/_/thermal-anomaly/png/:product/:x/:y/:date/:type', async (req, res) =>
     res.set('x-blocks-ring-buffer-id', resp.blocks_ring_buffer_id);
     res.set('Cache-control', 'public, max-age=21600')
     res.send(resp.png);
-    
 
-  } catch(e) {
+
+  } catch (e) {
     res.status(500).json({
-      error : true,
-      message : e.message,
-      stack : e.stack
+      error: true,
+      message: e.message,
+      stack: e.stack
     });
   }
 });
@@ -117,9 +117,9 @@ app.get('/_/thermal-anomaly/px-values/:product/:blockx/:blocky/:type/:pxx/:pxy',
   let resp;
 
   resp = await pg.query(
-    `SELECT * FROM get_all_grouped_px_values($1, $2, $3, $4, $5, $6)`, 
-    [req.params.product, req.params.blockx, req.params.blocky, 
-      req.params.type, req.params.pxx, req.params.pxy]
+    `SELECT * FROM get_all_grouped_px_values($1, $2, $3, $4, $5, $6)`,
+    [req.params.product, req.params.blockx, req.params.blocky,
+    req.params.type, req.params.pxx, req.params.pxy]
   );
 
   res.json(resp.rows);
@@ -129,27 +129,27 @@ app.get('/_/thermal-anomaly/thermal-event-px/:id', async (req, res) => {
   let data = {};
 
   let resp = await pg.query(`select * from thermal_event_px where thermal_event_px_id = $1;`, [req.params.id])
-  if( !resp.rows.length ) {
-    return res.status(500, {error: true, message: 'unknown thermal_event_px_id: '+req.params.id});
+  if (!resp.rows.length) {
+    return res.status(500, { error: true, message: 'unknown thermal_event_px_id: ' + req.params.id });
   }
   data.pixel = resp.rows[0];
 
   resp = await pg.query(
-    `select * from thermal_event_history where thermal_event_px_id = $1;`, 
+    `select * from thermal_event_history where thermal_event_px_id = $1;`,
     [req.params.id]
   );
 
-  if( resp.rows.length ) {
+  if (resp.rows.length) {
     data.results = resp.rows;
     data.historical = true;
   } else {
     data.results = [];
     data.historical = false;
     let historyTypes = ['amax-average', 'amax-stddev', 'max'];
-    for( let type of historyTypes ) {
+    for (let type of historyTypes) {
       resp = await pg.query(
-        `SELECT * FROM get_all_grouped_px_values($1, $2, $3, $4, $5, $6)`, 
-        [data.pixel.product, data.pixel.block.x, data.pixel.block.y, 
+        `SELECT * FROM get_all_grouped_px_values($1, $2, $3, $4, $5, $6)`,
+        [data.pixel.product, data.pixel.block.x, data.pixel.block.y,
           type, data.pixel.pixel.x, data.pixel.pixel.y]
       );
       data.results = [...data.results, ...resp.rows];
@@ -158,7 +158,7 @@ app.get('/_/thermal-anomaly/thermal-event-px/:id', async (req, res) => {
 
   let tmp = {};
   data.results.forEach(item => {
-    if( !tmp[item.date.toISOString()] ) tmp[item.date.toISOString()] = {date: item.date.toISOString()};
+    if (!tmp[item.date.toISOString()]) tmp[item.date.toISOString()] = { date: item.date.toISOString() };
     tmp[item.date.toISOString()][item.type] = item.value;
   });
   data.data = Object.values(tmp);
@@ -172,14 +172,15 @@ app.get('/_/thermal-anomaly/kml/data', async (req, res) => {
   let params = [];
   let nameExtra = '';
 
-  if( req.query.thermal_event_id ) {
-    where = 'where thermal_event_id = $1';
+  if (req.query.thermal_event_id) {
+    where = 'AND thermal_event_id = $1';
     params.push(req.query.thermal_event_id);
-    nameExtra = '-'+req.query.thermal_event_id;
+    nameExtra = '-' + req.query.thermal_event_id;
   }
 
   let resp = await pg.query(
-    `SELECT * FROM thermal_event_px ${where}`,
+    `SELECT px.*, b.satellite, b.product, b.apid, b.band, b.x as band_x, b.y as band_y FROM thermal_event_px px, goesr_raster_block b 
+    where b.goesr_raster_block_id = px.goesr_raster_block_id ${where}`,
     params
   );
 
@@ -192,9 +193,9 @@ app.get('/_/thermal-anomaly/kml/network', async (req, res) => {
   let param = '';
   let nameExtra = '';
 
-  if( req.query.thermal_event_id ) {
-    nameExtra = '-network-'+req.query.thermal_event_id;
-    param = '?thermal_event_id='+req.query.thermal_event_id;
+  if (req.query.thermal_event_id) {
+    nameExtra = '-network-' + req.query.thermal_event_id;
+    param = '?thermal_event_id=' + req.query.thermal_event_id;
   }
 
   res.set('content-type', 'application/vnd.google-earth.kml+xml');
