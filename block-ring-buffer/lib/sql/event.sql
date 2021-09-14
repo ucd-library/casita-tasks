@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS thermal_event_px_history (
 -- CREATE INDEX IF NOT EXISTS thermal_event_px_history_product_id_idx ON thermal_event_px_history (thermal_event_px_product_id);
 
 CREATE OR REPLACE VIEW thermal_event_history AS
-  SELECT h.thermal_event_px_id, p.thermal_event_px_product_id, p.date, p.pixel_x, p.pixel_y, p.value,
+  SELECT h.thermal_event_px_id, p.thermal_event_px_product_id, p.type, p.date, p.pixel_x, p.pixel_y, p.value,
   b.satellite, b.apid, b.product, b.band, b.x as block_x, b.y as block_y FROM thermal_event_px_history h
   LEFT JOIN thermal_event_px_product p ON p.thermal_event_px_product_id = h.thermal_event_px_product_id
   LEFT JOIN goesr_raster_block b ON p.goesr_raster_block_id = b.goesr_raster_block_id;

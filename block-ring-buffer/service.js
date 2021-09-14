@@ -128,7 +128,7 @@ app.get('/_/thermal-anomaly/px-values/:product/:blockx/:blocky/:type/:pxx/:pxy',
 app.get('/_/thermal-anomaly/thermal-event-px/:id', async (req, res) => {
   let data = {};
 
-  let resp = await pg.query(`select px.*, b.satellite, b.product, b.band, b.x as block_x, b.y as block_y from thermal_event_px px
+  let resp = await pg.query(`select px.*, b.satellite, b.apid, b.product, b.band, b.x as block_x, b.y as block_y from thermal_event_px px
     left join goesr_raster_block b on b.goesr_raster_block_id = px.goesr_raster_block_id
     where thermal_event_px_id = $1
   `, [req.params.id])
