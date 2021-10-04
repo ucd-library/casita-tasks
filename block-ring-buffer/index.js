@@ -106,14 +106,18 @@ class BlockRingBufferWorker extends Worker {
     resp = await pg.query(cmd);
     logger.info(resp);
 
-    await pg.query(`drop table ${preloadTable}`);
-    let blocks_ring_buffer_id = resp.rows[0].blocks_ring_buffer_id;
+    try {
+      await pg.query(`drop table ${preloadTable}`);
+      let blocks_ring_buffer_id = resp.rows[0].blocks_ring_buffer_id;
 
-    let priorHourDate = new Date(meta.date.getTime() - 1000 * 60 * 60);
-    resp = await pg.query(`SELECT create_hourly_max('${meta.product}', ${meta.x}, ${meta.y}, '${priorHourDate.toISOString()}') as blocks_ring_buffer_grouped_id`);
+      let priorHourDate = new Date(meta.date.getTime() - 1000 * 60 * 60);
+      resp = await pg.query(`SELECT create_hourly_max('${meta.product}', ${meta.x}, ${meta.y}, '${priorHourDate.toISOString()}') as blocks_ring_buffer_grouped_id`);
 
-    if (resp.rows[0].blocks_ring_buffer_grouped_id !== -1) {
-      await pg.query(`SELECT create_thermal_grouped_products(${resp.rows[0].blocks_ring_buffer_grouped_id});`);
+      if (resp.rows[0].blocks_ring_buffer_grouped_id !== -1) {
+        await pg.query(`SELECT create_thermal_grouped_products(${resp.rows[0].blocks_ring_buffer_grouped_id});`);
+      }
+    } catch(e) {
+      logger.error(e);
     }
 
     try {
