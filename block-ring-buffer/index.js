@@ -68,7 +68,8 @@ class BlockRingBufferWorker extends Worker {
 
     logger.info(`Inserting ${file} into ${preloadTable}`);
     let { stdout } = await exec(`raster2pgsql ${file} ${preloadTable}`);
-    await pg.query(stdout);
+    let resp = await pg.query(stdout);
+    logger.info(resp);
 
     let isoDate = meta.date.toISOString();
     let expire = new Date(meta.date.getTime() + (1000 * 60 * 60 * 24 * BUFFER_SIZE)).toISOString();
@@ -102,7 +103,9 @@ class BlockRingBufferWorker extends Worker {
       limit 1
       RETURNING blocks_ring_buffer_id`;
 
-    let resp = await pg.query(cmd);
+    resp = await pg.query(cmd);
+    logger.info(resp);
+
     await pg.query(`drop table ${preloadTable}`);
     let blocks_ring_buffer_id = resp.rows[0].blocks_ring_buffer_id;
 
