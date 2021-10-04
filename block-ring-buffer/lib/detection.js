@@ -1,4 +1,5 @@
 const pg = require('./pg');
+const { logger } = require('@ucd-lib/krm-node-utils');
 
 // const {Client} = require('pg');
 // class PG {
@@ -55,7 +56,7 @@ class EventDetection {
       `select * from ST_PixelOfValue(get_grouped_classified_product($1, $2), 1);`,
       [id, classifier]
     );
-    console.log('  resp - ',  id, classifier, resp.rows);
+    logger.info('  resp - ',  id, classifier, resp.rows);
 
     // todo get type
     let presp = await pg.query(`SELECT product, x, y, date, satellite, band, apid FROM blocks_ring_buffer where blocks_ring_buffer_id = ${id}`);
@@ -111,7 +112,7 @@ class EventDetection {
   }
 
   async addCreateThermalEvent(id, info) {
-    console.log('Creating thermal event for', id, info);
+    logger.info('Creating thermal event for', id, info);
 
     let resp = await pg.query(`INSERT INTO thermal_event (created)
     VALUES ('${info.date.toISOString()}') RETURNING thermal_event_id`);
@@ -126,7 +127,7 @@ class EventDetection {
     let event = Array.isArray(events) ? events[0] : events;
     let value = await this.getValue(id, info.pixel.x, info.pixel.y);
 
-    console.log('Adding thermal pixel for', event, info);
+    logger.info('Adding thermal pixel for', event, info);
 
     let resp = await pg.query(`INSERT INTO thermal_event_px (
       thermal_event_id, goesr_raster_block_id, date, 
@@ -206,7 +207,7 @@ module.exports = EventDetection;
 
 //   let resp = await pg.query(`select date, x, y, product, apid, band, satellite, blocks_ring_buffer_id from blocks_ring_buffer where date > '2021-08-19 12:00:00' order by date;`);
 //   for( let row of resp.rows ) {
-//     console.log('Checking', row);
+//     logger.info('Checking', row);
 //     await worker.addClassifiedPixels(row.blocks_ring_buffer_id);
 //   }
 // })();
