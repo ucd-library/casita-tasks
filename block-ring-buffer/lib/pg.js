@@ -17,6 +17,7 @@ class PG {
     this.client.on('end', () => {
       logger.info('Disconnected from postgresql');
       this.connected = false;
+      this.connect();
     });
   }
 
