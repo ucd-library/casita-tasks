@@ -17,6 +17,7 @@ class PG {
     this.client.on('end', () => {
       logger.info('Disconnected from postgresql');
       this.connected = false;
+      this.connecting = null;
       this.connect();
     });
   }
@@ -27,9 +28,10 @@ class PG {
     if( this.connecting ) {
       await this.connecting;
     } else {
+      logger.info('Connecting to postgresql');
       this.connecting = this.client.connect();
       await this.connecting;
-      logger.info('Connected from postgresql');
+      logger.info('Connected to postgresql');
       this.connecting = null;
       this.connected = true;
     }
