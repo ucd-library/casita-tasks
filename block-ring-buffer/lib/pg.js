@@ -14,11 +14,11 @@ class PG {
       database : process.env.PG_DATABASE || 'casita'
     });
 
-    this.client.on('end', () => {
+    this.client.on('end', async () => {
       logger.info('Postgresql client end event');
       await this.reconnect();
     });
-    this.client.on('error', () => {
+    this.client.on('error', async e => {
       logger.info('Postgresql client error event', e);
       await this.reconnect();
     });
