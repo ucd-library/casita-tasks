@@ -15,11 +15,26 @@ class PG {
     });
 
     this.client.on('end', () => {
-      logger.info('Disconnected from postgresql');
-      this.connected = false;
-      this.connecting = null;
-      this.connect();
+      logger.info('Postgresql client end event');
+      await this.reconnect();
     });
+    this.client.on('error', () => {
+      logger.info('Postgresql client error event', e);
+      await this.reconnect();
+    });
+  }
+
+  async reconnect() {
+    try { 
+      await this.disconnect();
+    } catch(e) { 
+      logger.error('disconnect failed in reconnect()', e)
+    }
+    try { 
+      await this.connect();
+    } catch(e) { 
+      logger.error('connect failed in reconnect()', e)
+    }
   }
 
   async connect() {
@@ -38,9 +53,9 @@ class PG {
   }
 
   async disconnect() {
-    if( !this.connected ) return;
     await this.client.disconnect();
     this.connected = false;
+    this.connecting = null;
   }
 
   async query(query, params) {
