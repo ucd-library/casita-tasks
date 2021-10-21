@@ -1,4 +1,4 @@
-const {Client} = require('pg');
+const {Client, Pool} = require('pg');
 const path = require('path');
 const fs = require('fs');
 const {logger} = require('@ucd-lib/krm-node-utils');
@@ -7,7 +7,7 @@ const {logger} = require('@ucd-lib/krm-node-utils');
 class PG {
 
   constructor() {
-    this.client = new Client({
+    this.client = new Pool({
       host : process.env.PG_HOST || 'postgres',
       user : process.env.PG_USERNAME || 'postgres',
       port : process.env.PG_PORT || 5432,
@@ -16,26 +16,26 @@ class PG {
 
     this.client.on('end', async () => {
       logger.info('Postgresql client end event');
-      await this.reconnect();
+      // await this.reconnect();
     });
     this.client.on('error', async e => {
       logger.info('Postgresql client error event', e);
-      await this.reconnect();
+      // await this.reconnect();
     });
   }
 
-  async reconnect() {
-    try { 
-      await this.disconnect();
-    } catch(e) { 
-      logger.error('disconnect failed in reconnect()', e)
-    }
-    try { 
-      await this.connect();
-    } catch(e) { 
-      logger.error('connect failed in reconnect()', e)
-    }
-  }
+  // async reconnect() {
+  //   try { 
+  //     await this.disconnect();
+  //   } catch(e) { 
+  //     logger.error('disconnect failed in reconnect()', e)
+  //   }
+  //   try { 
+  //     await this.connect();
+  //   } catch(e) { 
+  //     logger.error('connect failed in reconnect()', e)
+  //   }
+  // }
 
   async connect() {
     if( this.connected ) return;
@@ -52,11 +52,11 @@ class PG {
     }
   }
 
-  async disconnect() {
-    await this.client.end();
-    this.connected = false;
-    this.connecting = null;
-  }
+  // async disconnect() {
+  //   await this.client.end();
+  //   this.connected = false;
+  //   this.connecting = null;
+  // }
 
   async query(query, params) {
     await this.connect();
