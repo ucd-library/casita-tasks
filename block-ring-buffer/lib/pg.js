@@ -53,7 +53,7 @@ class PG {
   }
 
   async disconnect() {
-    await this.client.disconnect();
+    await this.client.end();
     this.connected = false;
     this.connecting = null;
   }
