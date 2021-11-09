@@ -4,6 +4,11 @@ const pg = require('./lib/pg');
 const cors = require('cors');
 const kml = require('./lib/kml');
 
+process.on('unhandledRejection', e => {
+  console.error('unhandledRejection, killing process shortly', e);
+  setTimeout(() => process.exit(-1), 50);
+});
+
 app.use(cors());
 
 pg.connect();
