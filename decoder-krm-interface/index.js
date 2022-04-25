@@ -6,7 +6,7 @@ const FormData = require('form-data');
 const path = require('path');
 const cp = require('child_process');
 const {apidUtils} = require('@ucd-lib/goes-r-packet-decoder');
-const {logger, bus, StartSubjectModel} = require('@ucd-lib/krm-node-utils');
+const {logger, bus, Monitor, StartSubjectModel} = require('@ucd-lib/krm-node-utils');
 const config = require('./config');
 const kafka = bus.kafka;
 
@@ -15,6 +15,35 @@ let model = new StartSubjectModel({
 });
 // TODO: the decoder should be including this information
 let SATELLITE = process.env.SATELLITE || 'west';
+
+let monitor = new Monitor('decoder-krm-interface');
+let metric = {
+  description: 'GRB product time to krm interface',
+  displayName: 'Time to KRM interface',
+  type: 'custom.googleapis.com/grb/time_to_krm_interface',
+  metricKind: 'GAUGE',
+  valueType: 'INT64',
+  unit: 'ms',
+  labels: [
+    {
+      key: 'env',
+      valueType: 'STRING',
+      description: 'CASITA ENV',
+    },
+    {
+      key: 'apid',
+      valueType: 'STRING',
+      description: 'GOES-R GRB APID',
+    },
+    {
+      key: 'channel',
+      valueType: 'STRING',
+      description: 'UCD GRB Box Channel',
+    }
+  ]
+};
+monitor.registerMetric(metric);
+monitor.ensureMetrics();
 
 async function onMessage(msg) {
   logger.debug('Reading message of length: '+ msg.value.length);
@@ -38,8 +67,8 @@ async function onMessage(msg) {
 }
 
 async function handleGenericMessage(metadata, payload) {
-  var date = new Date(946728000000 + metadata.headers.SECONDS_SINCE_EPOCH*1000);
-  var [date, time] = date.toISOString().split('T');
+  var dataObj = new Date(946728000000 + metadata.headers.SECONDS_SINCE_EPOCH*1000);
+  var [date, time] = dataObj.toISOString().split('T');
   time = time.replace(/\..*/, '');
 
   let product = apidUtils.get(metadata.apid);
@@ -73,6 +102,16 @@ async function handleGenericMessage(metadata, payload) {
     );
   }
 
+  monitor.setMaxMetric(
+    metric.type,
+     'apid', 
+     Date.now() - dataObj.getTime(),
+     {
+      apid: metadata.apid,
+      channel: metadata.streamName
+    }
+  );
+
   logger.debug('Sending generic:  '+ basePath);
 
   await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
@@ -83,8 +122,8 @@ async function handleImageMessage(metadata, payload) {
   let product = apidUtils.get(metadata.apid);
   if( !product.imageScale && !product.label ) return;
 
-  var date = new Date(946728000000 + metadata.imagePayload.SECONDS_SINCE_EPOCH*1000);
-  var [date, time] = date.toISOString().split('T');
+  var dataObj = new Date(946728000000 + metadata.imagePayload.SECONDS_SINCE_EPOCH*1000);
+  var [date, time] = dataObj.toISOString().split('T');
   time = time.replace(/\..*/, '');
 
   let basePath = path.resolve('/', 
@@ -99,6 +138,16 @@ async function handleImageMessage(metadata, payload) {
     metadata.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE+'-'+metadata.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE
   );
   logger.debug('Sending image:  '+ basePath);
+
+  monitor.setMaxMetric(
+    metric.type,
+     'apid', 
+     Date.now() - dataObj.getTime(),
+     {
+      apid: metadata.apid,
+      channel: metadata.streamName
+    }
+  );
 
   if( metadata.rootMetadata ) {
     await send(
