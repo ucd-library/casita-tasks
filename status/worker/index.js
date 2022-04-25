@@ -38,8 +38,8 @@ class StatusWorker extends Worker {
     let metadataFile = path.join(dir, 'fragment-metadata.json');
 
     let [satellite, scale, date, hour, minsec, band, apid, blocks, block] = msg.data.command.file.replace(/^\//, '').split('/');
-    let pngTime = (await fs.stat(pngFile)).ctime;
-    let mTime = (await fs.stat(metadataFile)).ctime;
+    let pngTime = (await fs.stat(pngFile)).birthtime;
+    let mTime = (await fs.stat(metadataFile)).birthtime;
 
     monitoring.addCPGT(
       apid, 
@@ -55,7 +55,9 @@ class StatusWorker extends Worker {
     let metadataFile = path.join(config.fs.nfsRoot, msg.data.command.file);
     let data = await this.readJsonFile(metadataFile, 'utf-8');
 
-    let serverTime = new Date(msg.time);
+    // let serverTime = new Date(msg.time);
+    let serverTime = fs.statSync(metadataFile).birthtime;
+
     let captureTime = null;
     if( data.type === 'generic' ) {
       if( data.headers && data.headers.SECONDS_SINCE_EPOCH ) {
