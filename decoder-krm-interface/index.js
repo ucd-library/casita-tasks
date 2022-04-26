@@ -104,7 +104,7 @@ async function handleGenericMessage(metadata, payload) {
 
   monitor.setMaxMetric(
     metric.type,
-     'apid', 
+     'channel', 
      Date.now() - dataObj.getTime(),
      {
       apid: metadata.apid,
@@ -141,7 +141,7 @@ async function handleImageMessage(metadata, payload) {
 
   monitor.setMaxMetric(
     metric.type,
-     'apid', 
+     'channel', 
      Date.now() - dataObj.getTime(),
      {
       apid: metadata.apid,
