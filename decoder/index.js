@@ -26,10 +26,6 @@ let metric = {
 monitor.registerMetric(metric);
 monitor.ensureMetrics();
 
-// 
-// var dataObj = new Date(946728000000 + metadata.imagePayload.SECONDS_SINCE_EPOCH*1000);
-
-
 let processor = new Processor({
   name : process.env.GRB_FILE,
   consoleLogStatus : false,
@@ -39,7 +35,7 @@ let processor = new Processor({
     var dataObj = new Date(946728000000 + msg.data.headers.SECONDS_SINCE_EPOCH*1000);
 
     monitor.setMaxMetric(
-      metric,
+      metric.type,
       'channel', 
       Date.now() - dataObj.getTime(),
       {
