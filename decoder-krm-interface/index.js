@@ -18,7 +18,7 @@ let SATELLITE = process.env.SATELLITE || 'west';
 
 let monitor = new Monitor('decoder-krm-interface');
 let metric = {
-  description: 'GRB product time to krm interface',
+  description: 'Decorder to krm interface time',
   displayName: 'Time to KRM interface',
   type: 'custom.googleapis.com/grb/time_to_krm_interface',
   metricKind: 'GAUGE',
@@ -105,7 +105,7 @@ async function handleGenericMessage(metadata, payload) {
   monitor.setMaxMetric(
     metric.type,
      'channel', 
-     Date.now() - dataObj.getTime(),
+     Date.now() - new Date(metadata.time).getTime(),
      {
       apid: metadata.apid,
       channel: metadata.streamName
@@ -142,7 +142,7 @@ async function handleImageMessage(metadata, payload) {
   monitor.setMaxMetric(
     metric.type,
      'channel', 
-     Date.now() - dataObj.getTime(),
+     Date.now() - new Date(metadata.time).getTime(),
      {
       apid: metadata.apid,
       channel: metadata.streamName
