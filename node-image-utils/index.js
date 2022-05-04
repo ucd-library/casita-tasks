@@ -4,6 +4,7 @@ const CaReproject = require('./lib/ca-reproject');
 const jp2ToPngFn = require("./lib/jp2-to-png");
 const scaleFn = require('./lib/scale');
 const Composite = require('./lib/composite');
+const {logger} = require('@ucd-lib/krm-node-utils');
 
 (async function() {
   try {
@@ -16,12 +17,12 @@ const Composite = require('./lib/composite');
     } else if( process.argv[2] === 'scale' ) {
       await scale();
     } else {
-      console.error('Unknown command: '+process.argv[2]);
-      process.exit(-1);
+      logger.error('Unknown command: '+process.argv[2]);
+      setTimeout(() => process.exit(-1), 50);
     }
   } catch(e) {
-    console.error('Failed to run command: ', process.argv, e);
-    process.exit(-1);
+    logger.error('Failed to run command: ', process.argv, e);
+    setTimeout(() => process.exit(-1), 50);
   }
 })();
 

@@ -23,7 +23,7 @@ class StatusWorker extends Worker {
     if( msg.data.command.type === 'time_to_disk' ) {
       return this.timeToDisk(msg);
     } else if( msg.data.command.type === 'comp_png_gen_time' ) {
-      return this.compPngGenTime(msg);
+      // return this.compPngGenTime(msg);
     }
 
     return {
