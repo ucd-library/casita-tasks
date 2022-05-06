@@ -3,7 +3,7 @@ const {logger, Monitor} = require('@ucd-lib/krm-node-utils');
 const kafkaSetup = require('./default-kafka-setup');
 
 let monitor = new Monitor(process.env.GRB_FILE);
-let metric = {
+let ttdMetric = {
   description: 'GRB product time to decoder',
   displayName: 'Time to decoder',
   type: 'custom.googleapis.com/grb/time_to_decoder',
@@ -23,19 +23,113 @@ let metric = {
     }
   ]
 };
-monitor.registerMetric(metric);
+let drMetric = {
+  description: 'GRB Decoder megabits per second',
+  displayName: 'GRB Decoder data rate',
+  type: 'custom.googleapis.com/grb/decoder_data_rate',
+  metricKind: 'GAUGE',
+  valueType: 'INT64',
+  unit: 'MBit',
+  labels: [
+    {
+      key: 'env',
+      valueType: 'STRING',
+      description: 'CASITA ENV',
+    },
+    {
+      key: 'channel',
+      valueType: 'STRING',
+      description: 'UCD GRB Box Channel',
+    }
+  ]
+};
+let prMetric = {
+  description: 'GRB Decoder packets per second',
+  displayName: 'GRB Decoder packet rate',
+  type: 'custom.googleapis.com/grb/decoder_packet_rate',
+  metricKind: 'GAUGE',
+  valueType: 'INT64',
+  unit: '1',
+  labels: [
+    {
+      key: 'env',
+      valueType: 'STRING',
+      description: 'CASITA ENV',
+    },
+    {
+      key: 'channel',
+      valueType: 'STRING',
+      description: 'UCD GRB Box Channel',
+    }
+  ]
+};
+let priMetric = {
+  description: 'GRB Decoder invalid packets per second',
+  displayName: 'GRB Decoder invalid packet rate',
+  type: 'custom.googleapis.com/grb/decoder_invalid_packet_rate',
+  metricKind: 'GAUGE',
+  valueType: 'INT64',
+  unit: '1',
+  labels: [
+    {
+      key: 'env',
+      valueType: 'STRING',
+      description: 'CASITA ENV',
+    },
+    {
+      key: 'channel',
+      valueType: 'STRING',
+      description: 'UCD GRB Box Channel',
+    }
+  ]
+};
+monitor.registerMetric(ttdMetric);
+monitor.registerMetric(drMetric);
+monitor.registerMetric(prMetric);
+monitor.registerMetric(priMetric);
 monitor.ensureMetrics();
 
 let processor = new Processor({
   name : process.env.GRB_FILE,
   consoleLogStatus : false,
+  statusCallback : msg => {
+    let {packetsPerSecond, mbytesPerSecond, invalidPacketsPerSecond, uptime} = msg;
+
+    monitor.incrementMetric(
+      drMetric.type,
+      'channel', 
+      {
+        channel: process.env.GRB_FILE,
+      },
+      mbytesPerSecond
+    );
+
+    monitor.incrementMetric(
+      prMetric.type,
+      'channel', 
+      {
+        channel: process.env.GRB_FILE
+      },
+      packetsPerSecond
+    );
+
+    monitor.incrementMetric(
+      priMetric.type,
+      'channel', 
+      {
+        channel: process.env.GRB_FILE
+      },
+      invalidPacketsPerSecond
+    );
+
+  },
   onStreamClosed : () => logger.warn(`${process.env.GRB_FILE} grb tail stream closed`),
   preprocessCallback : msg => {
     msg.time = Date.now();
     var dataObj = new Date(946728000000 + msg.data.headers.SECONDS_SINCE_EPOCH*1000);
 
     monitor.setMaxMetric(
-      metric.type,
+      ttdMetric.type,
       'channel', 
       Date.now() - dataObj.getTime(),
       {
