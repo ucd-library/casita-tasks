@@ -1,10 +1,4 @@
-const app = require('express')();
-const http = require('http').createServer(app);
-const Busboy = require('busboy');
-const _fetch = require('node-fetch');
-const FormData = require('form-data');
 const path = require('path');
-const cp = require('child_process');
 const {apidUtils} = require('@ucd-lib/goes-r-packet-decoder');
 const {logger, bus, Monitor, StartSubjectModel} = require('@ucd-lib/krm-node-utils');
 const config = require('./config');
@@ -200,15 +194,11 @@ async function send(file, data) {
   await kafkaConsumer.connect();
   await kafkaConsumer.subscribe([config.decoder.kafka.topic]);
 
-  try {
-    await kafkaConsumer.consume(async msg => {
-      try {
-        await onMessage(msg);
-      } catch(e) {
-        logger.error('kafka message error', e);
-      }
-    });
-  } catch(e) {
-    logger.error('kafka consume error', e);
-  }
+  kafkaConsumer.consume(async msg => {
+    try {
+      await onMessage(msg);
+    } catch(e) {
+      logger.error('kafka message error', e);
+    }
+  });
 })()
