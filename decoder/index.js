@@ -128,6 +128,8 @@ let processor = new Processor({
     msg.time = Date.now();
     var dataObj = new Date(946728000000 + msg.data.headers.SECONDS_SINCE_EPOCH*1000);
 
+    if( Date.now() - dataObj.getTime() < 1 ) return;
+
     monitor.setMaxMetric(
       ttdMetric.type,
       'channel', 
