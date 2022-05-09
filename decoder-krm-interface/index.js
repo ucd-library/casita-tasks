@@ -102,6 +102,11 @@ async function handleGenericMessage(metadata, payload) {
     );
   }
 
+  logger.debug('Sending generic:  '+ basePath);
+
+  await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
+  await send(path.join(basePath, 'payload.bin'), payload);
+
   monitor.setMaxMetric(
     metric.type,
      'channel', 
@@ -111,11 +116,6 @@ async function handleGenericMessage(metadata, payload) {
       channel: metadata.streamName
     }
   );
-
-  logger.debug('Sending generic:  '+ basePath);
-
-  await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
-  await send(path.join(basePath, 'payload.bin'), payload);
 }
 
 async function handleImageMessage(metadata, payload) {
@@ -139,16 +139,6 @@ async function handleImageMessage(metadata, payload) {
   );
   logger.debug('Sending image:  '+ basePath);
 
-  monitor.setMaxMetric(
-    metric.type,
-     'channel', 
-     Date.now() - new Date(metadata.time).getTime(),
-     {
-      apid: metadata.apid,
-      channel: metadata.streamName
-    }
-  );
-
   if( metadata.rootMetadata ) {
     await send(
       path.join(basePath, 'fragment-metadata.json'), 
@@ -166,6 +156,16 @@ async function handleImageMessage(metadata, payload) {
       payload
     );
   }
+
+  monitor.setMaxMetric(
+    metric.type,
+     'channel', 
+     Date.now() - new Date(metadata.time).getTime(),
+     {
+      apid: metadata.apid,
+      channel: metadata.streamName
+    }
+  );
 }
 
 async function send(file, data) {

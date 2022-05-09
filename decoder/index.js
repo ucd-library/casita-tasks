@@ -1,4 +1,5 @@
 const Processor = require('@ucd-lib/goes-r-packet-decoder/lib/binary-stream-processor');
+const apidUtils = require('@ucd-lib/goes-r-packet-decoder/lib/utils/apid');
 const {logger, Monitor} = require('@ucd-lib/krm-node-utils');
 const kafkaSetup = require('./default-kafka-setup');
 
@@ -20,6 +21,11 @@ let ttdMetric = {
       key: 'channel',
       valueType: 'STRING',
       description: 'UCD GRB Box Channel',
+    },
+    {
+      key: 'apid',
+      valueType: 'STRING',
+      description: 'APID',
     }
   ]
 };
@@ -128,14 +134,24 @@ let processor = new Processor({
     msg.time = Date.now();
     var dataObj = new Date(946728000000 + msg.data.headers.SECONDS_SINCE_EPOCH*1000);
 
-    if( Date.now() - dataObj.getTime() < 1 ) return;
+    let apid = msg.data.spHeaders.primary.APPLICATION_PROCESS_IDENTIFIER;
+    if( Date.now() - dataObj.getTime() < 0 ) return;
+
+console.log(      ttdMetric.type,
+  'apid', 
+  Date.now() - dataObj.getTime(),
+  {
+    channel: process.env.GRB_FILE,
+    apid : apid.toString(16)
+  })
 
     monitor.setMaxMetric(
       ttdMetric.type,
-      'channel', 
+      'apid', 
       Date.now() - dataObj.getTime(),
       {
-        channel: process.env.GRB_FILE
+        channel: process.env.GRB_FILE,
+        apid : apid.toString(16)
       }
     );
   },
