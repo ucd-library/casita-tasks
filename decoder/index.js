@@ -137,14 +137,6 @@ let processor = new Processor({
     let apid = msg.data.spHeaders.primary.APPLICATION_PROCESS_IDENTIFIER;
     if( Date.now() - dataObj.getTime() < 0 ) return;
 
-console.log(      ttdMetric.type,
-  'apid', 
-  Date.now() - dataObj.getTime(),
-  {
-    channel: process.env.GRB_FILE,
-    apid : apid.toString(16)
-  })
-
     monitor.setMaxMetric(
       ttdMetric.type,
       'apid', 
