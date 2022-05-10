@@ -98,8 +98,8 @@ async function handleGenericMessage(metadata, payload) {
 
   logger.debug('Sending generic:  '+ basePath);
 
-  await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
-  await send(path.join(basePath, 'payload.bin'), payload);
+  send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
+  send(path.join(basePath, 'payload.bin'), payload);
 
   monitor.setMaxMetric(
     metric.type,
@@ -134,18 +134,18 @@ async function handleImageMessage(metadata, payload) {
   logger.debug('Sending image:  '+ basePath);
 
   if( metadata.rootMetadata ) {
-    await send(
+    send(
       path.join(basePath, 'fragment-metadata.json'), 
       JSON.stringify(metadata)
     );
   } else {
 
-    await send(
+    send(
       path.join(basePath, 'fragments', metadata.index+'', 'image-fragment-metadata.json'), 
       JSON.stringify(metadata)
     );
 
-    await send(
+    send(
       path.join(basePath, 'fragments', metadata.index+'', 'image-fragment.jp2'), 
       payload
     );
@@ -162,9 +162,9 @@ async function handleImageMessage(metadata, payload) {
   );
 }
 
-async function send(file, data) {
+function send(file, data) {
   try {
-    await model.send(file, data);
+    model.send(file, data);
   } catch(e) {
     logger.error('Decoder krm interface failed to send subject: '+file, e);
   }
