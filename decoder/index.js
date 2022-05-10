@@ -35,7 +35,7 @@ let drMetric = {
   type: 'custom.googleapis.com/grb/decoder_data_rate',
   metricKind: 'GAUGE',
   valueType: 'INT64',
-  unit: 'Mbit',
+  unit: 'bit',
   labels: [
     {
       key: 'env',
@@ -55,7 +55,7 @@ let prMetric = {
   type: 'custom.googleapis.com/grb/decoder_packet_rate',
   metricKind: 'GAUGE',
   valueType: 'INT64',
-  unit: '1M',
+  unit: '1',
   labels: [
     {
       key: 'env',
@@ -75,7 +75,7 @@ let priMetric = {
   type: 'custom.googleapis.com/grb/decoder_invalid_packet_rate',
   metricKind: 'GAUGE',
   valueType: 'INT64',
-  unit: '1M',
+  unit: '1',
   labels: [
     {
       key: 'env',
