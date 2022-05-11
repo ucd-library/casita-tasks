@@ -197,8 +197,15 @@ function send(file, data) {
   kafkaConsumer.consume(async msg => {
     try {
       await onMessage(msg);
+      await sleep(25);
     } catch(e) {
       logger.error('kafka message error', e);
     }
   });
 })()
+
+async function sleep(time) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => resolve(), time);
+  });
+}
