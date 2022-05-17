@@ -70,30 +70,3 @@ async function reproject() {
   await caReproject.loadFiles();
   await caReproject.run();
 }
-
-async function jp2ToPng() {
-  let rootDir = process.argv.length > 2 ? path.parse(process.argv[3]).dir : process.cwd();
-  let metadata = require(rootDir+'/fragment-metadata.json');
-  let data = {};
-  for( let i = 0; i < metadata.fragmentsCount; i++ ) {
-    console.log('Reading file: '+path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'));
-    data['fragment_data_'+i] = {
-      data : await fs.readFile(path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'))
-    }
-    metadata[`fragment_headers_${i}`] = JSON.parse(
-      await fs.readFile(path.join(rootDir, 'fragments', i+'', 'image-fragment-metadata.json'), 'utf-8')
-    );
-  }
-
-  const images = await jp2ToPngFn(metadata, data);
-
-  console.log('Writing file: '+path.join(rootDir, 'image.png'));
-  await fs.writeFile(path.join(rootDir, 'image.png'), images.sciPng);
-
-  console.log('Writing file: '+path.join(rootDir, 'web.png'));
-  await fs.writeFile(path.join(rootDir, 'web.png'), images.webPng);
-
-  if( process.argv.includes('--rm-fragments') ) {
-    await fs.remove(path.join(rootDir, 'fragments'));
-  }
-}

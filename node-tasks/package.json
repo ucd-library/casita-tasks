@@ -1,0 +1,41 @@
+{
+  "name": "@ucd-lib/casita-airflow-worker",
+  "version": "0.0.1",
+  "description": "Extended NodeJS worker libraries",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "casita": "cli/casita.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ucd-library/casita-krm-tasks.git"
+  },
+  "author": "jrmerz@ucdavis.edu",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ucd-library/casita-krm-tasks/issues"
+  },
+  "homepage": "https://github.com/ucd-library/casita-krm-tasks#readme",
+  "dependencies": {
+    "@google-cloud/logging-bunyan": "^3.3.1",
+    "@google-cloud/monitoring": "^2.3.5",
+    "@google-cloud/secret-manager": "^3.12.0",
+    "@slack/webhook": "^6.1.0",
+    "@ucd-lib/goes-r-packet-decoder": "^0.5.2",
+    "@ucd-lib/node-kafka": "^0.0.8",
+    "@ucd-lib/pngjs": "^5.0.0",
+    "commander": "^9.2.0",
+    "cors": "^2.8.5",
+    "deepmerge": "^4.2.2",
+    "dot-object": "^2.1.4",
+    "express": "^4.18.1",
+    "fs-extra": "^10.1.0",
+    "node-fetch": "^3.2.4",
+    "pg": "^8.7.3",
+    "pngjs": "^6.0.0",
+    "uuid": "^8.3.2"
+  }
+}
