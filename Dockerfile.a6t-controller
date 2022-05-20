@@ -1,5 +1,5 @@
 ARG A6T_CONTROLLER_BASE=gcr.io/ucdlib-pubreg/argonaut:latest
-ARG NODE_BASE=gcr.io/ucdlib-pubreg/casita-base:latest
+ARG NODE_BASE=gcr.io/ucdlib-pubreg/casita:latest
 
 FROM ${NODE_BASE} as node-base
 

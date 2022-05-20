@@ -1,5 +1,5 @@
 ARG AIRFLOW_WORKER_BASE=apache/airflow:2.2.4
-ARG NODE_BASE=gcr.io/ucdlib-pubreg/casita-base:latest
+ARG NODE_BASE=gcr.io/ucdlib-pubreg/casita:latest
 ARG NODE_VERSION=16
 
 FROM ${NODE_BASE} as node-base
@@ -17,7 +17,8 @@ RUN apt-get update \
       && apt-get install -y --no-install-recommends \
         postgis nodejs imagemagick proj-bin build-essential
 
-COPY --from=node-base /casita /
+COPY --from=node-base /casita /casita
 WORKDIR /casita
+RUN npm install -g
 
 USER airflow
