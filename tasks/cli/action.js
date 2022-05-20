@@ -1,6 +1,6 @@
-const config = require('./config');
-const logger = require('./logger');
-const metrics = require('./metrics');
+const config = require('../../node-commons/config');
+const logger = require('../../node-commons/logger');
+const metrics = require('../../node-commons/metrics');
 
 const metricsDefs = {
   time : {
@@ -97,12 +97,13 @@ async function action(opts, cmd) {
   try {
     let module = await import(config.command.reference);
     if( module.default ) module = module.default;
+  
     if( typeof module === 'function') {
       resp = await module();
     } else {
       resp = module;
     }
-    // if( resp.default ) resp = resp.default; 
+
   } catch(e) {
     handleError(e, startTime);
     return;
@@ -119,7 +120,7 @@ async function action(opts, cmd) {
   }
 
   if( config.kafka.enabled ) {
-    const kafka = require('./kafka');
+    const kafka = require('../../node-commons/kafka');
     await kafka.connect();
     await kafka.send(resp);
     await kafka.flush(); // send message now

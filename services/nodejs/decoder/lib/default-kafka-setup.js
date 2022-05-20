@@ -1,12 +1,11 @@
-const {logger} = require('@ucd-lib/krm-node-utils');
+import {logger, config} from '@ucd-lib/argonaut';
 
-let kafkaHost = 'kafka:9092';
-if( process.env.DECODER_KAFKA_HOST && process.env.DECODER_KAFKA_PORT ) {
-  kafkaHost = process.env.DECODER_KAFKA_HOST + ':' + process.env.DECODER_KAFKA_PORT;
-}
+let khost = process.env.KAFKA_HOST || 'kafka';
+let kport = process.env.KAFKA_PORT || '9092';
+let kafkaHost = khost+':'+kport;
 
 let clientOpts = {
-  'metadata.broker.list' : kafkaHost,
+  'metadata.broker.list' : config.kafka.host+':'+config.kafka.port,
   'message.max.bytes': 100000000+'', // must be a string
   'request.required.acks' : 1,
   'dr_cb': true, // delivery report
@@ -18,10 +17,10 @@ if( process.env.KAFKA_CLIENT_DEBUG ) {
 }
 
 
-module.exports = {
+const setup = {
   client : clientOpts,
   topic : {
-    topic : process.env.DECODER_KAFKA_TOPIC || 'goes-r-stream',
+    topic : process.env.DECODER_KAFKA_TOPIC || 'goesr-product',
     num_partitions: 10,
     replication_factor: 1,
     // TODO: this is set in decoder-krm-interface/index.js as well.  need to update both. badness
@@ -46,3 +45,5 @@ module.exports = {
     }
   }
 }
+
+export default setup

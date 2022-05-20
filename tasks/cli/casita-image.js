@@ -1,7 +1,6 @@
 const { program, Option } = require('commander');
 const globalOpts = require('./global-opts');
-const config = require('../lib/config');
-const action = require('../lib/action');
+const action = require('../action');
 
 program
   .command('jp2-to-png')

@@ -1,0 +1,11 @@
+ARG A6T_CONTROLLER_BASE=gcr.io/ucdlib-pubreg/argonaut:latest
+ARG NODE_BASE=gcr.io/ucdlib-pubreg/casita-base:latest
+
+FROM ${NODE_BASE} as node-base
+
+FROM ${A6T_CONTROLLER_BASE}
+
+COPY --from=node-base /casita /
+WORKDIR /casita
+
+ENV ARGONAUT_GRAPH=/casita/services/nodejs/lib/graph.js

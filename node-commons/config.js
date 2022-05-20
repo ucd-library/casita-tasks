@@ -53,7 +53,7 @@ let config = {
 module.exports = config
 module.exports.update = function(args, cmd) {
   let parent = cmd.parent ? cmd.parent.name() : '';
-  args.command = ((parent ? parent+'/' : '') + cmd.name()).replace(/casita-/g, '');
+  args.command = 'nodejs/'+((parent ? parent+'/' : '') + cmd.name()).replace(/casita-/g, '');
   args.commandRef = getCommandReference(args.command);
   Object.assign(
     config, 

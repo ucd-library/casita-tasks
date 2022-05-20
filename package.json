@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "casita": "cli/casita.js"
+    "casita": "tasks/node/cli/casita.js"
   },
   "repository": {
     "type": "git",
