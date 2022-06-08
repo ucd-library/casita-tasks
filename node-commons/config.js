@@ -20,7 +20,7 @@ let dotPathMap = {
 };
 
 let config = {
-  instance : env.INSTANCE_NAME || 'sandbox',
+  instance : env.INSTANCE_ENV || 'sandbox',
 
   google : {
     metrics : false,

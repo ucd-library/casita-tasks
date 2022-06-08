@@ -1,5 +1,5 @@
-const config = require('../lib/config');
-const logger = require('../lib/logger');
+const config = require('../../../node-commons/config');
+const logger = require('../../../node-commons/logger');
 const path = require('path');
 const jp2ToPng = require("./lib/jp2-to-png");
 

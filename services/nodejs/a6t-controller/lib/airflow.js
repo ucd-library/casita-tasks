@@ -1,6 +1,5 @@
 import fetch from 'node-fetch';
 
-
 const AIRFLOW_HOST = process.env.AIRFLOW_HOST || 'airflow-webserver:8080';
 const BASE_API = `http://${AIRFLOW_HOST}/api/v1/dags`;
 const AIRFLOW_USERNAME = process.env._AIRFLOW_WWW_USER_USERNAME || 'airflow';
