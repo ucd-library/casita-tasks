@@ -26,7 +26,15 @@ with DAG(
     )
     # [END howto_operator_bash]
 
-    start >> block_composite
+    another = DummyOperator(
+        task_id='another',
+    )
+
+    end = DummyOperator(
+        task_id='endly',
+    )
+
+    start >> block_composite >> another >> end
 
 
 if __name__ == "__main__":
