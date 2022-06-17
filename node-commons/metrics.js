@@ -1,7 +1,7 @@
-const config = require('./config');
-const logger = require('./logger');
-const fs = require('fs')
-const monitoring = require('@google-cloud/monitoring');
+import config from './config.js';
+import logger from './logger.js';
+import fs from 'fs'
+import monitoring from '@google-cloud/monitoring';
 
 // https://cloud.google.com/monitoring/custom-metrics/creating-metrics
 
@@ -103,4 +103,4 @@ class Monitoring {
 }
 
 
-module.exports = new Monitoring('casita-worker-'+Date.now());
+export default Monitoring;

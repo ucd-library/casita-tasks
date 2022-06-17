@@ -1,9 +1,6 @@
-import {logger, config} from '@ucd-lib/argonaut';
+import {logger, config} from '../../../../node-commons/index.js';
 
-let khost = process.env.KAFKA_HOST || 'kafka';
-let kport = process.env.KAFKA_PORT || '9092';
-let kafkaHost = khost+':'+kport;
-
+console.log(config.kafka);
 let clientOpts = {
   'metadata.broker.list' : config.kafka.host+':'+config.kafka.port,
   'message.max.bytes': 100000000+'', // must be a string
@@ -12,6 +9,7 @@ let clientOpts = {
   'event_cb' : true
   // 'statistics.interval.ms' : 500 // for event.stats callback
 }
+
 if( process.env.KAFKA_CLIENT_DEBUG ) {
   clientOpts.debug = process.env.KAFKA_CLIENT_DEBUG;
 }

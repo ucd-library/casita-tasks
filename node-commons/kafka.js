@@ -1,32 +1,35 @@
-const {Producer, utils} = require('@ucd-lib/node-kafka');
-const config = require('./config');
+import kafka from '@ucd-lib/node-kafka';
+import config from './config.js';
 
-class Kafka {
-  constructor() {
-    this.connected = false;
-    this.producer = new Producer({
-      'metadata.broker.list': config.kafka.host + ':' + config.kafka.port
-    });
-  }
+const {Producer, Consumer, utils} = kafka;
 
-  connect() {
-    return producer.connect();
-  }
+class KafkaProducer {
+  constructor(kconfig, pollInterval=100) {
 
-  send(value, key) {
-    // send message
-    this.producer.produce({
-      topic : config.kafka.topic,
-      value, key
-    })
-  }
+    if( !kconfig['metadata.broker.list'] ) {
+      kconfig['metadata.broker.list'] = config.kafka.host + ':' + config.kafka.port;
+    }
 
-  flush() {
-    return new Promise((resolve, reject) => {
-      this.producer.flush(500, () => resolve());
-    });
+    this.client = new Producer(kconfig);
+
+    this.client.setPollInterval(100);
   }
 
 }
 
-module.export = new Kafka();
+class KafkaConsumer {
+  constructor(kconfig={}, topicConfig={}) {
+    this.connected = false;
+
+    if( !kconfig['metadata.broker.list'] ) {
+      kconfig['metadata.broker.list'] = config.kafka.host + ':' + config.kafka.port;
+    }
+    if( !topicConfig['auto.offset.reset'] ) {
+      config['auto.offset.reset'] = 'earliest';
+    }
+
+    this.client = new Consumer(kconfig, topicConfig);
+  }
+}
+
+export {KafkaConsumer, KafkaProducer};

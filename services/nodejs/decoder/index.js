@@ -1,5 +1,5 @@
 import decoder from '@ucd-lib/goes-r-packet-decoder';
-import {logger} from '@ucd-lib/argonaut';
+import {logger} from '../../../node-commons/index.js';
 import kafkaSetup from './lib/default-kafka-setup.js';
 
 const {BinaryStreamProcessor} = decoder;

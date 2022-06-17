@@ -17,7 +17,7 @@ RUN apt-get update \
       && apt-get install -y --no-install-recommends \
         postgis nodejs imagemagick proj-bin build-essential
 
-COPY ./dags ${AIRFLOW_HOME}/dags
+COPY ./tasks/airflow-dags ${AIRFLOW_HOME}/dags
 
 COPY --from=node-base /casita /casita
 WORKDIR /casita

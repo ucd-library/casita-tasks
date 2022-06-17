@@ -1,10 +1,9 @@
-const express = require('express')
-const app = express();
-const {logger, state, config} = require('@ucd-lib/krm-node-utils');
-const fs = require('fs');
-const path = require('path');
+import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import {logger} from '@ucd-lib/casita-worker';
 
-const mongo = state.mongo;
+const app = express();
 
 const EXPIRED = 1000 * 60 * 3;
 const STREAMS = ['decoded', 'secdecoded'];

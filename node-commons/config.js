@@ -1,6 +1,6 @@
-const dot = require('dot-object');
-const path = require('path');
-const merge = require('deepmerge');
+import dot from 'dot-object';
+import path from 'path';
+import merge from 'deepmerge';
 const env = process.env;
 
 let dotPathMap = {
@@ -19,6 +19,12 @@ let dotPathMap = {
   'printKafkaMsg' : 'kafka.print'
 };
 
+// k8s inserts a kafka port like tcp://10.109.128.0:9092.  clean up
+let kafkaPort = env.KAFKA_PORT;
+if( kafkaPort && kafkaPort.match(/:/) ) {
+  kafkaPort = kafkaPort.split(':').pop();
+}
+
 let config = {
   instance : env.INSTANCE_ENV || 'sandbox',
 
@@ -35,12 +41,22 @@ let config = {
     current : '',
     reference : ''
   },
+
+  fs : {
+    nfsRoot : env.NFS_ROOT || '/storage/network'
+  },
   
   kafka : {
     enabled : false,
-    port : env.KAFKA_PORT || 9092,
+    port : kafkaPort || 9092,
     host : env.KAFKA_HOST || 'kafka',
-    topic : env.KAFKA_TOPIC || ''
+    topics : {
+      decoder : env.KAFKA_DECODER_TOPIC || 'goes-decoder',
+      productWriter : env.KAFKA_PRODUCT_WRITER_TOPIC || 'goes-nfs-product',
+    },
+    groups : {
+      productWriter : env.KAFKA_PRODUCT_WRITER_GROUP_ID || 'product-writer'
+    }
   },
 
   logging : {
@@ -50,8 +66,8 @@ let config = {
   }
 }
 
-module.exports = config
-module.exports.update = function(args, cmd) {
+export default config
+function update(args, cmd) {
   let parent = cmd.parent ? cmd.parent.name() : '';
   args.command = 'nodejs/'+((parent ? parent+'/' : '') + cmd.name()).replace(/casita-/g, '');
   args.commandRef = getCommandReference(args.command);
@@ -60,6 +76,7 @@ module.exports.update = function(args, cmd) {
     merge(config, dot.transform(dotPathMap, args))
   );
 };
+export {update}
 
 function getCommandReference(cmd) {
   return path.resolve(__dirname, '..', cmd.split('/')

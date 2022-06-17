@@ -1,6 +1,6 @@
-const bunyan = require('bunyan');
-const {LoggingBunyan} = require('@google-cloud/logging-bunyan');
-const config = require('./config');
+import bunyan from 'bunyan';
+import {LoggingBunyan} from '@google-cloud/logging-bunyan';
+import config from './config.js';
 
 const streams = [];
 
@@ -44,4 +44,4 @@ let info = {
 
 logger.info('logger initialized', info);
 
-module.exports = logger;
+export default logger;

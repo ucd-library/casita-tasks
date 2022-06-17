@@ -7,6 +7,5 @@ FROM ${A6T_CONTROLLER_BASE}
 
 COPY --from=node-base /casita /casita
 WORKDIR /casita
-RUN npm install -g
 
 ENV ARGONAUT_GRAPH=/casita/services/nodejs/a6t-controller/lib/graph.js
