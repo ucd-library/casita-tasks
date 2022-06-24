@@ -1,12 +1,10 @@
-import {logger, config} from '../../../../node-commons/index.js';
+import {logger, config} from '@ucd-lib/casita-worker';
 
-console.log(config.kafka);
 let clientOpts = {
   'metadata.broker.list' : config.kafka.host+':'+config.kafka.port,
-  'message.max.bytes': 100000000+'', // must be a string
-  'request.required.acks' : 1,
+  // 'request.required.acks' : 1,
   'dr_cb': true, // delivery report
-  'event_cb' : true
+  'event_cb' : true,
   // 'statistics.interval.ms' : 500 // for event.stats callback
 }
 
@@ -18,15 +16,7 @@ if( process.env.KAFKA_CLIENT_DEBUG ) {
 const setup = {
   client : clientOpts,
   topic : {
-    topic : process.env.DECODER_KAFKA_TOPIC || 'goesr-product',
-    num_partitions: 10,
-    replication_factor: 1,
-    // TODO: this is set in decoder-krm-interface/index.js as well.  need to update both. badness
-    config : {
-      'retention.ms' : (1000 * 60 * 60)+'',
-      // 'message.max.bytes': 25000000+''
-      'max.message.bytes' : 100000000+''
-    }
+    topic : config.kafka.topics.decoder,
   },
   callbacks : {
     'ready' : () => logger.info(`${process.env.GRB_FILE} kafka producer ready`),

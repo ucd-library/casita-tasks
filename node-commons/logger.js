@@ -4,7 +4,6 @@ import config from './config.js';
 
 const streams = [];
 
-console.log(config.logging.quiet);
 if( config.logging.quiet !== true ) {
   streams.push({ stream: process.stdout });
 }

@@ -21,6 +21,7 @@ COPY ./tasks/airflow-dags ${AIRFLOW_HOME}/dags
 
 COPY --from=node-base /casita /casita
 WORKDIR /casita
-RUN npm install -g
+RUN npm link
+RUN npm link @ucd-lib/casita-worker
 
 USER airflow

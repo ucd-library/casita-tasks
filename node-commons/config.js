@@ -1,6 +1,7 @@
 import dot from 'dot-object';
 import path from 'path';
 import merge from 'deepmerge';
+import fs from 'fs';
 const env = process.env;
 
 let dotPathMap = {
@@ -19,6 +20,12 @@ let dotPathMap = {
   'printKafkaMsg' : 'kafka.print'
 };
 
+let credentialProjectId;
+if( env.GOOGLE_APPLICATION_CREDENTIALS ) {
+  let content = fs.readFileSync(env.GOOGLE_APPLICATION_CREDENTIALS);
+  credentialProjectId = content.project_id;
+}
+
 // k8s inserts a kafka port like tcp://10.109.128.0:9092.  clean up
 let kafkaPort = env.KAFKA_PORT;
 if( kafkaPort && kafkaPort.match(/:/) ) {
@@ -27,11 +34,12 @@ if( kafkaPort && kafkaPort.match(/:/) ) {
 
 let config = {
   instance : env.INSTANCE_ENV || 'sandbox',
+  satellite : process.env.SATELLITE || 'west',
 
   google : {
     metrics : false,
     applicationCredentials : env.GOOGLE_APPLICATION_CREDENTIALS || '',
-    projectId : env.GOOGLE_PROJECT_ID || ''
+    projectId : env.GOOGLE_PROJECT_ID || credentialProjectId ||  ''
   },
 
   command : {
@@ -50,9 +58,10 @@ let config = {
     enabled : false,
     port : kafkaPort || 9092,
     host : env.KAFKA_HOST || 'kafka',
+    // TODO: if you update a topic name, make sure you do it in services/init/kafka.js as well
     topics : {
-      decoder : env.KAFKA_DECODER_TOPIC || 'goes-decoder',
-      productWriter : env.KAFKA_PRODUCT_WRITER_TOPIC || 'goes-nfs-product',
+      decoder : 'goes-decoder',
+      productWriter : 'goes-nfs-product',
     },
     groups : {
       productWriter : env.KAFKA_PRODUCT_WRITER_GROUP_ID || 'product-writer'

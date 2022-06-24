@@ -1,0 +1,8 @@
+ARG INIT_BASE=gcr.io/ucdlib-pubreg/init-services:latest
+ARG NODE_BASE=gcr.io/ucdlib-pubreg/casita:latest
+
+FROM ${NODE_BASE} as node-base
+
+FROM ${INIT_BASE}
+
+COPY --from=node-base /casita/services/init /etc/ucdlib-service-init

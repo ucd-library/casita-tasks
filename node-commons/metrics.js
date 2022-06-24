@@ -29,9 +29,19 @@ class Monitoring {
 
     this.interval = 1000 * 30;
     this.startTime = new Date();
+
+    if( !config.google.applicationCredentials ) {
+      this.enabled = false;
+      logger.warn('No GOOGLE_APPLICATION_CREDENTIALS set. metrics will not write');
+    } else {
+      this.enabled = true;
+      setInterval(() => this.write(), this.interval);
+    }
   }
 
   registerMetric(metric, opts={}) {
+    if( !this.enabled ) return;
+
     if( !metric.metricDescriptor ) {
       metric = {
         name : this.client.projectPath(config.google.projectId),
@@ -43,7 +53,57 @@ class Monitoring {
     this.data[metric.metricDescriptor.type] = {};
   }
 
+  setMaxMetric(type, key, value, args={}) {
+    if( !this.enabled ) return;
+
+    let current = this.getMetricValue(type, args[key]);
+
+    if( !current ) {
+      this.setMetricValue(type, key, value, args);
+      return true;
+    }
+
+    if( current.value > value ) return false;
+
+    this.setMetricValue(type, key, value, args);
+    return true;
+  }
+
+  incrementMetric(type, key, args, value) {
+    if( !this.enabled ) return;
+
+    let current = this.getMetricValue(type, args[key]);
+    if( value === undefined ) value = 1;
+
+    if( !current ) {
+      this.setMetricValue(type, key, value, args);
+      return true;
+    }
+    this.setMetricValue(type, key, current.value+value, args);
+    return true;
+  }
+
+  setMetricValue(type, key, value, args={}) {
+    if( !this.enabled ) return;
+    
+    if( !args[key] ) throw new Error('Metric args does not contain key: '+key);
+    if( !this.data[type] ) throw new Error('Unknown metric type: '+type);
+    
+    args.value = value;
+    
+    this.data[type][args[key]] = args;
+
+    logger.debug(`setting metric ${type} ${args[key]}`, args);
+  }
+
+  getMetricValue(type, key) {
+    if( !this.data[type] ) throw new Error('Unknown metric type: '+type);
+    return this.data[type][key];
+  }
+
   async ensureMetrics() {
+    if( !this.enabled ) return;
+
     for( let key in this.metrics ) {
       logger.info('Ensuring metric: ', key);
       await this.ensureMetric(this.metrics[key].metric);
@@ -51,11 +111,18 @@ class Monitoring {
   }
 
   ensureMetric(metric) {
+    if( !config.google.applicationCredentials ) {
+      return;
+    }
+
     return this.client.createMetricDescriptor(metric);
   }
 
+  
 
   async write(type, value, labels) {
+    if( !this.enabled ) return;
+
     let dataPoint = {
       interval: {
         // startTime : {

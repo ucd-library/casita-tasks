@@ -7,5 +7,7 @@ FROM ${A6T_CONTROLLER_BASE}
 
 COPY --from=node-base /casita /casita
 WORKDIR /casita
+RUN npm link
+RUN npm link @ucd-lib/casita-worker
 
 ENV ARGONAUT_GRAPH=/casita/services/nodejs/a6t-controller/lib/graph.js

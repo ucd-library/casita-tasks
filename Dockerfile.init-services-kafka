@@ -1,0 +1,8 @@
+ARG INIT_KAFKA_BASE=gcr.io/ucdlib-pubreg/init-services-kafka:latest
+ARG NODE_BASE=gcr.io/ucdlib-pubreg/casita:latest
+
+FROM ${NODE_BASE} as node-base
+
+FROM ${INIT_KAFKA_BASE}
+
+COPY --from=node-base /casita/services/init /etc/ucdlib-service-init

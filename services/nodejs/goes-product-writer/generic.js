@@ -1,7 +1,11 @@
-import {apidUtils} from '@ucd-lib/goes-r-packet-decoder';
+import decoder from '@ucd-lib/goes-r-packet-decoder';
+import {config, logger} from '@ucd-lib/casita-worker';
+import path from 'path';
 import send from './send.js';
 
-async function handleGenericMessage(metadata, payload, monitor) {
+const {apidUtils} = decoder;
+
+async function handleGenericMessage(metadata, payload, monitor, metric) {
   var dataObj = new Date(946728000000 + metadata.headers.SECONDS_SINCE_EPOCH*1000);
   var [date, time] = dataObj.toISOString().split('T');
   time = time.replace(/\..*/, '');
@@ -18,7 +22,7 @@ async function handleGenericMessage(metadata, payload, monitor) {
 
   if( ms && !productName.match(/^(mesoscale|conus|fulldisk|solar-imagery-euv-data)$/) ) {
     basePath = path.resolve('/', 
-      SATELLITE,
+      config.satellite,
       (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       date,
       time.split(':')[0],
@@ -28,7 +32,7 @@ async function handleGenericMessage(metadata, payload, monitor) {
     );
   } else {
     basePath = path.resolve('/', 
-      SATELLITE,
+      config.satellite,
       (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       date,
       time.split(':')[0],

@@ -1,7 +1,11 @@
-import {apidUtils} from '@ucd-lib/goes-r-packet-decoder';
+import decoder from '@ucd-lib/goes-r-packet-decoder';
+import {config, logger} from '@ucd-lib/casita-worker';
+import path from 'path';
 import send from './send.js';
 
-async function handleImageMessage(metadata, payload, monitor) {
+const {apidUtils} = decoder;
+
+async function handleImageMessage(metadata, payload, monitor, metric) {
   let product = apidUtils.get(metadata.apid);
   if( !product.imageScale && !product.label ) return;
 
@@ -10,7 +14,7 @@ async function handleImageMessage(metadata, payload, monitor) {
   time = time.replace(/\..*/, '');
 
   let basePath = path.resolve('/', 
-    SATELLITE,
+    config.satellite,
     (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     date,
     time.split(':')[0],

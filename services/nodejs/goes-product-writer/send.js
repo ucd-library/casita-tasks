@@ -1,7 +1,9 @@
 import fs from 'fs-extra';
+import path from 'path';
+import {v4} from 'uuid';
 import {logger, config, KafkaProducer} from '@ucd-lib/casita-worker';
 
-let kafkaProducer = new KafkaProducer();
+let kafkaProducer = KafkaProducer();
 
 async function send(file, data) {
   try {
@@ -10,10 +12,10 @@ async function send(file, data) {
     await fs.mkdirpSync(path.parse(file).dir);
     await fs.writeFile(file, data);
 
-    kafkaProducer.client.produce({
+    kafkaProducer.produce({
       topic : config.kafka.topics.productWriter,
       value : {
-        id : uuid.v4(),
+        id : v4(),
         time : new Date().toISOString(),
         source : 'goes-product-writer',
         datacontenttype : 'application/json',
@@ -29,7 +31,7 @@ async function send(file, data) {
 }
 
 (async function() {
-  await kafkaProducer.client.connect();
+  await kafkaProducer.connect();
 })()
 
 export default send;
