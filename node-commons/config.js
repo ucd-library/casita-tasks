@@ -4,6 +4,8 @@ import merge from 'deepmerge';
 import fs from 'fs';
 const env = process.env;
 
+const __dirname = path.parse(import.meta.url.replace('file://', '')).dir;
+
 let dotPathMap = {
   'debugConfig' : 'debugConfig',
   'quiet': 'logging.quiet',
@@ -31,6 +33,8 @@ let kafkaPort = env.KAFKA_PORT;
 if( kafkaPort && kafkaPort.match(/:/) ) {
   kafkaPort = kafkaPort.split(':').pop();
 }
+
+const AIRFLOW_HOST = env.AIRFLOW_HOST || 'airflow-webserver:8080';
 
 let config = {
   instance : env.INSTANCE_ENV || 'sandbox',
@@ -72,13 +76,20 @@ let config = {
     quite : (env.LOG_QUITE === 'true'),
     name : env.LOG_NAME || 'casita-worker',
     level : env.LOG_LEVEL || 'info'
+  },
+
+  airflow : {
+    host : AIRFLOW_HOST,
+    baseApi : `http://${AIRFLOW_HOST}/api/v1/dags`,
+    username : env._AIRFLOW_WWW_USER_USERNAME || 'airflow',
+    password : env._AIRFLOW_WWW_USER_PASSWORD || 'airflow'
   }
 }
 
 export default config
 function update(args, cmd) {
   let parent = cmd.parent ? cmd.parent.name() : '';
-  args.command = 'nodejs/'+((parent ? parent+'/' : '') + cmd.name()).replace(/casita-/g, '');
+  args.command = 'tasks/nodejs/'+((parent ? parent+'/' : '') + cmd.name()).replace(/casita-/g, '');
   args.commandRef = getCommandReference(args.command);
   Object.assign(
     config, 

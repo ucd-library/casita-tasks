@@ -30,7 +30,6 @@ async function onMessage(msg) {
     payload = msg.value.slice(length + 4, msg.value.length);
   }
 
-  console.log(metadata.type);
   if( metadata.type === 'image' ) {
     await handleImageMessage(metadata, payload, monitor, metric)
   } else {
@@ -40,20 +39,6 @@ async function onMessage(msg) {
 
 
 (async function() {
-  // await model.connect();
-
-  // TODO: move to kafka init
-  // await kafka.utils.ensureTopic({
-  //   topic: config.decoder.kafka.topic,
-  //   num_partitions: 10,
-  //   replication_factor: 1,
-  //   // TODO: this is set in decoder/index.js as well.  need to update both. badness
-  //   config : {
-  //     'retention.ms' : (1000 * 60 * 60)+'',
-  //     'max.message.bytes' : 100000000+''
-  //   }
-  // }, {'metadata.broker.list': config.decoder.kafka.host+':'+config.decoder.kafka.port});
-
   await kafkaConsumer.connect();
   logger.info(`Waiting for topic: ${config.kafka.topics.decoder}`);
   await kafkaConsumer.waitForTopics([config.kafka.topics.decoder]);
@@ -64,15 +49,8 @@ async function onMessage(msg) {
   kafkaConsumer.consume(async msg => {
     try {
       await onMessage(msg);
-      await sleep(25);
     } catch(e) {
       logger.error('kafka message error', e);
     }
   });
 })()
-
-async function sleep(time) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => resolve(), time);
-  });
-}

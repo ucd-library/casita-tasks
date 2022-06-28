@@ -1,6 +1,6 @@
-const { program, Option } = require('commander');
-const globalOpts = require('./global-opts');
-const action = require('../action');
+import { program, Option } from 'commander';
+import globalOpts from './global-opts.js';
+import action from './action.js';
 
 program
   .command('jp2-to-png')

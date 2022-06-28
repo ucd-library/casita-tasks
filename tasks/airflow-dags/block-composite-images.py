@@ -22,7 +22,7 @@ with DAG(
     # [START howto_operator_bash]
     block_composite = BashOperator(
         task_id='block_composite',
-        bash_command='casita image jp2-to-png --quiet -m -k=png-block-ready --directory {{ params.path }}',
+        bash_command='casita image jp2-to-png --quiet -m -k=png-block-ready --directory {{ params.file.dir }}',
     )
     # [END howto_operator_bash]
 

@@ -13,32 +13,47 @@ async function handleImageMessage(metadata, payload, monitor, metric) {
   var [date, time] = dataObj.toISOString().split('T');
   time = time.replace(/\..*/, '');
 
-  let basePath = path.resolve('/', 
-    config.satellite,
-    (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+  let productInfo = {
+    satellite : config.satellite,
+    scale : (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     date,
-    time.split(':')[0],
-    time.split(':').splice(1,2).join('-'),
-    product.band,
-    metadata.apid,
+    hour : time.split(':')[0],
+    minsec : time.split(':').splice(1,2).join('-'),
+    band : product.band,
+    apid : metadata.apid,
+    x : metadata.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE,
+    y : metadata.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE
+  }
+
+  let basePath = path.resolve('/', 
+    productInfo.satellite,
+    productInfo.scale,
+    productInfo.date,
+    productInfo.hour,
+    productInfo.minsec,
+    productInfo.band,
+    productInfo.apid,
     'blocks',
-    metadata.imagePayload.UPPER_LOWER_LEFT_X_COORDINATE+'-'+metadata.imagePayload.UPPER_LOWER_LEFT_Y_COORDINATE
+    productInfo.x+'-'+productInfo.y
   );
   logger.debug('Sending image:  '+ basePath);
 
   if( metadata.rootMetadata ) {
     await send(
+      productInfo,
       path.join(basePath, 'fragment-metadata.json'), 
       JSON.stringify(metadata)
     );
   } else {
 
     await send(
+      productInfo,
       path.join(basePath, 'fragments', metadata.index+'', 'image-fragment-metadata.json'), 
       JSON.stringify(metadata)
     );
 
     await send(
+      productInfo,
       path.join(basePath, 'fragments', metadata.index+'', 'image-fragment.jp2'), 
       payload
     );

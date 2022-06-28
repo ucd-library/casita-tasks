@@ -5,11 +5,13 @@ import {logger, config, KafkaProducer} from '@ucd-lib/casita-worker';
 
 let kafkaProducer = KafkaProducer();
 
-async function send(file, data) {
+async function send(productInfo, file, data) {
   try {
+    productInfo = Object.assign({}, productInfo);
     file = path.join(config.fs.nfsRoot, file);
+    productInfo.file = path.parse(file);
 
-    await fs.mkdirpSync(path.parse(file).dir);
+    await fs.mkdirpSync(productInfo.file.dir);
     await fs.writeFile(file, data);
 
     kafkaProducer.produce({
@@ -19,9 +21,7 @@ async function send(file, data) {
         time : new Date().toISOString(),
         source : 'goes-product-writer',
         datacontenttype : 'application/json',
-        data : {
-          filePath: file
-        }
+        data : productInfo
       }
     })
 

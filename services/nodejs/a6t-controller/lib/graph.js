@@ -1,51 +1,53 @@
-import goesrMsgDecorder from './goesr-message-decoder.js';
 import airflow from './airflow.js';
 import pathUtils from 'path';
+import fs from 'fs';
+import {config} from '@ucd-lib/casita-worker';
 
 const GENERIC_PAYLOAD_APIDS = /^(301|302)$/;
 
 
 function isBandReady(msgs) {
-  let fragments = msgs.filter(item => item.path.filename === 'image-fragment.jp2');
-  let metadata = msgs.filter(item => item.path.filename === 'fragment-metadata.json');
+  let fragments = msgs.filter(item => item.data.file.base === 'image-fragment.jp2');
+  let metadata = msgs.filter(item => item.data.file.base === 'fragment-metadata.json');
   
   if( !metadata.length ) return false;
-  return (metadata[0].metadata.fragmentsCount <= fragments.length);
+
+  metadata = metadata[0].data.file;
+  metadata = JSON.parse(fs.readFileSync(pathUtils.join(metadata.dir, metadata.base), 'utf-8'));
+  
+  return (metadata.fragmentsCount <= fragments.length);
 }
 
 
 const dag = {
 
-  'goesr-product' : {
-    source : true,
-    decoder : goesrMsgDecorder 
-  },
-
-
+  // [config.kafka.topics.productWriter] : {
+  //   source : true
+  // },
 
   'block-composite-image' : {
-    dependencies : ['goesr-product'],
+    dependencies : [config.kafka.topics.productWriter],
 
-    where : msg => ['image-fragment.jp2', 'fragment-metadata.json'].includes(msg.path.filename),
-    groupBy : msg => `${msg.scale}-${msg.date}-${msg.hour}-${msg.minsec}-${msg.block}`,
+    where : msg => ['image-fragment.jp2', 'fragment-metadata.json'].includes(msg.data.file.base),
+    groupBy : msg => `${msg.data.scale}-${msg.data.date}-${msg.data.hour}-${msg.data.minsec}-${msg.data.x}-${msg.data.y}`,
     expire : 60 * 2,
     
     ready : (key, msgs) => {
-      // group by band
+      // group by band for airflow tasks
       let bands = {}, band;
       msgs.forEach(msg => {
-        if( !bands[msg.band] ) bands[msg.band] = []
-        bands[msg.band].push(msg);
+        if( !bands[msg.data.band] ) bands[msg.data.band] = []
+        bands[msg.data.band].push(msg);
       })
 
-      if( Object.keys(bands).length < 6 ) {
+      let pendingTime = new Date(msgs[0].time).getTime();
+      if( (Date.now() - pendingTime < 500) && Object.keys(bands).length < 6 ) {
         return;
       }
 
       for( let bandID in bands ) {
         band = bands[bandID];
         if( !isBandReady(band) ) {
-          console.log(band);
           return false;
         }
       }
@@ -54,11 +56,13 @@ const dag = {
     },
 
     sink : (key, msgs) => {
-      let {scale, date, hour, minsec, block, path} = msgs[0];
-      path.directory = pathUtils.resolve(path.directory, '..', '..', '..');
+      let {scale, date, hour, minsec, block, file, x, y} = msgs[0].data;
 
-      return airflow.runDag(key, 'block-composite-images', {
-        scale, date, hour, minsec, block, path
+      let bands = new Set();
+      msgs.forEach(msg => bands.add(msg.data.band))
+
+      return airflow.runDag(key+'-'+Array.from(bands).join(':'), 'block-composite-images', {
+        scale, date, hour, minsec, block, file, x, y
       });
     }
   },
@@ -66,10 +70,11 @@ const dag = {
 
 
   'full-composite-image' : {
+    enabled : false,
     dependencies : ['block-composite-images'],
 
-    groupBy : msg => `${msg.scale}-${date}-${hour}-${minsec}-${band}-${apid}-${path.filename}`,
-    where : data => ['image.png', 'web.png', 'web-scaled.png'].includes(data.path.filename),
+    groupBy : msg => `${msg.scale}-${msg.date}-${msg.hour}-${msg.minsec}-${msg.band}-${msg.apid}-${msg.file.base}`,
+    where : data => ['image.png', 'web.png', 'web-scaled.png'].includes(data.file.base),
     expire : 60 * 20,
 
     ready : (key, msgs) => {
@@ -92,12 +97,11 @@ const dag = {
     },
   },
 
-
-
   'generic-payload-parser' : {
-    dependencies : ['goesr-product'],
+    enabled : false,
+    dependencies : [config.kafka.topics.productWriter],
 
-    where : data => (data.apid.match(GENERIC_PAYLOAD_APIDS) ? true : false) && (data.path.filename === 'payload.bin'),
+    where : data => (data.apid.match(GENERIC_PAYLOAD_APIDS) ? true : false) && (data.file.base === 'payload.bin'),
 
     sink : (key, msgs) => {
       let {scale, date, hour, minsec, ms, band, apid, block, path} = msgs[0];
@@ -109,7 +113,7 @@ const dag = {
   },
 
   'lighting-grouped-stats' : {
-
+    enabled : false
   }
 
 

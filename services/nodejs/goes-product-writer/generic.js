@@ -20,31 +20,42 @@ async function handleGenericMessage(metadata, payload, monitor, metric) {
 
   let productName = (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
+  let productInfo = {
+    satellite : config.satellite,
+    scale : (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    date,
+    hour : time.split(':')[0],
+    minsec : time.split(':').splice(1,2).join('-'),
+    band : product.band,
+    apid : metadata.apid,
+    ms
+  }
+
   if( ms && !productName.match(/^(mesoscale|conus|fulldisk|solar-imagery-euv-data)$/) ) {
     basePath = path.resolve('/', 
-      config.satellite,
-      (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      date,
-      time.split(':')[0],
-      time.split(':').splice(1,2).join('-'),
+      productInfo.satellite,
+      productInfo.scale,
+      productInfo.date,
+      productInfo.hour,
+      productInfo.minsec,
       ms,
-      metadata.apid
+      productInfo.apid
     );
   } else {
     basePath = path.resolve('/', 
-      config.satellite,
-      (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      date,
-      time.split(':')[0],
-      time.split(':').splice(1,2).join('-'),
-      metadata.apid
+      productInfo.satellite,
+      productInfo.scale,
+      productInfo.date,
+      productInfo.hour,
+      productInfo.minsec,
+      productInfo.apid
     );
   }
 
   logger.debug('Sending generic:  '+ basePath);
 
-  await send(path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
-  await send(path.join(basePath, 'payload.bin'), payload);
+  await send(productInfo, path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
+  await send(productInfo, path.join(basePath, 'payload.bin'), payload);
 
   monitor.setMaxMetric(
     metric.type,

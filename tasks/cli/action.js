@@ -1,6 +1,7 @@
-const config = require('../../node-commons/config');
-const logger = require('../../node-commons/logger');
-const metrics = require('../../node-commons/metrics');
+import {config, logger, Monitoring} from '@ucd-lib/casita-worker';
+import {update as updateConfig} from '../../node-commons/config.js';
+// const logger = require('../../node-commons/logger');
+// const metrics = require('../../node-commons/metrics');
 
 const metricsDefs = {
   time : {
@@ -85,7 +86,7 @@ function sendMetrics(time, labels) {
  * run command from config
  */
 async function action(opts, cmd) {
-  config.update(opts, cmd);
+  updateConfig(opts, cmd);
 
   if( config.debugConfig === true) {
     logger.info(config);
@@ -132,4 +133,4 @@ async function action(opts, cmd) {
   }
 }
 
-module.exports = action;
+export default action;

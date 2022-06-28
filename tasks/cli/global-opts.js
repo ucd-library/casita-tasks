@@ -1,6 +1,6 @@
-const { Option } = require('commander');
+import { Option } from 'commander';
 
-module.exports = function wrapOpts(program) {
+function wrapOpts(program) {
   program.commands.forEach(cmd => {
     cmd
       .option('-m, --metrics', 'record google cloud metrics')
@@ -33,3 +33,5 @@ module.exports = function wrapOpts(program) {
       .option('--debug-config', 'print config to stdout')
   })
 }
+
+export default wrapOpts;

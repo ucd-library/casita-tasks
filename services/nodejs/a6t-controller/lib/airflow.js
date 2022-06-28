@@ -1,9 +1,5 @@
 import fetch from 'node-fetch';
-
-const AIRFLOW_HOST = process.env.AIRFLOW_HOST || 'airflow-webserver:8080';
-const BASE_API = `http://${AIRFLOW_HOST}/api/v1/dags`;
-const AIRFLOW_USERNAME = process.env._AIRFLOW_WWW_USER_USERNAME || 'airflow';
-const AIRFLOW_PASSWORD = process.env._AIRFLOW_WWW_USER_PASSWORD || 'airflow';
+import {config} from '@ucd-lib/casita-worker';
 
 class Airflow {
 
@@ -20,7 +16,7 @@ class Airflow {
   
     console.log(
       'SENDING!!!!!',
-      [BASE_API, dagId, 'dagRuns'].join('/'), 
+      [config.airflow.baseApi, dagId, 'dagRuns'].join('/'), 
       {
         method : 'POST',
         headers : {'content-type': 'application/json'}, 
@@ -40,12 +36,12 @@ class Airflow {
   async _callPostApi(key, path, body) {
     try { 
       let response = await fetch(
-        [BASE_API, path].join('/'),
+        [config.airflow.baseApi, path].join('/'),
         {
           method : 'POST',
           headers : {
             'content-type': 'application/json',
-            'Authorization': `Basic ${Buffer.from(AIRFLOW_USERNAME+':'+AIRFLOW_PASSWORD).toString('base64')}`
+            'Authorization': `Basic ${Buffer.from(config.airflow.username+':'+config.airflow.password).toString('base64')}`
           }, 
           body : JSON.stringify(body)
         }
