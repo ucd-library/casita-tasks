@@ -11,6 +11,7 @@ let dotPathMap = {
   'quiet': 'logging.quiet',
   'directory' : 'directory',
   'file' : 'file',
+  'metadataFile' : 'metadataFile',
   'metrics' : 'google.metrics',
   'googleApplicationCredentials' : 'google.applicationCredentials',
   'googleProjectId' : 'google.projectId',
@@ -60,15 +61,17 @@ let config = {
   
   kafka : {
     enabled : false,
+    clientId : env.KAFKA_CLIENT_ID || 'default-casita-client',
     port : kafkaPort || 9092,
     host : env.KAFKA_HOST || 'kafka',
     // TODO: if you update a topic name, make sure you do it in services/init/kafka.js as well
     topics : {
       decoder : 'goes-decoder',
       productWriter : 'goes-nfs-product',
+      tasks : 'tasks'
     },
     groups : {
-      productWriter : env.KAFKA_PRODUCT_WRITER_GROUP_ID || 'product-writer'
+      productWriter : env.KAFKA_PRODUCT_WRITER_GROUP_ID || 'product-writer-1'
     }
   },
 

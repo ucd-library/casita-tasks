@@ -45,13 +45,11 @@ async function handleImageMessage(metadata, payload, monitor, metric) {
       JSON.stringify(metadata)
     );
   } else {
-
     await send(
       productInfo,
       path.join(basePath, 'fragments', metadata.index+'', 'image-fragment-metadata.json'), 
       JSON.stringify(metadata)
     );
-
     await send(
       productInfo,
       path.join(basePath, 'fragments', metadata.index+'', 'image-fragment.jp2'), 

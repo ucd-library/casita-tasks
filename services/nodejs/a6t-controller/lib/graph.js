@@ -29,7 +29,7 @@ const dag = {
     dependencies : [config.kafka.topics.productWriter],
 
     where : msg => ['image-fragment.jp2', 'fragment-metadata.json'].includes(msg.data.file.base),
-    groupBy : msg => `${msg.data.scale}-${msg.data.date}-${msg.data.hour}-${msg.data.minsec}-${msg.data.x}-${msg.data.y}`,
+    groupBy : msg => `${msg.data.scale}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}`,
     expire : 60 * 2,
     
     ready : (key, msgs) => {
@@ -41,7 +41,7 @@ const dag = {
       })
 
       let pendingTime = new Date(msgs[0].time).getTime();
-      if( (Date.now() - pendingTime < 500) && Object.keys(bands).length < 6 ) {
+      if( (Date.now() - pendingTime < 5000) && Object.keys(bands).length < 16 ) {
         return;
       }
 
@@ -52,18 +52,28 @@ const dag = {
         }
       }
 
+      console.log(key, Date.now() - pendingTime, Object.keys(bands) );
+
       return true;
     },
 
     sink : (key, msgs) => {
-      let {scale, date, hour, minsec, block, file, x, y} = msgs[0].data;
+      let {satellite, scale, date, hour, minsec, block, file, apid, x, y} = msgs[0].data;
 
-      let bands = new Set();
-      msgs.forEach(msg => bands.add(msg.data.band))
-
-      return airflow.runDag(key+'-'+Array.from(bands).join(':'), 'block-composite-images', {
-        scale, date, hour, minsec, block, file, x, y
+      let files = {};
+      msgs.forEach(msg => {
+        files[parseInt(msg.data.band)] = pathUtils.join(config.fs.nfsRoot, satellite, scale,
+          date, hour, minsec, msg.data.band, msg.data.apid, 'blocks', x+'-'+y,
+          'fragment-metadata.json');
       });
+      // console.log(files);
+
+      return airflow.runDag(
+        key+'-'+Object.keys(files).join(':')+'-'+Date.now(), 
+        'block-composite-images', 
+        // 'block-test', 
+        {files}
+      );
     }
   },
 

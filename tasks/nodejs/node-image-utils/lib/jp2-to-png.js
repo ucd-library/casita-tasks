@@ -1,11 +1,11 @@
-const JpgImage = require('./jpxInt16');
-const {PNG} = require('pngjs');
-const config = require('./config');
+import JpgImage from './jpxInt16.js';
+import {PNG} from 'pngjs';
+import config from './config.js';
 
 let max = 0;
 let min = Number.MAX_SAFE_INTEGER;
 
-module.exports = async (metadata, data) => {
+async function run(metadata, data) {
   let fragmentCount = parseInt(metadata.fragmentsCount);
   let imageMetadata = metadata.imagePayload;
   let imageHeight = imageMetadata.IMAGE_BLOCK_HEIGHT;
@@ -131,3 +131,5 @@ module.exports = async (metadata, data) => {
     })
   };
 }
+
+export default run

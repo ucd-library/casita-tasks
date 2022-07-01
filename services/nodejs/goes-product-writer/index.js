@@ -1,4 +1,4 @@
-import {logger, config, KafkaConsumer, Monitoring} from '@ucd-lib/casita-worker';
+import {logger, config, KafkaConsumer, waitForTopics, waitUntil, Monitoring} from '@ucd-lib/casita-worker';
 import metrics from '../../init/google-cloud-metrics.js';
 import handleImageMessage from './image.js';
 import handleGenericMessage from './generic.js';
@@ -13,7 +13,7 @@ monitor.ensureMetrics();
 
 // init kafka
 let kafkaConsumer = KafkaConsumer({
-  'group.id' : config.kafka.groups.productWriter
+  groupId : config.kafka.groups.productWriter,
 });
 
 async function onMessage(msg) {
@@ -40,17 +40,23 @@ async function onMessage(msg) {
 
 (async function() {
   await kafkaConsumer.connect();
+
   logger.info(`Waiting for topic: ${config.kafka.topics.decoder}`);
-  await kafkaConsumer.waitForTopics([config.kafka.topics.decoder]);
+  await waitForTopics([config.kafka.topics.decoder]);
 
   logger.info(`Topic ready ${config.kafka.topics.decoder}, subscribing`);
-  await kafkaConsumer.subscribe([config.kafka.topics.decoder]);
+  await kafkaConsumer.subscribe({
+    topics: [config.kafka.topics.decoder]
+  });
 
-  kafkaConsumer.consume(async msg => {
-    try {
-      await onMessage(msg);
-    } catch(e) {
-      logger.error('kafka message error', e);
+  await kafkaConsumer.run({
+    eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
+      try {
+        await onMessage(message);
+      } catch(e) {
+        logger.error('kafka message error', e);
+      }
     }
   });
+
 })()

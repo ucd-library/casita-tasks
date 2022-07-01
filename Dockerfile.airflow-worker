@@ -24,4 +24,4 @@ WORKDIR /casita
 RUN npm link
 RUN npm link @ucd-lib/casita-worker
 
-USER airflow
+# USER airflow

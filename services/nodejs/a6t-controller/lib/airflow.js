@@ -5,8 +5,8 @@ class Airflow {
 
   async runDag(key, dagId, conf) {
 
-    let productTime = new Date(conf.date+'T'+conf.hour+':'+conf.minsec.replace('-', ':'));
-    console.log('Product Time diff: '+Math.ceil((Date.now() - productTime.getTime())/1000) );
+    // let productTime = new Date(conf.date+'T'+conf.hour+':'+conf.minsec.replace('-', ':'));
+    // console.log('Product Time diff: '+Math.ceil((Date.now() - productTime.getTime())/1000) );
 
     const body = {
       dag_run_id : key,

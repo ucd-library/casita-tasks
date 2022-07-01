@@ -1,28 +1,35 @@
-import kafka from '@ucd-lib/node-kafka';
+import {Kafka} from 'kafkajs';
 import config from './config.js';
 
-const {Producer, Consumer, utils} = kafka;
+const kafka = new Kafka({
+  clientId: config.kafka.clientId,
+  brokers: [config.kafka.host + ':' + config.kafka.port]
+});
+let admin;
 
 function KafkaProducer(kconfig={}, pollInterval=100) {
-  if( !kconfig['metadata.broker.list'] ) {
-    kconfig['metadata.broker.list'] = config.kafka.host + ':' + config.kafka.port;
-  }
-
-  let producer = new Producer(kconfig);
-
-  producer.client.setPollInterval(pollInterval);
-  return producer;
+  return kafka.producer();
 }
 
-function KafkaConsumer(kconfig={}, topicConfig={}) {
-  if( !kconfig['metadata.broker.list'] ) {
-    kconfig['metadata.broker.list'] = config.kafka.host + ':' + config.kafka.port;
-  }
-  if( !topicConfig['auto.offset.reset'] ) {
-    topicConfig['auto.offset.reset'] = 'earliest';
-  }
-
-  return new Consumer(kconfig, topicConfig);
+function KafkaConsumer(kconfig={}) {
+  return kafka.consumer(kconfig)
 }
 
-export {KafkaConsumer, KafkaProducer};
+async function waitForTopics(topics) {
+  if( !admin ) {
+    admin = kafka.admin();
+    await admin.connect();
+  }
+  console.log(await admin.fetchTopicMetadata())
+  let existingTopics = (await admin.fetchTopicMetadata()).topics.map(item => item.topic);
+
+  for( let topic of topics ) {
+    if( !existingTopics.includes(topic) ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export {KafkaConsumer, KafkaProducer, waitForTopics};

@@ -2462,4 +2462,4 @@
              return JpxImage;
            })();
            
-module.exports = JpxImage;
+export default JpxImage;

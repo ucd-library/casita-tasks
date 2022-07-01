@@ -4,7 +4,7 @@ import action from './action.js';
 
 program
   .command('jp2-to-png')
-  .requiredOption('-d, --directory <directory>', 'root fragement directory containing fragment-metadata.json file')
+  .requiredOption('-f, --metadata-file <file>', 'root fragement directory, fragment-metadata.json file')
   .description('convert jp2 fragement dir to png file')
   .action(action)
 

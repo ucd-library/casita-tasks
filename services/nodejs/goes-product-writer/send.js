@@ -7,22 +7,30 @@ let kafkaProducer = KafkaProducer();
 
 async function send(productInfo, file, data) {
   try {
+
     productInfo = Object.assign({}, productInfo);
     file = path.join(config.fs.nfsRoot, file);
     productInfo.file = path.parse(file);
 
-    await fs.mkdirpSync(productInfo.file.dir);
-    await fs.writeFile(file, data);
+    fs.mkdirpSync(productInfo.file.dir);
+    if( fs.existsSync(file) ) {
+      fs.unlinkSync(file)
+    }
 
-    kafkaProducer.produce({
+    fs.writeFileSync(file, data);
+
+
+    kafkaProducer.send({
       topic : config.kafka.topics.productWriter,
-      value : {
-        id : v4(),
-        time : new Date().toISOString(),
-        source : 'goes-product-writer',
-        datacontenttype : 'application/json',
-        data : productInfo
-      }
+      messages : [{
+        value : JSON.stringify({
+          id : v4(),
+          time : new Date().toISOString(),
+          source : 'goes-product-writer',
+          datacontenttype : 'application/json',
+          data : productInfo
+        })
+      }]
     })
 
   } catch(e) {

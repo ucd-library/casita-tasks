@@ -1,13 +1,13 @@
-const config = require('../../../node-commons/config');
-const logger = require('../../../node-commons/logger');
-const path = require('path');
-const jp2ToPng = require("./lib/jp2-to-png");
+import {config, logger, } from '@ucd-lib/casita-worker';
+import path from 'path';
+import fs from 'fs-extra';
+import jp2ToPng from "./lib/jp2-to-png.js";
 
 async function run() {
-  let rootDir = config.directory;
-
-  let metadata = require(rootDir+'/fragment-metadata.json');
+  let rootDir = path.parse(config.metadataFile).dir;
+  let metadata = JSON.parse(fs.readFileSync(config.metadataFile, 'utf-8'));
   let data = {};
+
   for( let i = 0; i < metadata.fragmentsCount; i++ ) {
     logger.debug('Reading file: '+path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'));
     data['fragment_data_'+i] = {
@@ -31,4 +31,4 @@ async function run() {
   }
 }
 
-module.exports = run;
+export default run;
