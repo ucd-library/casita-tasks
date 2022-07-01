@@ -19,7 +19,7 @@ class PG {
       // await this.reconnect();
     });
     this.client.on('error', async e => {
-      logger.info('Postgresql client error event', e);
+      logger.error('Postgresql client error event', e);
       // await this.reconnect();
     });
   }

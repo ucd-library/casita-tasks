@@ -1,5 +1,6 @@
 import {Kafka} from 'kafkajs';
 import config from './config.js';
+import {v4} from 'uuid';
 
 const kafka = new Kafka({
   clientId: config.kafka.clientId,
@@ -20,7 +21,7 @@ async function waitForTopics(topics) {
     admin = kafka.admin();
     await admin.connect();
   }
-  console.log(await admin.fetchTopicMetadata())
+
   let existingTopics = (await admin.fetchTopicMetadata()).topics.map(item => item.topic);
 
   for( let topic of topics ) {
@@ -32,4 +33,26 @@ async function waitForTopics(topics) {
   return true;
 }
 
-export {KafkaConsumer, KafkaProducer, waitForTopics};
+async function sendMessage(msg, kafkaProducer) {
+  if( !kafkaProducer ) {
+    kafkaProducer = KafkaProducer();
+    await kafkaProducer.connect();
+  }
+
+  return kafkaProducer.send({
+    topic : msg.topic,
+    messages : [{
+      value : JSON.stringify({
+        id : v4(),
+        time : new Date().toISOString(),
+        source : msg.source,
+        datacontenttype : 'application/json',
+        data : msg.data
+      })
+    }]
+  });
+
+
+}
+
+export {KafkaConsumer, KafkaProducer, waitForTopics, sendMessage};

@@ -68,10 +68,12 @@ let config = {
     topics : {
       decoder : 'goes-decoder',
       productWriter : 'goes-nfs-product',
-      tasks : 'tasks'
+      tasks : 'tasks',
+      blockCompositeImage : 'block-composite-image'
     },
     groups : {
-      productWriter : env.KAFKA_PRODUCT_WRITER_GROUP_ID || 'product-writer-1'
+      productWriter : env.KAFKA_PRODUCT_WRITER_GROUP_ID || 'product-writer',
+      worker : env.KAFKA_CASITA_WORKER_GROUP_ID || 'casita-worker'
     }
   },
 

@@ -1,7 +1,8 @@
-import {config, logger, } from '@ucd-lib/casita-worker';
+import {config, logger } from '@ucd-lib/casita-worker';
 import path from 'path';
 import fs from 'fs-extra';
 import jp2ToPng from "./lib/jp2-to-png.js";
+import scale from './lib/scale.js';
 
 async function run() {
   let rootDir = path.parse(config.metadataFile).dir;
@@ -26,8 +27,18 @@ async function run() {
   logger.debug('Writing file: '+path.join(rootDir, 'web.png'));
   await fs.writeFile(path.join(rootDir, 'web.png'), images.webPng);
 
+  let {satellite, product, date, hour, minsec, band} = rootDir.replace(config.fs.nfsRoot) 
+  let scaleImage = await scale(path.join(rootDir, 'web.png'), band);
+  let scaleFile = path.join(rootDir, 'web-scaled.png');
+  logger.debug('Writing scale file: '+scaleFile);
+  await fs.writeFile(scaleFile, scaleImage);
+
   return {
-    files : [path.join(rootDir, 'image.png'), path.join(rootDir, 'web.png') ]
+    files : [
+      path.join(rootDir, 'image.png'), 
+      path.join(rootDir, 'web.png'),
+      path.join(rootDir, 'web-scaled.png')
+    ]
   }
 }
 

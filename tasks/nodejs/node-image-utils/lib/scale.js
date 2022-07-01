@@ -1,15 +1,14 @@
-const fs = require('fs-extra');
-const path = require('path');
-const {PNG} = require('@ucd-lib/pngjs');
-const config = require('./config');
+import fs from 'fs-extra';
+import path from 'path';
+import {PNG} from '@ucd-lib/pngjs';
+import config from './config.js';
 
 const SCALE_FACTOR = 2;
 
-module.exports = async function scale(file, band=1) {
+async function scale(file, band=1) {
   let info = config.bandResolutions[parseInt(band)];
   let scale = info.resolution/SCALE_FACTOR;
 
-  file = path.join(path.parse(file).dir, 'web.png');
   let imageData = await readPng(file);
 
   let newSizeW = Math.floor(imageData.width * scale);
@@ -82,3 +81,5 @@ async function readPng(file, opts) {
     });
   });
 }
+
+export default scale;

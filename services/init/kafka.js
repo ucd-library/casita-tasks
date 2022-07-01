@@ -21,7 +21,7 @@ const topics = [
     }
   },
   {
-    name : 'block-composite-image',
+    name : 'block-composite-image'
   }
 ];
 export default topics;

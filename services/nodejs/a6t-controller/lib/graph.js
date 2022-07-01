@@ -1,4 +1,4 @@
-import airflow from './airflow.js';
+import kafkaWorker from './kafka.js';
 import pathUtils from 'path';
 import fs from 'fs';
 import {config} from '@ucd-lib/casita-worker';
@@ -25,87 +25,79 @@ const dag = {
   //   source : true
   // },
 
-  'block-composite-image' : {
+  [config.kafka.topics.blockCompositeImage] : {
     dependencies : [config.kafka.topics.productWriter],
 
     where : msg => ['image-fragment.jp2', 'fragment-metadata.json'].includes(msg.data.file.base),
-    groupBy : msg => `${msg.data.scale}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}`,
-    expire : 60 * 2,
-    
-    ready : (key, msgs) => {
-      // group by band for airflow tasks
-      let bands = {}, band;
-      msgs.forEach(msg => {
-        if( !bands[msg.data.band] ) bands[msg.data.band] = []
-        bands[msg.data.band].push(msg);
-      })
+    groupBy : msg => `${msg.data.scale}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}-${msg.data.band}`,
+    expire : 5,
+    ready : (key, msgs) => isBandReady(msgs),
 
-      let pendingTime = new Date(msgs[0].time).getTime();
-      if( (Date.now() - pendingTime < 5000) && Object.keys(bands).length < 16 ) {
-        return;
-      }
+    sink : (key, msgs) => {
+      let {satellite, scale, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
 
-      for( let bandID in bands ) {
-        band = bands[bandID];
-        if( !isBandReady(band) ) {
-          return false;
-        }
-      }
+      let fmFile = pathUtils.join(config.fs.nfsRoot, satellite, scale,
+        date, hour, minsec, band, apid, 'blocks', x+'-'+y,
+        'fragment-metadata.json');
 
-      console.log(key, Date.now() - pendingTime, Object.keys(bands) );
+      // return kafkaWorker.exec(`casita image jp2-to-png -k -m --metadata-file=${fmFile}`);
+      return kafkaWorker.exec(`node /casita/tasks/cli/casita.js image jp2-to-png -k -m --metadata-file=${fmFile}`);
 
-      return true;
+    }
+  },
+
+  'ring-buffer' : {
+    enabled: false,
+    dependencies : [config.kafka.topics.blockCompositeImage],
+    where : msg => true,
+    groupBy : msg => `${msg.data.scale}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}-${msg.data.band}`,
+
+  },
+
+  'ca-projection' : {
+    enabled: false,
+    dependencies : ['ring-buffer'],
+    groupBy : msg => `${msg.data.scale}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.band}`,
+    where : msg => {
+      let key = `${msg.data.x},${msg.data.y}`;
+      return ['0-0','200-375'].includes(key);
     },
 
     sink : (key, msgs) => {
-      let {satellite, scale, date, hour, minsec, block, file, apid, x, y} = msgs[0].data;
-
-      let files = {};
-      msgs.forEach(msg => {
-        files[parseInt(msg.data.band)] = pathUtils.join(config.fs.nfsRoot, satellite, scale,
-          date, hour, minsec, msg.data.band, msg.data.apid, 'blocks', x+'-'+y,
-          'fragment-metadata.json');
-      });
-      // console.log(files);
-
-      return airflow.runDag(
-        key+'-'+Object.keys(files).join(':')+'-'+Date.now(), 
-        'block-composite-images', 
-        // 'block-test', 
-        {files}
-      );
+      let {satellite, scale, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
+      return kafkaWorker.exec(`casita image ca-project -k -m --product=${scale} --time=${date}T${hour}:${minsec}`);
     }
   },
 
 
 
-  'full-composite-image' : {
-    enabled : false,
-    dependencies : ['block-composite-images'],
+  // 'full-composite-image' : {
+  //   enabled : false,
+  //   dependencies : ['block-composite-image'],
 
-    groupBy : msg => `${msg.scale}-${msg.date}-${msg.hour}-${msg.minsec}-${msg.band}-${msg.apid}-${msg.file.base}`,
-    where : data => ['image.png', 'web.png', 'web-scaled.png'].includes(data.file.base),
-    expire : 60 * 20,
+  //   groupBy : msg => `${msg.scale}-${msg.date}-${msg.hour}-${msg.minsec}-${msg.band}-${msg.apid}-${msg.file.base}`,
+  //   where : data => ['image.png', 'web.png', 'web-scaled.png'].includes(data.file.base),
+  //   expire : 60 * 20,
 
-    ready : (key, msgs) => {
-      let scale = msgs[0].scale;
+  //   ready : (key, msgs) => {
+  //     let scale = msgs[0].scale;
 
-      // TODO: wish there was a better way
-      if( scale === 'mesoscale' && msgs.length >= 4 ) return true;
-      if( scale === 'conus' && msgs.length >= 36 ) return true;
-      if( scale === 'fulldisk' && msgs.length >= 229 ) return true;
+  //     // TODO: wish there was a better way
+  //     if( scale === 'mesoscale' && msgs.length >= 4 ) return true;
+  //     if( scale === 'conus' && msgs.length >= 36 ) return true;
+  //     if( scale === 'fulldisk' && msgs.length >= 229 ) return true;
 
-      return false;
-    },
+  //     return false;
+  //   },
 
-    sink : (key, msgs) => {
-      let {scale, date, hour, minsec, band, apid, block, path} = msgs[0];
+  //   sink : (key, msgs) => {
+  //     let {scale, date, hour, minsec, band, apid, block, path} = msgs[0];
 
-      return airflow.runDag(key, 'full-composite-image', {
-        scale, date, hour, minsec, band, apid, block, path
-      });
-    },
-  },
+  //     return airflow.runDag(key, 'full-composite-image', {
+  //       scale, date, hour, minsec, band, apid, block, path
+  //     });
+  //   },
+  // },
 
   'generic-payload-parser' : {
     enabled : false,
@@ -123,7 +115,9 @@ const dag = {
   },
 
   'lighting-grouped-stats' : {
-    enabled : false
+    enabled : false,
+    expire : 30,
+    where : () => false
   }
 
 

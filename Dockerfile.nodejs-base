@@ -13,9 +13,11 @@ WORKDIR /casita
 
 COPY package.json .
 COPY package-lock.json .
-RUN npm install --production
+RUN npm install
 RUN npm link
 RUN npm link @ucd-lib/casita-worker
+# TODO: fix this
+RUN alias casita="node /casita/tasks/cli/casita.js"
 
 COPY node-commons node-commons
 COPY services services

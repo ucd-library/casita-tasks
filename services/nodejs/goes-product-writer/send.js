@@ -19,7 +19,6 @@ async function send(productInfo, file, data) {
 
     fs.writeFileSync(file, data);
 
-
     kafkaProducer.send({
       topic : config.kafka.topics.productWriter,
       messages : [{

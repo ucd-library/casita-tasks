@@ -23,6 +23,56 @@ const metrics = [
         description: 'UCD GRB Box Channel',
       }
     ]
+  },
+  {
+    description: 'Decorder to GOES product writer service time',
+    displayName: 'Time to GOES product writer service',
+    type: 'custom.googleapis.com/grb/time-to-worker',
+    metricKind: 'GAUGE',
+    valueType: 'INT64',
+    unit: 'ms',
+    labels: [
+      {
+        key: 'env',
+        valueType: 'STRING',
+        description: 'CASITA ENV',
+      },
+      {
+        key: 'apid',
+        valueType: 'STRING',
+        description: 'GOES-R GRB APID',
+      },
+      {
+        key: 'channel',
+        valueType: 'STRING',
+        description: 'UCD GRB Box Channel',
+      }
+    ]
+  },
+  {
+    description: 'Decorder to GOES product writer service time',
+    displayName: 'Time to GOES product writer service',
+    type: 'custom.googleapis.com/grb/worker-exec-time',
+    metricKind: 'GAUGE',
+    valueType: 'INT64',
+    unit: 'ms',
+    labels: [
+      {
+        key: 'env',
+        valueType: 'STRING',
+        description: 'CASITA ENV',
+      },
+      {
+        key: 'apid',
+        valueType: 'STRING',
+        description: 'GOES-R GRB APID',
+      },
+      {
+        key: 'channel',
+        valueType: 'STRING',
+        description: 'UCD GRB Box Channel',
+      }
+    ]
   }
 ];
 export default metrics;
