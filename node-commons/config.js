@@ -83,11 +83,17 @@ let config = {
     level : env.LOG_LEVEL || 'info'
   },
 
-  airflow : {
-    host : AIRFLOW_HOST,
-    baseApi : `http://${AIRFLOW_HOST}/api/v1/dags`,
-    username : env._AIRFLOW_WWW_USER_USERNAME || 'airflow',
-    password : env._AIRFLOW_WWW_USER_PASSWORD || 'airflow'
+  pg : {
+    host : env.PG_HOST || 'postgres',
+    user : env.PG_USERNAME || 'postgres',
+    port : env.PG_PORT || 5432,
+    database : env.PG_DATABASE || 'casita',
+
+    ringBuffer : {
+      table : 'public.blocks_ring_buffer',
+      size : 10, // days,
+      preloadTablePrefix : 'raster'
+    }
   }
 }
 

@@ -1,49 +1,24 @@
-const path = require('path');
-const fs = require('fs');
-const Worker = require('/service/lib/worker');
-const { config, logger } = require('@ucd-lib/krm-node-utils');
-const uuid = require('uuid');
-const pg = require('./lib/pg');
-const exec = require('./lib/exec');
-const EventDetection = require('./lib/detection');
-const sendSlackMessage = require('./lib/slack');
-const PRELOAD_TABLE_PREFIX = 'raster';
-const BUFFER_SIZE = 10; // in days
-const TABLE = 'public.blocks_ring_buffer';
+import fs from 'fs';
+import { config, logger, pg, exec, config } from '@ucd-lib/casita-worker';
+import uuid from 'uuid';
 
+const PRELOAD_TABLE_PREFIX = config.pg.ringBuffer.preloadTablePrefix;
+const BUFFER_SIZE = config.pg.ringBuffer.size;
+const TABLE = config.pg.ringBuffer.table;
 
-class BlockRingBufferWorker extends Worker {
+class BlockRingBuffer {
 
-  constructor() {
-    super();
-    this.ensureSchema();
-    this.detection = new EventDetection();
-  }
-
-  async ensureSchema() {
-    await pg.connect();
-
-    let schema = fs.readFileSync(path.join(__dirname, 'lib', 'sql', 'schema.sql'), 'utf-8');
-    await pg.query(schema);
-
-    schema = fs.readFileSync(path.join(__dirname, 'lib', 'sql', 'grouped-schema.sql'), 'utf-8');
-    await pg.query(schema);
-  }
-
-  async exec(msg) {
-    let file = path.join(config.fs.nfsRoot, msg.data.ready[0].replace('file:///', ''));
-
+  exec(file) {
     try {
-      await this.addFromNfs(file);
+      return this.addFromNfs(file);
     } catch (e) {
-      logger.error(e);
+      throw new Error('failed to insert into block ring buffer: '+ file +', '+e.message);
     }
   }
 
   async addFromNfs(file) {
     if (!fs.existsSync(file)) {
-      logger.error('File does not exist: ' + file);
-      return;
+      throw new Error('File does not exist: ' + file);      
     }
 
     var [satellite, product, date, hour, minuteSecond, band, apid, blocks, blockXY] = file
@@ -53,30 +28,33 @@ class BlockRingBufferWorker extends Worker {
     let [x, y] = blockXY.split('-');
     var date = new Date(date + 'T' + hour + ':' + minuteSecond.replace('-', ':'));
 
-    await this.insert(file, { satellite, product, date, band, apid, blocks, x, y });
+    let blocks_ring_buffer_id = await this.insert(file, { satellite, product, date, band, apid, blocks, x, y });
+
+    return { 
+      file, 
+      satellite, 
+      product, 
+      date, 
+      band, 
+      apid, 
+      x, y, 
+      blocks_ring_buffer_id
+    }
   }
 
   async insert(file, meta) {
-    if (!fs.existsSync(file)) {
-      logger.error('File does not exist: ' + file);
-      return;
-    }
-
     await pg.connect();
 
     let preloadTable = PRELOAD_TABLE_PREFIX + '_' + uuid.v4().replace(/-/g, '_');
 
-    logger.info(`Inserting ${file} into ${preloadTable}`);
-    let { stdout } = await exec(`raster2pgsql ${file} ${preloadTable}`);
+    logger.debug(`Inserting ${file} into ${preloadTable}`);
+    let {stdout} = await exec(`raster2pgsql ${file} ${preloadTable}`);
     let resp = await pg.query(stdout);
-    logger.info(resp);
+    logger.debug(resp);
 
     let isoDate = meta.date.toISOString();
     let expire = new Date(meta.date.getTime() + (1000 * 60 * 60 * 24 * BUFFER_SIZE)).toISOString();
 
-    // try {
-    //   await pg.query(`DELETE from thermal_product where expire <= $1 cascade`, [new Date().toISOString()]);
-    // } catch(e) {}
     try {
       await pg.query(`DELETE from ${TABLE} where expire <= $1 cascade`, [new Date().toISOString()]);
     } catch (e) { }
@@ -110,52 +88,17 @@ class BlockRingBufferWorker extends Worker {
     try {
       await pg.query(`drop table ${preloadTable}`);
       blocks_ring_buffer_id = resp.rows[0].blocks_ring_buffer_id;
-
-      priorHourDate = new Date(meta.date.getTime() - 1000 * 60 * 60);
-      resp = await pg.query(`SELECT create_hourly_max('${meta.product}', ${meta.x}, ${meta.y}, '${priorHourDate.toISOString()}') as blocks_ring_buffer_grouped_id`);
-
-      if (resp.rows[0].blocks_ring_buffer_grouped_id !== -1) {
-        await pg.query(`SELECT create_thermal_grouped_products(${resp.rows[0].blocks_ring_buffer_grouped_id});`);
-      }
     } catch(e) {
       logger.error(e);
     }
 
-    try {
-      // expire old thermal events
-      await pg.query(`with active_events as (
-        select * from thermal_event where active = true
-      ),
-      last_event as (
-        select max(px.date) as max, px.thermal_event_id 
-        from thermal_event_px px
-        right join active_events ae on ae.thermal_event_id = px.thermal_event_id
-        group by px.thermal_event_id
-      ),
-      expired as (
-        select max, thermal_event_id from last_event where max <= NOW() - INTERVAL '7 DAY'
-      )
-      update thermal_event set active = false 
-      FROM expired 
-      WHERE expired.thermal_event_id = thermal_event.thermal_event_id`);
-      
-
-      let eventSet = await this.detection.addClassifiedPixels(blocks_ring_buffer_id);
-      let newEvents = Array.from(eventSet.new);
-      for (let data of newEvents) {
-        await sendSlackMessage(data);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    await pg.query(`DELETE from blocks_ring_buffer_grouped where expire <= $1`, [new Date().toISOString()]);
-    await pg.query(`DELETE from blocks_ring_buffer where expire <= $1`, [new Date().toISOString()]);
+    return blocks_ring_buffer_id;
   }
 }
 
-let worker = new BlockRingBufferWorker();
-worker.connect();
-// module.exports = worker;
-
-
+async function run() {
+  let instance = new BlockRingBuffer();
+  let response = await instance.exec(config.file);
+  return response;
+}
+export default run();

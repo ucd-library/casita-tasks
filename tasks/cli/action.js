@@ -1,60 +1,13 @@
 import {config, logger, Monitoring} from '@ucd-lib/casita-worker';
 import {update as updateConfig} from '../../node-commons/config.js';
 // const logger = require('../../node-commons/logger');
-// const metrics = require('../../node-commons/metrics');
+const metrics = require('../../services/init/google-cloud-metrics.js');
 
 const metricsDefs = {
-  time : {
-    description: 'CaSITA worker task execution details (time)',
-    displayName: 'CaSITA - Worker Execution Time',
-    type: 'custom.googleapis.com/casita/worker-execution-time',
-    metricKind: 'GAUGE',
-    valueType: 'INT64',
-    unit: 'ms',
-    labels: [
-      {
-        key: 'instance',
-        valueType: 'STRING',
-        description: 'CaSITA instance name',
-      },
-      {
-        key: 'command',
-        valueType: 'STRING',
-        description: 'bash command that was run',
-      },
-      {
-        key: 'status',
-        valueType: 'STRING',
-        description: 'ex: success, error',
-      }
-    ]
-  },
-  status : {
-    description: 'CaSITA worker task execution details (status)',
-    displayName: 'CaSITA - Worker Execution Status',
-    type: 'custom.googleapis.com/casita/worker-execution-status',
-    metricKind: 'GAUGE',
-    valueType: 'INT64',
-    unit: '1',
-    labels: [
-      {
-        key: 'instance',
-        valueType: 'STRING',
-        description: 'CaSITA instance name',
-      },
-      {
-        key: 'command',
-        valueType: 'STRING',
-        description: 'bash command that was run',
-      },
-      {
-        key: 'status',
-        valueType: 'STRING',
-        description: 'ex: success, error',
-      }
-    ]
-  }
+  time : metrics.find(item => item.type === 'custom.googleapis.com/casita/worker-execution-time'),
+  status : metrics.find(item => item.type === 'custom.googleapis.com/casita/worker-execution-status')
 }
+const monitor = new Monitoring('casita-cli');
 
 async function handleError(e, startTime) {
   if( config.metrics ) {
@@ -75,11 +28,11 @@ async function handleError(e, startTime) {
 }
 
 function sendMetrics(time, labels) {
-  metrics.registerMetric(metricsDefs.time);
-  metrics.registerMetric(metricsDefs.status);
+  monitor.registerMetric(metricsDefs.time);
+  monitor.registerMetric(metricsDefs.status);
 
   metrics.write(metricsDefs.time, time, labels);
-  metrics.write(metricsDefs.status, 1, labels);
+  // metrics.write(metricsDefs.status, 1, labels);
 }
 
 /**
@@ -114,18 +67,20 @@ async function action(opts, cmd) {
     await sendMetrics(
       startTime-Date.now(),
       {
-        command : config.command.current,
+        command : config.command,
         status : 'success'
       }
     );
   }
 
   if( config.kafka.enabled ) {
-    const kafka = require('../../node-commons/kafka');
-    await kafka.connect();
-    await kafka.send(resp);
-    await kafka.flush(); // send message now
-    await kafka.disconnect();
+    const {sendMessage} = require('../../node-commons/kafka');
+    const {kafkaProducter} = await sendMessage({
+      topic : config.kafka.topic,
+      source : config.command,
+      data : response
+    });
+    await kafkaProducter.disconnect();
   }
 
   if( config.kafka.print === true ) {

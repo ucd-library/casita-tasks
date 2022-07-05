@@ -41,7 +41,7 @@ const dag = {
         'fragment-metadata.json');
 
       // return kafkaWorker.exec(`casita image jp2-to-png -k -m --metadata-file=${fmFile}`);
-      return kafkaWorker.exec(`node /casita/tasks/cli/casita.js image jp2-to-png -k -m --metadata-file=${fmFile}`);
+      return kafkaWorker.exec(`node /casita/tasks/cli/casita.js image jp2-to-png -k ${config.kafka.topics.blockCompositeImage} -m --metadata-file=${fmFile}`);
 
     }
   },

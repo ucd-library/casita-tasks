@@ -73,6 +73,56 @@ const metrics = [
         description: 'UCD GRB Box Channel',
       }
     ]
+  },
+  {
+    description: 'CaSITA worker task execution details (time)',
+    displayName: 'CaSITA - Worker Execution Time',
+    type: 'custom.googleapis.com/casita/worker-execution-time',
+    metricKind: 'GAUGE',
+    valueType: 'INT64',
+    unit: 'ms',
+    labels: [
+      {
+        key: 'instance',
+        valueType: 'STRING',
+        description: 'CaSITA instance name',
+      },
+      {
+        key: 'command',
+        valueType: 'STRING',
+        description: 'bash command that was run',
+      },
+      {
+        key: 'status',
+        valueType: 'STRING',
+        description: 'ex: success, error',
+      }
+    ]
+  },
+  {
+    description: 'CaSITA worker task execution details (status)',
+    displayName: 'CaSITA - Worker Execution Status',
+    type: 'custom.googleapis.com/casita/worker-execution-status',
+    metricKind: 'GAUGE',
+    valueType: 'INT64',
+    unit: '1',
+    labels: [
+      {
+        key: 'instance',
+        valueType: 'STRING',
+        description: 'CaSITA instance name',
+      },
+      {
+        key: 'command',
+        valueType: 'STRING',
+        description: 'bash command that was run',
+      },
+      {
+        key: 'status',
+        valueType: 'STRING',
+        description: 'ex: success, error',
+      }
+    ]
   }
 ];
 export default metrics;

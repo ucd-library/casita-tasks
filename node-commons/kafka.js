@@ -39,7 +39,7 @@ async function sendMessage(msg, kafkaProducer) {
     await kafkaProducer.connect();
   }
 
-  return kafkaProducer.send({
+  let response = await kafkaProducer.send({
     topic : msg.topic,
     messages : [{
       value : JSON.stringify({
@@ -52,7 +52,7 @@ async function sendMessage(msg, kafkaProducer) {
     }]
   });
 
-
+  return {response, kafkaProducer};
 }
 
 export {KafkaConsumer, KafkaProducer, waitForTopics, sendMessage};
