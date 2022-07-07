@@ -4,6 +4,7 @@ import logger from "./logger.js"
 import Monitoring from "./metrics.js";
 import waitUntil from './wait-until.js';
 import pg from './pg.js';
+import utils from './utils.js';
 import exec from './exec.js';
 
 export {
@@ -15,5 +16,7 @@ export {
   logger, 
   waitUntil, 
   sendMessage,
-  pg
+  pg,
+  utils, 
+  exec
 }

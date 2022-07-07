@@ -41,6 +41,8 @@ let config = {
   instance : env.INSTANCE_ENV || 'sandbox',
   satellite : process.env.SATELLITE || 'west',
 
+  streams : ['decoded', 'secdecoded'],
+
   google : {
     metrics : false,
     applicationCredentials : env.GOOGLE_APPLICATION_CREDENTIALS || '',
@@ -49,7 +51,8 @@ let config = {
 
   command : {
     map : {
-      image : 'node-image-utils'
+      image : 'node-image-utils',
+      'ring-block-buffer' : 'ring-block-buffer'
     },
     current : '',
     reference : ''
@@ -69,7 +72,8 @@ let config = {
       decoder : 'goes-decoder',
       productWriter : 'goes-nfs-product',
       tasks : 'tasks',
-      blockCompositeImage : 'block-composite-image'
+      blockCompositeImage : 'block-composite-image',
+      ringBuffer : 'ring-buffer'
     },
     groups : {
       productWriter : env.KAFKA_PRODUCT_WRITER_GROUP_ID || 'product-writer',

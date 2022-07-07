@@ -22,6 +22,9 @@ const topics = [
   },
   {
     name : 'block-composite-image'
+  },
+  {
+    name : 'ring-buffer'
   }
 ];
 export default topics;

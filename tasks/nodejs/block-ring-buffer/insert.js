@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { config, logger, pg, exec, config } from '@ucd-lib/casita-worker';
+import { config, logger, pg, exec, config, utils } from '@ucd-lib/casita-worker';
 import uuid from 'uuid';
 
 const PRELOAD_TABLE_PREFIX = config.pg.ringBuffer.preloadTablePrefix;
@@ -21,25 +21,12 @@ class BlockRingBuffer {
       throw new Error('File does not exist: ' + file);      
     }
 
-    var [satellite, product, date, hour, minuteSecond, band, apid, blocks, blockXY] = file
-      .replace(config.fs.nfsRoot + '/', '')
-      .split('/');
 
-    let [x, y] = blockXY.split('-');
-    var date = new Date(date + 'T' + hour + ':' + minuteSecond.replace('-', ':'));
+    let fileData = utils.getDataFromPath(file);
+    fileData.file = file;
+    fileData.blocks_ring_buffer_id = await this.insert(file, fileData);
 
-    let blocks_ring_buffer_id = await this.insert(file, { satellite, product, date, band, apid, blocks, x, y });
-
-    return { 
-      file, 
-      satellite, 
-      product, 
-      date, 
-      band, 
-      apid, 
-      x, y, 
-      blocks_ring_buffer_id
-    }
+    return fileData;
   }
 
   async insert(file, meta) {

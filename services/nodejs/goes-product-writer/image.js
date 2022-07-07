@@ -15,7 +15,7 @@ async function handleImageMessage(metadata, payload, monitor, metric) {
 
   let productInfo = {
     satellite : config.satellite,
-    scale : (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    product : (product.imageScale || product.label || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     date,
     hour : time.split(':')[0],
     minsec : time.split(':').splice(1,2).join('-'),
@@ -27,7 +27,7 @@ async function handleImageMessage(metadata, payload, monitor, metric) {
 
   let basePath = path.resolve('/', 
     productInfo.satellite,
-    productInfo.scale,
+    productInfo.product,
     productInfo.date,
     productInfo.hour,
     productInfo.minsec,

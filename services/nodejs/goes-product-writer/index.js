@@ -1,4 +1,4 @@
-import {logger, config, KafkaConsumer, waitForTopics, waitUntil, Monitoring} from '@ucd-lib/casita-worker';
+import {logger, config, KafkaConsumer, waitForTopics, waitUntil, Monitoring, pg} from '@ucd-lib/casita-worker';
 import metrics from '../../init/google-cloud-metrics.js';
 import handleImageMessage from './image.js';
 import handleGenericMessage from './generic.js';
@@ -30,6 +30,8 @@ async function onMessage(msg) {
     payload = msg.value.slice(length + 4, msg.value.length);
   }
 
+  await updateChannelStatusTable(metadata);
+
   if( metadata.type === 'image' ) {
     await handleImageMessage(metadata, payload, monitor, metric)
   } else {
@@ -37,8 +39,21 @@ async function onMessage(msg) {
   }
 }
 
+async function updateChannelStatusTable(metadata) {
+  try {
+    await pg.query('SELECT insert_status_latest_timestamp($1, $2, $3)', [
+      config.satellite, metadata.streamName, metadata.apid
+    ]);
+  } catch(e) {
+    logger.error('Failed to update stream status table', metadata, e);
+  }
+}
 
 (async function() {
+  waitUntil(config.pg.host, config.pg.port);
+  await pg.connect();
+
+  waitUntil(config.kafka.host, config.kafka.port);
   await kafkaConsumer.connect();
 
   logger.info(`Waiting for topic: ${config.kafka.topics.decoder}`);

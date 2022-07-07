@@ -5,6 +5,9 @@ import {config} from '@ucd-lib/casita-worker';
 
 const GENERIC_PAYLOAD_APIDS = /^(301|302)$/;
 
+// const CASITA_CMD = 'casita';
+const CASITA_CMD = 'node /casita/tasks/cli/casita.js';
+const TOPICS = config.kafka.topics;
 
 function isBandReady(msgs) {
   let fragments = msgs.filter(item => item.data.file.base === 'image-fragment.jp2');
@@ -25,47 +28,58 @@ const dag = {
   //   source : true
   // },
 
-  [config.kafka.topics.blockCompositeImage] : {
-    dependencies : [config.kafka.topics.productWriter],
+  [TOPICS.blockCompositeImage] : {
+    dependencies : [TOPICS.productWriter],
 
     where : msg => ['image-fragment.jp2', 'fragment-metadata.json'].includes(msg.data.file.base),
     groupBy : msg => `${msg.data.scale}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}-${msg.data.band}`,
-    expire : 5,
+    expire : 5, // 5 seconds
     ready : (key, msgs) => isBandReady(msgs),
 
     sink : (key, msgs) => {
-      let {satellite, scale, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
+      let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
 
-      let fmFile = pathUtils.join(config.fs.nfsRoot, satellite, scale,
+      let fmFile = pathUtils.join(config.fs.nfsRoot, satellite, product,
         date, hour, minsec, band, apid, 'blocks', x+'-'+y,
         'fragment-metadata.json');
 
-      // return kafkaWorker.exec(`casita image jp2-to-png -k -m --metadata-file=${fmFile}`);
-      return kafkaWorker.exec(`node /casita/tasks/cli/casita.js image jp2-to-png -k ${config.kafka.topics.blockCompositeImage} -m --metadata-file=${fmFile}`);
+      return kafkaWorker.exec(`${CASITA_CMD} image jp2-to-png -k ${TOPICS.blockCompositeImage} -m --metadata-file=${fmFile}`);
 
     }
   },
 
-  'ring-buffer' : {
+  [TOPICS.ringBuffer] : {
     enabled: false,
-    dependencies : [config.kafka.topics.blockCompositeImage],
+    dependencies : [TOPICS.blockCompositeImage],
+    expire : 60 * 2, // 2 minutes
     where : msg => true,
-    groupBy : msg => `${msg.data.scale}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}-${msg.data.band}`,
+    groupBy : msg => `${msg.data.product}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}-${msg.data.band}`,
+    sink : (key, msgs) => {
+      let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
 
+      let pngFile = pathUtils.join(config.fs.nfsRoot, satellite, product,
+        date, hour, minsec, band, apid, 'blocks', x+'-'+y,
+        'image.png');
+
+      return kafkaWorker.exec(`${CASITA_CMD} block-ring-buffer insert -k ${TOPICS.ringBuffer} -m --file=${pngFile}`);
+    }
   },
 
   'ca-projection' : {
     enabled: false,
-    dependencies : ['ring-buffer'],
-    groupBy : msg => `${msg.data.scale}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.band}`,
+    dependencies : [config.kafka.topics.ringBuffer],
+    groupBy : msg => `${msg.data.product}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.band}`,
     where : msg => {
-      let key = `${msg.data.x},${msg.data.y}`;
-      return ['0-0','200-375'].includes(key);
+      return [
+        '6664-852', '8332-852', '6664-1860','8332-1860', // conus
+        '12656-2628', '14464-2628', '12656-3640', '14464-3640' // fulldisk
+      ].includes(`${msg.data.x},${msg.data.y}`);
     },
+    ready : (key, msgs) => msgs.length === 4,
 
     sink : (key, msgs) => {
-      let {satellite, scale, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
-      return kafkaWorker.exec(`casita image ca-project -k -m --product=${scale} --time=${date}T${hour}:${minsec}`);
+      let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
+      return kafkaWorker.exec(`casita image ca-project -k -m --product=${product} --time=${date}T${hour}:${minsec}`);
     }
   },
 
@@ -106,10 +120,10 @@ const dag = {
     where : data => (data.apid.match(GENERIC_PAYLOAD_APIDS) ? true : false) && (data.file.base === 'payload.bin'),
 
     sink : (key, msgs) => {
-      let {scale, date, hour, minsec, ms, band, apid, block, path} = msgs[0];
+      let {product, date, hour, minsec, ms, band, apid, block, path} = msgs[0];
 
       return airflow.runDag(key, 'generic-payload-parser', {
-          scale, date, hour, minsec, ms, band, apid, block, path
+        product, date, hour, minsec, ms, band, apid, block, path
       });
     }
   },

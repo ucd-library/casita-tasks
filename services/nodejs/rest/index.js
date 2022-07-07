@@ -5,7 +5,7 @@ import {logger, config} from '@ucd-lib/casita-worker';
 import httpProxy from 'http-proxy';
 import http from 'http';
 import Cors from 'cors';
-// import controllers from './controllers/index.js'
+import controllers from './controllers/index.js'
 
 const cors = Cors({
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -39,7 +39,7 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 // register the /_/task-graph api
-// app.use(require('./controllers'));
+app.use('/_', controllers);
 
 // register services
 if( config?.api?.services ) {

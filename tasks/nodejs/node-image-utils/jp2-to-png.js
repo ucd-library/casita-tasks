@@ -1,4 +1,4 @@
-import {config, logger } from '@ucd-lib/casita-worker';
+import {config, logger, utils } from '@ucd-lib/casita-worker';
 import path from 'path';
 import fs from 'fs-extra';
 import jp2ToPng from "./lib/jp2-to-png.js";
@@ -33,12 +33,14 @@ async function run() {
   logger.debug('Writing scale file: '+scaleFile);
   await fs.writeFile(scaleFile, scaleImage);
 
+  let pathData = utils.getDataFromPath(rootDir);
   return {
     files : [
       path.join(rootDir, 'image.png'), 
       path.join(rootDir, 'web.png'),
       path.join(rootDir, 'web-scaled.png')
-    ]
+    ],
+    ...pathData
   }
 }
 
