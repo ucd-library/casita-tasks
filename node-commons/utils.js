@@ -26,7 +26,7 @@ class Utils {
     }
 
     return {
-      satellite, product, scale, date, hour, minsec, band, ms, apid, x, y,
+      satellite, product, date, hour, minsec, band, ms, apid, x, y,
       datetime : new Date(date+'T'+hour+':'+minsec.replace('-', ':')+'.000Z')
     }
   }

@@ -1,7 +1,7 @@
 import {config, logger, Monitoring} from '@ucd-lib/casita-worker';
 import {update as updateConfig} from '../../node-commons/config.js';
 // const logger = require('../../node-commons/logger');
-const metrics = require('../../services/init/google-cloud-metrics.js');
+import metrics from '../../services/init/google-cloud-metrics.js';
 
 const metricsDefs = {
   time : metrics.find(item => item.type === 'custom.googleapis.com/casita/worker-execution-time'),
@@ -73,14 +73,14 @@ async function action(opts, cmd) {
     );
   }
 
-  if( config.kafka.enabled ) {
-    const {sendMessage} = require('../../node-commons/kafka');
-    const {kafkaProducter} = await sendMessage({
+  if( config.kafka.topic ) {
+    const {sendMessage} = await import('../../node-commons/kafka.js');
+    const {kafkaProducer} = await sendMessage({
       topic : config.kafka.topic,
-      source : config.command,
-      data : response
+      source : config.command.reference,
+      data : resp
     });
-    await kafkaProducter.disconnect();
+    await kafkaProducer.disconnect();
   }
 
   if( config.kafka.print === true ) {

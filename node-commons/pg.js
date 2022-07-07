@@ -30,7 +30,7 @@ class PG {
     } else {
       logger.info('Connecting to postgresql');
       this.connecting = this.client.connect();
-      await this.connecting;
+      this._client = await this.connecting;
       logger.info('Connected to postgresql');
       this.connecting = null;
       this.connected = true;
@@ -40,6 +40,13 @@ class PG {
   async query(query, params) {
     await this.connect();
     return this.client.query(query, params);
+  }
+
+  async end() {
+    await this._client.release();
+    await this.client.end();
+    this.client = null
+    this._client = null;
   }
 }
 

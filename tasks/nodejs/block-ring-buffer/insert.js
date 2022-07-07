@@ -1,6 +1,6 @@
 import fs from 'fs';
-import { config, logger, pg, exec, config, utils } from '@ucd-lib/casita-worker';
-import uuid from 'uuid';
+import { config, logger, pg, exec, utils } from '@ucd-lib/casita-worker';
+import {v4} from 'uuid';
 
 const PRELOAD_TABLE_PREFIX = config.pg.ringBuffer.preloadTablePrefix;
 const BUFFER_SIZE = config.pg.ringBuffer.size;
@@ -32,18 +32,28 @@ class BlockRingBuffer {
   async insert(file, meta) {
     await pg.connect();
 
-    let preloadTable = PRELOAD_TABLE_PREFIX + '_' + uuid.v4().replace(/-/g, '_');
+    let preloadTable = PRELOAD_TABLE_PREFIX + '_' + v4().replace(/-/g, '_');
 
     logger.debug(`Inserting ${file} into ${preloadTable}`);
     let {stdout} = await exec(`raster2pgsql ${file} ${preloadTable}`);
     let resp = await pg.query(stdout);
     logger.debug(resp);
 
-    let isoDate = meta.date.toISOString();
-    let expire = new Date(meta.date.getTime() + (1000 * 60 * 60 * 24 * BUFFER_SIZE)).toISOString();
+    let isoDate = meta.datetime.toISOString();
+    let expire = new Date(meta.datetime.getTime() + (1000 * 60 * 60 * 24 * BUFFER_SIZE)).toISOString();
 
     try {
       await pg.query(`DELETE from ${TABLE} where expire <= $1 cascade`, [new Date().toISOString()]);
+    } catch (e) { }
+
+    try {
+      await pg.query(`DELETE from ${TABLE} where date = '${isoDate}' and
+      '${meta.x}' = x and
+      '${meta.y}' = y and
+      '${meta.satellite}' = satellite and
+      '${meta.product}' = product and
+      '${meta.apid}' = apid and
+      '${meta.band}' = band`);
     } catch (e) { }
 
     let cmd = `
@@ -78,6 +88,9 @@ class BlockRingBuffer {
     } catch(e) {
       logger.error(e);
     }
+
+    // TODO: not firing :(
+    await pg.end();
 
     return blocks_ring_buffer_id;
   }

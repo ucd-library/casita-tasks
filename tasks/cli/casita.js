@@ -14,5 +14,6 @@ program
   .version(pkg.version)
   .usage("<subcmd> [options]")
   .command('image', 'image manipulation')
+  .command('block-ring-buffer', 'block ring buffer actions')
 
 program.parse(process.argv);

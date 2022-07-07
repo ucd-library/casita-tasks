@@ -19,7 +19,7 @@ let dotPathMap = {
   'commandRef' : 'command.reference',
   'kafkaHost' : 'kafka.host',
   'kafkaPort' : 'kafka.port',
-  'kafkaTopic' : 'kafka.topic',
+  'kafka' : 'kafka.topic',
   'printKafkaMsg' : 'kafka.print'
 };
 
@@ -29,13 +29,16 @@ if( env.GOOGLE_APPLICATION_CREDENTIALS ) {
   credentialProjectId = content.project_id;
 }
 
-// k8s inserts a kafka port like tcp://10.109.128.0:9092.  clean up
-let kafkaPort = env.KAFKA_PORT;
-if( kafkaPort && kafkaPort.match(/:/) ) {
-  kafkaPort = kafkaPort.split(':').pop();
+function handlePortEnv(value) {
+  if( value && value.match(':') ) {
+    return value.split(':').pop();
+  }
+  return value;
 }
 
-const AIRFLOW_HOST = env.AIRFLOW_HOST || 'airflow-webserver:8080';
+// k8s inserts a kafka port like tcp://10.109.128.0:9092.  clean up
+let kafkaPort = handlePortEnv(env.KAFKA_PORT);
+
 
 let config = {
   instance : env.INSTANCE_ENV || 'sandbox',
@@ -51,8 +54,7 @@ let config = {
 
   command : {
     map : {
-      image : 'node-image-utils',
-      'ring-block-buffer' : 'ring-block-buffer'
+      image : 'node-image-utils'
     },
     current : '',
     reference : ''
@@ -63,7 +65,6 @@ let config = {
   },
   
   kafka : {
-    enabled : false,
     clientId : env.KAFKA_CLIENT_ID || 'default-casita-client',
     port : kafkaPort || 9092,
     host : env.KAFKA_HOST || 'kafka',
@@ -106,6 +107,11 @@ function update(args, cmd) {
   let parent = cmd.parent ? cmd.parent.name() : '';
   args.command = 'tasks/nodejs/'+((parent ? parent+'/' : '') + cmd.name()).replace(/casita-/g, '');
   args.commandRef = getCommandReference(args.command);
+
+  if( args.kafkaPort ) {
+    args.kafkaPort = handlePortEnv(args.kafkaPort);
+  }
+  
   Object.assign(
     config, 
     merge(config, dot.transform(dotPathMap, args))

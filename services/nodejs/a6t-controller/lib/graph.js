@@ -32,7 +32,7 @@ const dag = {
     dependencies : [TOPICS.productWriter],
 
     where : msg => ['image-fragment.jp2', 'fragment-metadata.json'].includes(msg.data.file.base),
-    groupBy : msg => `${msg.data.scale}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}-${msg.data.band}`,
+    groupBy : msg => `${msg.data.product}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}-${msg.data.band}`,
     expire : 5, // 5 seconds
     ready : (key, msgs) => isBandReady(msgs),
 
@@ -49,19 +49,20 @@ const dag = {
   },
 
   [TOPICS.ringBuffer] : {
-    enabled: false,
+    enabled: true,
     dependencies : [TOPICS.blockCompositeImage],
     expire : 60 * 2, // 2 minutes
-    where : msg => true,
+    ready : (key, msgs) => true,
     groupBy : msg => `${msg.data.product}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}-${msg.data.band}`,
     sink : (key, msgs) => {
+      console.log(key);
       let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
 
       let pngFile = pathUtils.join(config.fs.nfsRoot, satellite, product,
         date, hour, minsec, band, apid, 'blocks', x+'-'+y,
         'image.png');
 
-      return kafkaWorker.exec(`${CASITA_CMD} block-ring-buffer insert -k ${TOPICS.ringBuffer} -m --file=${pngFile}`);
+      return kafkaWorker.exec(`${CASITA_CMD} image block-ring-buffer -k ${TOPICS.ringBuffer} -m --file=${pngFile}`);
     }
   },
 
