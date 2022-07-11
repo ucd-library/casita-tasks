@@ -2,7 +2,7 @@ ARG NODE_VERSION=16
 
 FROM node:${NODE_VERSION}
 
-RUN apt-get update && apt-get install -y ssh postgis
+RUN apt-get update && apt-get install -y ssh postgis proj-bin
 
 RUN mkdir /root/.ssh/
 RUN touch /root/.ssh/known_hosts

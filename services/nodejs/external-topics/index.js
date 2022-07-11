@@ -1,61 +1,81 @@
-const path = require('path');
-const fs = require('fs');
-const Worker = require('/service/lib/worker');
-const { config, logger, bus } = require('@ucd-lib/krm-node-utils');
-const kafka = bus.kafka;
+import {KafkaConsumer, logger, waitUntil, waitForTopics, config} from '@ucd-lib/casita-worker'
+import { Server } from "socket.io";
+import {getProperty} from 'dot-prop';
+import topics from '../../init/kafka.js';
 
-class ExternalTopicsWorker extends Worker {
+const io = new Server({ /* options */ });
 
-  constructor() {
-    super();
+let sockets = new Map();
 
-    this.topic = 'lightning'
+let kafkaConsumer = KafkaConsumer({
+  groupId : config.kafka.groups.external,
+});
 
-    this.kafkaPubTopicProducer = new kafka.Producer({
-      'metadata.broker.list': config.kafka.host+':'+config.kafka.port
-    });
-  }
+io.on("connection", (socket) => {
+  map.set(socket.id, socket);
 
-  async connect() {
-    await kafka.utils.ensureTopic({
-      topic: this.topic,
-      num_partitions: 10,
-      replication_factor: 1,
-      config : {
-        'retention.ms' : (1000 * 60 * 60 * 24 * 4)+'',
-        'max.message.bytes' : 100000000+''
+  logger.debug(`socket connected ${socket.id}`);
+
+  socket.on("message", (msg) => {
+    if( msg.cmd === 'setFilter' ) {
+      if( !msg.key ) {
+        socket.filter = null;
+      } else {
+        socket.filter = {key: msg.key, regex: new Regex(msg.regex)}
       }
-    }, {'metadata.broker.list': config.kafka.host+':'+config.kafka.port});
-    await super.connect();
-
-    await this.kafkaPubTopicProducer.connect();
-  }
-
-  async exec(msg) {
-    let file = path.join(config.fs.nfsRoot, msg.data.ready[0].replace('file:///', ''));
-
-    try {
-      await this.sendlightning(msg.data.args, file);
-    } catch (e) {
-      logger.error(e);
     }
-  }
+  });
+});
 
-  async sendlightning(properties, file) {
-    if (!fs.existsSync(file)) {
-      logger.error('File does not exist: ' + file);
-      return;
+io.on("disconnect", (socket) => {
+  logger.debug(`socket disconnected ${socket.id}`);
+  delete this.sockets[socket.id];
+});
+
+function onMessage(topic, msg) {
+  msg = JSON.parse(msg.value.toString());
+
+  logger.debug(`socket message: ${topic}`, msg);
+
+  sockets.forEach((socket, id) => {
+    if( !socket.filter ) {
+      return socket.emit(topic, msg);
     }
 
-    let data = JSON.parse(fs.readFileSync(file, 'utf-8'));
-
-    this.kafkaPubTopicProducer.produce({
-      topic : this.topic,
-      value: {properties, data}
-    });
-  }
-
+    if( (getProperty(msg, socket.filter.key)+'').match(socker.filter.regex) ) {
+      return socket.emit(topic, msg);
+    }
+  });
 }
 
-let worker = new ExternalTopicsWorker();
-worker.connect();
+(async function() {
+  waitUntil(config.kafka.host, config.kafka.port);
+  await kafkaConsumer.connect();
+
+  let externalTopics = topics.map(item => item.name)
+    .filter(name => name.match(/-ext$/));
+
+  logger.info(`Waiting for external topic: ${externalTopics.join(', ')}`);
+  await waitForTopics(externalTopics);
+
+  logger.info(`External topics ready ${externalTopics.join(', ')}, subscribing`);
+  
+  await kafkaConsumer.subscribe({
+    topics: externalTopics
+  });
+
+  await kafkaConsumer.run({
+    eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
+      try {
+        await onMessage(topic, message);
+      } catch(e) {
+        logger.error('kafka message error', e);
+      }
+    }
+  });
+
+})()
+
+
+
+io.listen(3000);

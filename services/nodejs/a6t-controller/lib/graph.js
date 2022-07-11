@@ -43,7 +43,7 @@ const dag = {
         date, hour, minsec, band, apid, 'blocks', x+'-'+y,
         'fragment-metadata.json');
 
-      return kafkaWorker.exec(`${CASITA_CMD} image jp2-to-png -k ${TOPICS.blockCompositeImage} -m --metadata-file=${fmFile}`);
+      return kafkaWorker.exec(`${CASITA_CMD} image jp2-to-png -e -k ${TOPICS.blockCompositeImage} -m --metadata-file=${fmFile}`);
 
     }
   },
@@ -62,7 +62,7 @@ const dag = {
         date, hour, minsec, band, apid, 'blocks', x+'-'+y,
         'image.png');
 
-      return kafkaWorker.exec(`${CASITA_CMD} image block-ring-buffer -k ${TOPICS.ringBuffer} -m --file=${pngFile}`);
+      return kafkaWorker.exec(`${CASITA_CMD} block-ring-buffer insert -e -k ${TOPICS.ringBuffer} -m --file=${pngFile}`);
     }
   },
 
@@ -80,7 +80,7 @@ const dag = {
 
     sink : (key, msgs) => {
       let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
-      return kafkaWorker.exec(`casita image ca-project -k -m --product=${product} --time=${date}T${hour}:${minsec}`);
+      return kafkaWorker.exec(`casita image ca-project -e -k -m --product=${product} --time=${date}T${hour}:${minsec}`);
     }
   },
 

@@ -18,6 +18,7 @@ function wrapOpts(program) {
         .env('GOOGLE_PROJECT_ID')
       )
       .option('-k, --kafka <topic>', 'send kafka message on complete')
+      .option('-e, --kafka-external', 'send kafka message to external *-ext topic as well')
       .addOption(
         new Option('--kafka-port <port>', 'port kafka is running on')
           .default(9092)

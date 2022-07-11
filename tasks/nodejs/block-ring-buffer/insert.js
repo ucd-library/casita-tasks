@@ -89,7 +89,6 @@ class BlockRingBuffer {
       logger.error(e);
     }
 
-    // TODO: not firing :(
     await pg.end();
 
     return blocks_ring_buffer_id;
@@ -101,4 +100,4 @@ async function run() {
   let response = await instance.exec(config.file);
   return response;
 }
-export default run();
+export default run;

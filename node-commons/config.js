@@ -20,6 +20,7 @@ let dotPathMap = {
   'kafkaHost' : 'kafka.host',
   'kafkaPort' : 'kafka.port',
   'kafka' : 'kafka.topic',
+  'kafkaExternal' : 'kafka.external',
   'printKafkaMsg' : 'kafka.print'
 };
 
@@ -78,7 +79,8 @@ let config = {
     },
     groups : {
       productWriter : env.KAFKA_PRODUCT_WRITER_GROUP_ID || 'product-writer',
-      worker : env.KAFKA_CASITA_WORKER_GROUP_ID || 'casita-worker'
+      worker : env.KAFKA_CASITA_WORKER_GROUP_ID || 'casita-worker',
+      external : env.KAFKA_EXTERNAL_GROUP_ID || 'external'
     }
   },
 
@@ -99,6 +101,12 @@ let config = {
       size : 10, // days,
       preloadTablePrefix : 'raster'
     }
+  },
+
+  // external api routes that are proxied by
+  // main rest service
+  api : {
+    
   }
 }
 

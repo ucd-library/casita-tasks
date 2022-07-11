@@ -39,20 +39,30 @@ async function sendMessage(msg, kafkaProducer) {
     await kafkaProducer.connect();
   }
 
+  let messages = [{
+    value : JSON.stringify({
+      id : v4(),
+      time : new Date().toISOString(),
+      source : msg.source,
+      datacontenttype : 'application/json',
+      data : msg.data
+    })
+  }];
+
   let response = await kafkaProducer.send({
     topic : msg.topic,
-    messages : [{
-      value : JSON.stringify({
-        id : v4(),
-        time : new Date().toISOString(),
-        source : msg.source,
-        datacontenttype : 'application/json',
-        data : msg.data
-      })
-    }]
+    messages
   });
 
-  return {response, kafkaProducer};
+  let extResponse = null;
+  if( msg.external ) {
+    extResponse = await kafkaProducer.send({
+      topic : msg.topic+'-ext',
+      messages
+    });
+  }
+
+  return {response, extResponse, kafkaProducer};
 }
 
 export {KafkaConsumer, KafkaProducer, waitForTopics, sendMessage};

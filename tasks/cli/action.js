@@ -10,6 +10,8 @@ const metricsDefs = {
 const monitor = new Monitoring('casita-cli');
 
 async function handleError(e, startTime) {
+  logger.error(e);
+
   if( config.metrics ) {
     await sendMetrics(
       startTime-Date.now(),
@@ -23,7 +25,6 @@ async function handleError(e, startTime) {
     return;
   }
 
-  logger.error(e);
   setTimeout(() => process.exit(100), 25);
 }
 
@@ -78,7 +79,8 @@ async function action(opts, cmd) {
     const {kafkaProducer} = await sendMessage({
       topic : config.kafka.topic,
       source : config.command.reference,
-      data : resp
+      data : resp,
+      external: config.kafka.external
     });
     await kafkaProducer.disconnect();
   }

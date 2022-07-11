@@ -6,6 +6,8 @@ const {Pool} = pg;
 
 class PG {
 
+  // TODO: add opts for Client instead of pool
+  // make sure to wrap end
   constructor() {
     this.client = new Pool({
       host : config.pg.host, 
