@@ -3,7 +3,13 @@ import { Server } from "socket.io";
 import {getProperty} from 'dot-prop';
 import topics from '../../init/kafka.js';
 
-const io = new Server({ /* options */ });
+const io = new Server({
+  cors: {
+    origin: "*",
+    credentials: false
+  },
+  path : '/_/ws/'
+ });
 
 let sockets = new Map();
 
@@ -12,38 +18,46 @@ let kafkaConsumer = KafkaConsumer({
 });
 
 io.on("connection", (socket) => {
-  map.set(socket.id, socket);
+  sockets.set(socket.id, socket);
 
   logger.debug(`socket connected ${socket.id}`);
 
-  socket.on("message", (msg) => {
-    if( msg.cmd === 'setFilter' ) {
-      if( !msg.key ) {
-        socket.filter = null;
-      } else {
-        socket.filter = {key: msg.key, regex: new Regex(msg.regex)}
-      }
+  socket.on('setFilter', (msg) => {
+    logger.debug(`setting filters for socket ${socket.id}`, msg.filters);
+    if( !msg.filters ) {
+      socket.filters = null;
+    } else {
+      socket.filters = msg.filters.map(item => ({
+        key: item.key, 
+        regex: new RegExp(item.regex),
+        topic: item.topic
+      }))
     }
   });
 });
 
 io.on("disconnect", (socket) => {
   logger.debug(`socket disconnected ${socket.id}`);
-  delete this.sockets[socket.id];
+  sockets.delete(socket.id);
 });
 
 function onMessage(topic, msg) {
   msg = JSON.parse(msg.value.toString());
 
   logger.debug(`socket message: ${topic}`, msg);
+  topic = topic.replace(/-ext$/, '');
 
   sockets.forEach((socket, id) => {
-    if( !socket.filter ) {
-      return socket.emit(topic, msg);
+    if( !socket.filters ) {
+      return socket.emit('message', {topic, message: msg});
     }
 
-    if( (getProperty(msg, socket.filter.key)+'').match(socker.filter.regex) ) {
-      return socket.emit(topic, msg);
+    for( let filter of socket.filters ) {
+      if( filter.topic !== topic ) continue;
+
+      if( (getProperty(msg, filter.key)+'').match(filter.regex) ) {
+        return socket.emit('message', {topic, message: msg});
+      }
     }
   });
 }

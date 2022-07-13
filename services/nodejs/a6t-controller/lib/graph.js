@@ -3,7 +3,7 @@ import pathUtils from 'path';
 import fs from 'fs';
 import {config} from '@ucd-lib/casita-worker';
 
-const GENERIC_PAYLOAD_APIDS = /^(301|302)$/;
+const LIGHTNING_PAYLOAD_APIDS = /^(301|302)$/;
 
 // const CASITA_CMD = 'casita';
 const CASITA_CMD = 'node /casita/tasks/cli/casita.js';
@@ -29,6 +29,7 @@ const dag = {
   // },
 
   [TOPICS.blockCompositeImage] : {
+    enabled: true,
     dependencies : [TOPICS.productWriter],
 
     where : msg => ['image-fragment.jp2', 'fragment-metadata.json'].includes(msg.data.file.base),
@@ -80,7 +81,7 @@ const dag = {
 
     sink : (key, msgs) => {
       let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
-      return kafkaWorker.exec(`casita image ca-project -e -k -m --product=${product} --time=${date}T${hour}:${minsec}`);
+      return kafkaWorker.exec(`${CASITA_CMD} image ca-project -e -k -m --product=${product} --time=${date}T${hour}:${minsec}`);
     }
   },
 
@@ -114,22 +115,24 @@ const dag = {
   //   },
   // },
 
-  'generic-payload-parser' : {
-    enabled : false,
+  [config.kafka.topics.lightning] : {
+    enabled : true,
     dependencies : [config.kafka.topics.productWriter],
 
-    where : data => (data.apid.match(GENERIC_PAYLOAD_APIDS) ? true : false) && (data.file.base === 'payload.bin'),
+    groupBy : msg => `${msg.data.product}-${msg.data.date}-${msg.data.hour}-${msg.data.minsec}-${msg.data.ms}-${msg.data.apid}-${msg.data.file.base}`,
+    where : msg => (msg.data.apid.match(LIGHTNING_PAYLOAD_APIDS)) && (msg.data.file.base === 'payload.bin'),
+    ready : () => true,
 
     sink : (key, msgs) => {
-      let {product, date, hour, minsec, ms, band, apid, block, path} = msgs[0];
-
-      return airflow.runDag(key, 'generic-payload-parser', {
-        product, date, hour, minsec, ms, band, apid, block, path
-      });
+      let data = msgs[0].data;
+      let file = pathUtils.resolve(data.file.dir, data.file.base);
+      return kafkaWorker.exec(`${CASITA_CMD} generic parse-lightning -e -k ${config.kafka.topics.lightning} -m --file=${file} `);
     }
   },
 
   'lighting-grouped-stats' : {
+    enabled : false,
+    dependencies : [config.kafka.topics.lightning],
     enabled : false,
     expire : 30,
     where : () => false

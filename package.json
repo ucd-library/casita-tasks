@@ -7,7 +7,7 @@
   "scripts": {
     "worker": "node services/nodejs/worker/index.js",
     "rest": "node services/nodejs/rest/index.js",
-    "decoder": "node services/nodejs/decoder/run.js",
+    "decoder": "services/nodejs/decoder/run.sh",
     "product-writer": "node services/nodejs/goes-product-writer/index.js"
   },
   "bin": {

@@ -55,7 +55,8 @@ let config = {
 
   command : {
     map : {
-      image : 'node-image-utils'
+      image : 'node-image-utils',
+      generic : 'generic-payload-parser'
     },
     current : '',
     reference : ''
@@ -75,7 +76,9 @@ let config = {
       productWriter : 'goes-nfs-product',
       tasks : 'tasks',
       blockCompositeImage : 'block-composite-image',
-      ringBuffer : 'ring-buffer'
+      ringBuffer : 'ring-buffer',
+      lightning : 'lightning',
+      lightningGroupStats : 'lightning-grouped-stats'
     },
     groups : {
       productWriter : env.KAFKA_PRODUCT_WRITER_GROUP_ID || 'product-writer',
@@ -105,8 +108,11 @@ let config = {
 
   // external api routes that are proxied by
   // main rest service
-  api : {
-    
+  rest : {
+    proxyServices : [{
+      route : '/ws',
+      hostname : 'external-topics-service'
+    }]
   }
 }
 

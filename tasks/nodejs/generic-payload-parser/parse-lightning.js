@@ -1,8 +1,10 @@
 import {config, utils} from '@ucd-lib/casita-worker'; 
-import {lightningPayloadParser} from '@ucd-lib/goes-r-packet-decoder';
+import decoder from '@ucd-lib/goes-r-packet-decoder';
 import fs from 'fs';
 import path from 'path';
-import project from './lib/project';
+import project from './lib/project.js';
+
+const {lightningPayloadParser} = decoder;
 
 async function run() {
   let metadata = utils.getDataFromPath(config.file);
@@ -22,6 +24,10 @@ async function run() {
   }
 
   fs.writeFileSync(outfile, JSON.stringify(outcontent));
+
+  metadata.files = [outfile.replace(config.fs.nfsRoot)];
+
+  return metadata;
 }
 
 export default run();

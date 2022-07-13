@@ -1,4 +1,4 @@
-const {exec} = require('child_process');
+import {exec} from 'child_process';
 
 // const CMD = 'proj +proj=geos +x_0=0 +y_0=0 +lon_0=-75 +sweep=x +h=35786023 +ellps=GRS80 +datum=NAD83 +units=m +no_defs';
 const CMD = 'proj +proj=geos +x_0=0 +y_0=0 +lon_0=-137 +sweep=x +h=35786023 +ellps=GRS80 +datum=NAD83 +units=m +no_defs';
@@ -7,7 +7,7 @@ const FOV_OFFSET_LNG = -75;
 const SIZE = 21696;
 const H_SIZE = SIZE/2;
 
-module.exports = (lng, lat) => {
+function run (lng, lat) {
   // lng = FOV_OFFSET_LNG + lng;
 
   return new Promise((resolve, reject) => {
@@ -33,3 +33,5 @@ module.exports = (lng, lat) => {
     child.stdin.end();
   });
 }
+
+export default run;

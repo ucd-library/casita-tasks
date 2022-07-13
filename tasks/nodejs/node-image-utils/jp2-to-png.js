@@ -27,13 +27,14 @@ async function run() {
   logger.debug('Writing file: '+path.join(rootDir, 'web.png'));
   await fs.writeFile(path.join(rootDir, 'web.png'), images.webPng);
 
-  let {satellite, product, date, hour, minsec, band} = rootDir.replace(config.fs.nfsRoot) 
-  let scaleImage = await scale(path.join(rootDir, 'web.png'), band);
+  let {band} = utils.getDataFromPath(rootDir);
+  let scaleImage = await scale(path.join(rootDir, 'web.png'), parseInt(band));
   let scaleFile = path.join(rootDir, 'web-scaled.png');
   logger.debug('Writing scale file: '+scaleFile);
   await fs.writeFile(scaleFile, scaleImage);
 
   let pathData = utils.getDataFromPath(rootDir);
+  rootDir = rootDir.replace(config.fs.nfsRoot, '');
   return {
     files : [
       path.join(rootDir, 'image.png'), 

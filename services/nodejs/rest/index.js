@@ -42,12 +42,12 @@ server.on('upgrade', (req, socket, head) => {
 app.use('/_', controllers);
 
 // register services
-if( config?.api?.services ) {
-  for( let service of config.api.services ) {
-    logger.info(`Creating api service route '/_/${service.route}' to 'http://${service.hostname}'`);
+if( config?.rest?.proxyServices ) {
+  for( let service of config.rest.proxyServices ) {
+    logger.info(`Creating api service route '/_${service.route}' to 'http://${service.hostname}'`);
     
     // required to handle websocket upgrade requests
-    wsServiceMap[service.hostname] = new RegExp(`^/_/${service.route}(/.*|$)`);
+    wsServiceMap[service.hostname] = new RegExp(`^/_${service.route}(/.*|$)`);
 
     app.use(wsServiceMap[service.hostname], (req, res) => {
       proxy.web(req, res, {

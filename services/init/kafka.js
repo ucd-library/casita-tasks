@@ -41,6 +41,22 @@ const topics = [
   {
     name : 'ring-buffer-ext',
     partitions : 1
+  },
+  {
+    name : 'lightning',
+    partitions : DEFAULT_PARTITIONS
+  },
+  {
+    name : 'lightning-ext',
+    partitions : 1
+  },
+  {
+    name : 'lightning-grouped-stats',
+    partitions : DEFAULT_PARTITIONS
+  },
+  {
+    name : 'lightning-grouped-stats-ext',
+    partitions : 1
   }
 ];
 export default topics;
