@@ -17,12 +17,18 @@ function KafkaConsumer(kconfig={}) {
 }
 
 async function waitForTopics(topics) {
+  while( !(await _waitForTopics(topics)) ) {
+    await sleep();
+  }
+}
+
+async function _waitForTopics(topics) {
   if( !admin ) {
     admin = kafka.admin();
     await admin.connect();
   }
 
-  let existingTopics = (await admin.fetchTopicMetadata()).topics.map(item => item.topic);
+  let existingTopics = (await admin.fetchTopicMetadata()).topics.map(item => item.name);
 
   for( let topic of topics ) {
     if( !existingTopics.includes(topic) ) {
@@ -31,6 +37,12 @@ async function waitForTopics(topics) {
   }
 
   return true;
+}
+
+async function sleep(time) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => resolve(), time || 500);
+  });
 }
 
 async function sendMessage(msg, kafkaProducer) {

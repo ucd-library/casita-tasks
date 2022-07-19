@@ -16,7 +16,7 @@ class Utils {
       .split('/');
 
     var x = -1,y = -1;
-    if( xy ) {
+    if( xy && xy.match(/-/) ) {
       var [x, y] = xy.split('-').map(v => parseInt(v));
     }
 

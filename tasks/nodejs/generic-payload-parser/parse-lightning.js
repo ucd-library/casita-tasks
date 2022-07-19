@@ -25,9 +25,9 @@ async function run() {
 
   fs.writeFileSync(outfile, JSON.stringify(outcontent));
 
-  metadata.files = [outfile.replace(config.fs.nfsRoot)];
+  metadata.files = [outfile.replace(config.fs.nfsRoot, '')];
 
   return metadata;
 }
 
-export default run();
+export default run;

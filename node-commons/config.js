@@ -106,6 +106,22 @@ let config = {
     }
   },
 
+  expire : {
+    maxDepth : env.EXPIRE_DIR_DEPTH,
+    direction : env.EXPIRE_DIRECTION || 'forward',
+    cron : '0 0-23 * * *',
+    default : {
+      maxDepth : parseInt(env.EXPIRE_DIR_DEPTH || 4),
+      expireTime : 24
+    },
+    custom : {
+      california : {
+        expireTime : 24 * 31,
+        regex : /\/west\/ca-[a-z]+\/[0-9-]+/
+      }
+    }
+  },
+
   // external api routes that are proxied by
   // main rest service
   rest : {

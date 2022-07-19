@@ -49,12 +49,11 @@ const dag = {
     }
   },
 
+  // no group by need here
   [TOPICS.ringBuffer] : {
     enabled: true,
     dependencies : [TOPICS.blockCompositeImage],
-    expire : 60 * 2, // 2 minutes
-    ready : (key, msgs) => true,
-    groupBy : msg => `${msg.data.product}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.x},${msg.data.y}-${msg.data.band}`,
+    where : msg => true,
     sink : (key, msgs) => {
       console.log(key);
       let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;

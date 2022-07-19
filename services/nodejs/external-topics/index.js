@@ -17,12 +17,12 @@ let kafkaConsumer = KafkaConsumer({
   groupId : config.kafka.groups.external,
 });
 
-io.on("connection", (socket) => {
+io.on('connection', (socket) => {
   sockets.set(socket.id, socket);
 
   logger.debug(`socket connected ${socket.id}`);
 
-  socket.on('setFilter', (msg) => {
+  socket.on('listen', (msg) => {
     logger.debug(`setting filters for socket ${socket.id}`, msg.filters);
     if( !msg.filters ) {
       socket.filters = null;
@@ -48,13 +48,18 @@ function onMessage(topic, msg) {
   topic = topic.replace(/-ext$/, '');
 
   sockets.forEach((socket, id) => {
-    if( !socket.filters ) {
-      return socket.emit('message', {topic, message: msg});
-    }
+    if( !socket.filters ) return;
 
     for( let filter of socket.filters ) {
+      // check filter is for topic
       if( filter.topic !== topic ) continue;
 
+      // just listening to all messages on topic
+      if( !filter.regex || !filter.key ) {
+        return socket.emit('message', {topic, message: msg});
+      }
+
+      // check key and regex for filtered message match
       if( (getProperty(msg, filter.key)+'').match(filter.regex) ) {
         return socket.emit('message', {topic, message: msg});
       }

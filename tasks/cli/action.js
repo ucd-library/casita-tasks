@@ -52,7 +52,7 @@ async function action(opts, cmd) {
   try {
     let module = await import(config.command.reference);
     if( module.default ) module = module.default;
-  
+
     if( typeof module === 'function') {
       resp = await module();
     } else {
