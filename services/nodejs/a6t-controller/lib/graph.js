@@ -53,9 +53,8 @@ const dag = {
   [TOPICS.ringBuffer] : {
     enabled: true,
     dependencies : [TOPICS.blockCompositeImage],
-    where : msg => true,
+    where : msg => msg.data.band.match(/^(1|2|7)$/),
     sink : (key, msgs) => {
-      console.log(key);
       let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
 
       let pngFile = pathUtils.join(config.fs.nfsRoot, satellite, product,

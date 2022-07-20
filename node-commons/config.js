@@ -107,9 +107,9 @@ let config = {
   },
 
   expire : {
-    maxDepth : env.EXPIRE_DIR_DEPTH,
     direction : env.EXPIRE_DIRECTION || 'forward',
-    cron : '0 0-23 * * *',
+    cron : '0 0 * * *', // at every hour
+    minDepth : 3,
     default : {
       maxDepth : parseInt(env.EXPIRE_DIR_DEPTH || 4),
       expireTime : 24
@@ -117,7 +117,8 @@ let config = {
     custom : {
       california : {
         expireTime : 24 * 31,
-        regex : /\/west\/ca-[a-z]+\/[0-9-]+/
+        regex : /\/west\/ca-[a-z]+\/.+/,
+        maxDepth : 3
       }
     }
   },

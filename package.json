@@ -5,6 +5,7 @@
   "main": "./node-commons/index.js",
   "type": "module",
   "scripts": {
+    "expire": "node services/nodejs/expire/index.js",
     "worker": "node services/nodejs/worker/index.js",
     "rest": "node services/nodejs/rest/index.js",
     "decoder": "services/nodejs/decoder/run.sh",
