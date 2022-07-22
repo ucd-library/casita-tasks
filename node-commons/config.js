@@ -94,7 +94,7 @@ let config = {
   },
 
   pg : {
-    host : env.PG_HOST || 'postgres',
+    host : env.PG_HOST || 'postgres-service',
     user : env.PG_USERNAME || 'postgres',
     port : env.PG_PORT || 5432,
     database : env.PG_DATABASE || 'casita',
@@ -106,6 +106,7 @@ let config = {
     }
   },
 
+  // remove files from nfs
   expire : {
     direction : env.EXPIRE_DIRECTION || 'forward',
     cron : '0 0 * * *', // at every hour
