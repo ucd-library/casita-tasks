@@ -8,7 +8,7 @@ function wrapOpts(program) {
         '--google-application-credentials <file>', 
         'path to google cloud credentials file (required for metrics)'
         )
-        .default('/etc/casita/service-account.json')
+        .default('/etc/google/service-account.json')
         .env('GOOGLE_APPLICATION_CREDENTIALS')
       )
       .addOption(new Option(
