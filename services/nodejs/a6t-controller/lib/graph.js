@@ -38,14 +38,14 @@ const dag = {
     ready : (key, msgs) => isBandReady(msgs),
 
     sink : (key, msgs) => {
+      let task = TOPICS.blockCompositeImage;
       let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
 
       let fmFile = pathUtils.join(config.fs.nfsRoot, satellite, product,
         date, hour, minsec, band, apid, 'blocks', x+'-'+y,
         'fragment-metadata.json');
 
-      return kafkaWorker.exec(`${CASITA_CMD} image jp2-to-png -e -k ${TOPICS.blockCompositeImage} -m --metadata-file=${fmFile}`);
-
+      return kafkaWorker.exec(`${CASITA_CMD} image jp2-to-png -e -k ${task} -m --metadata-file=${fmFile}`, {task, msgs});
     }
   },
 
@@ -55,13 +55,14 @@ const dag = {
     dependencies : [TOPICS.blockCompositeImage],
     where : msg => msg.data.band.match(/^(1|2|7)$/),
     sink : (key, msgs) => {
+      let task = TOPICS.ringBuffer;
       let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
 
       let pngFile = pathUtils.join(config.fs.nfsRoot, satellite, product,
         date, hour, minsec, band, apid, 'blocks', x+'-'+y,
         'image.png');
 
-      return kafkaWorker.exec(`${CASITA_CMD} block-ring-buffer insert -e -k ${TOPICS.ringBuffer} -m --file=${pngFile}`);
+      return kafkaWorker.exec(`${CASITA_CMD} block-ring-buffer insert -e -k ${task} -m --file=${pngFile}`, {task, msgs});
     }
   },
 
@@ -79,7 +80,7 @@ const dag = {
 
     sink : (key, msgs) => {
       let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
-      return kafkaWorker.exec(`${CASITA_CMD} image ca-project -e -k -m --product=${product} --time=${date}T${hour}:${minsec}`);
+      return kafkaWorker.exec(`${CASITA_CMD} image ca-project -e -k -m --product=${product} --time=${date}T${hour}:${minsec}`, msgs);
     }
   },
 
@@ -113,18 +114,19 @@ const dag = {
   //   },
   // },
 
-  [config.kafka.topics.lightning] : {
+  [TOPICS.lightning] : {
     enabled : true,
-    dependencies : [config.kafka.topics.productWriter],
+    dependencies : [TOPICS.productWriter],
 
     groupBy : msg => `${msg.data.product}-${msg.data.date}-${msg.data.hour}-${msg.data.minsec}-${msg.data.ms}-${msg.data.apid}-${msg.data.file.base}`,
     where : msg => (msg.data.apid.match(LIGHTNING_PAYLOAD_APIDS)) && (msg.data.file.base === 'payload.bin'),
     ready : () => true,
 
     sink : (key, msgs) => {
+      let task = TOPICS.lightning;
       let data = msgs[0].data;
       let file = pathUtils.resolve(data.file.dir, data.file.base);
-      return kafkaWorker.exec(`${CASITA_CMD} generic parse-lightning -e -k ${config.kafka.topics.lightning} -m --file=${file} `);
+      return kafkaWorker.exec(`${CASITA_CMD} generic parse-lightning -e -k ${task} -m --file=${file} `, {task, msgs});
     }
   },
 

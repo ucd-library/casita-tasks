@@ -1,4 +1,12 @@
-import {config, KafkaProducer, sendMessage} from '@ucd-lib/casita-worker';
+import {config, KafkaProducer, sendMessage, Monitoring} from '@ucd-lib/casita-worker';
+import metrics from '../../../init/google-cloud-metrics.js';
+
+const METRIC_TYPE = 'custom.googleapis.com/casita/a6t-compose-time';
+let metric = metrics.find(item => item.type === METRIC_TYPE);
+
+// init monitoring
+let monitor = new Monitoring('argonaut');
+monitor.registerMetric(metric);
 
 class CasitaKafkaWorkerExec {
 
@@ -9,16 +17,32 @@ class CasitaKafkaWorkerExec {
     }
   }
 
-  async exec(cmd) {
+  async exec(cmd, metadata) {
     if( typeof cmd === 'string' ) {
       cmd = {cmd}
     }
 
+    // get earliest time for all messages
+    let timestamp = metadata.msgs[0].time;
+    metadata.msgs.forEach(msg => {
+      if( msg.time < timestamp ) timestamp = msg.time;
+    });
+
+    // send a6t compose time metric
+    monitor.setMaxMetric(
+      PACKET_RATE_METRIC_TYPE,
+      'task', 
+      {
+        task: metadata.task
+      },
+      Date.now() - timestamp
+    );
+
     await this.connect();
     await sendMessage({
       topic : config.kafka.topics.tasks,
-      source : 'casita-a6t',
-      data : cmd
+      source : 'argonaut',
+      data : {cmd, task: metadata.task}
     });
 
     return {success: true};

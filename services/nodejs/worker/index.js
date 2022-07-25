@@ -2,13 +2,10 @@ import {logger, config, KafkaConsumer, waitForTopics, waitUntil, Monitoring} fro
 import metrics from '../../init/google-cloud-metrics.js';
 import exec from './exec.js';
 
-// TODO
-// const metrics = 'custom.googleapis.com/grb/worker-exec-time';
-// let metric = metrics.find(item => item.type === METRIC_TYPE);
-
-// // init monitoring
-// let monitor = new Monitoring('casita-worker');
-// monitor.registerMetric(metric);
+const metrics = 'custom.googleapis.com/grb/time-to-worker';
+let metric = metrics.find(item => item.type === METRIC_TYPE);
+let monitor = new Monitoring('casita-worker');
+monitor.registerMetric(metric);
 
 // init kafka
 let kafkaConsumer = KafkaConsumer({
@@ -33,9 +30,17 @@ let kafkaConsumer = KafkaConsumer({
         message.value = JSON.parse(message.value.toString())
         logger.debug('casita worker received message: ', message, {topic, partition});
 
-        // todo, send time to worker metric
-        await exec(message.value.data);
-        // todo, send exec time metric
+        let timestamp = message.value.time;
+        monitor.setMaxMetric(
+          metric,
+          'task',
+          {
+            task: message.value.data.task
+          },
+          Date.now() - timestamp
+        );
+
+        await exec(message.value.data.cmd);
       } catch(e) {
         logger.error('kafka message error', e);
       }

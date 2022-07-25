@@ -101,27 +101,46 @@ class Monitoring {
     return this.data[type][key];
   }
 
-  async ensureMetrics() {
-    if( !this.enabled ) return;
+  // async ensureMetrics() {
+  //   if( !this.enabled ) return;
 
-    for( let key in this.metrics ) {
-      logger.info('Ensuring metric: ', key);
-      await this.ensureMetric(this.metrics[key].metric);
+  //   for( let key in this.metrics ) {
+  //     logger.info('Ensuring metric: ', key);
+  //     await this.ensureMetric(this.metrics[key].metric);
+  //   }
+  // }
+
+  // ensureMetric(metric) {
+  //   if( !config.google.applicationCredentials ) {
+  //     return;
+  //   }
+
+  //   return this.client.createMetricDescriptor(metric);
+  // }
+
+  write() {
+    for( let type in this.data ) {
+      for( let stat in this.data[type] ) {
+        let labels = this.data[type][stat];
+        let value = labels.value;
+        delete labels.value;
+
+        this._write(type, value, labels);
+      }
+      this.data[type] = {};
     }
   }
-
-  ensureMetric(metric) {
-    if( !config.google.applicationCredentials ) {
-      return;
-    }
-
-    return this.client.createMetricDescriptor(metric);
-  }
-
   
 
-  async write(type, value, labels) {
+  async _write(type, value, labels) {
     if( !this.enabled ) return;
+
+    let opts = this.metrics[type].opts;
+    if( opts.average === true ) {
+      value = value / 30;
+    }
+
+    value = parseInt(Math.round(value));
 
     let dataPoint = {
       interval: {
@@ -159,11 +178,11 @@ class Monitoring {
   
     // Writes time series data
     try {
-      logger.debug(`sendig metric ${type} ${key}`, {value:item.value}, labels);
+      logger.debug(`sendig metric ${type}`, {value:dataPoint.value}, labels);
       let result = await this.client.createTimeSeries(request);
-      logger.debug(`metric create result ${type} ${key}`, result)
+      logger.debug(`metric create result ${type}`, result)
     } catch(e) {
-      logger.warn(`error writing metric ${type} ${key}`, e);
+      logger.warn(`error writing metric ${type}`, e);
     }
   }
 

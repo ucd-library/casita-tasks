@@ -3,13 +3,12 @@ import metrics from '../../init/google-cloud-metrics.js';
 import handleImageMessage from './image.js';
 import handleGenericMessage from './generic.js';
 
-const METRIC_TYPE = 'custom.googleapis.com/grb/time-to-goes-product-writer';
+const METRIC_TYPE = 'custom.googleapis.com/casita/time-to-disk';
 let metric = metrics.find(item => item.type === METRIC_TYPE);
 
 // init monitoring
 let monitor = new Monitoring('goes-product-writer');
 monitor.registerMetric(metric);
-monitor.ensureMetrics();
 
 // init kafka
 let kafkaConsumer = KafkaConsumer({

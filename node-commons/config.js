@@ -26,7 +26,7 @@ let dotPathMap = {
 
 let credentialProjectId;
 if( env.GOOGLE_APPLICATION_CREDENTIALS ) {
-  let content = fs.readFileSync(env.GOOGLE_APPLICATION_CREDENTIALS);
+  let content = JSON.parse(fs.readFileSync(env.GOOGLE_APPLICATION_CREDENTIALS, 'utf-8'));
   credentialProjectId = content.project_id;
 }
 

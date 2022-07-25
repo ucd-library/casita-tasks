@@ -1,6 +1,5 @@
 import {config, logger, Monitoring} from '@ucd-lib/casita-worker';
 import {update as updateConfig} from '../../node-commons/config.js';
-// const logger = require('../../node-commons/logger');
 import metrics from '../../services/init/google-cloud-metrics.js';
 
 const metricsDefs = {
@@ -8,6 +7,8 @@ const metricsDefs = {
   status : metrics.find(item => item.type === 'custom.googleapis.com/casita/worker-execution-status')
 }
 const monitor = new Monitoring('casita-cli');
+monitor.registerMetric(metricsDefs.time);
+monitor.registerMetric(metricsDefs.status);
 
 async function handleError(e, startTime) {
   logger.error(e);
@@ -29,11 +30,8 @@ async function handleError(e, startTime) {
 }
 
 function sendMetrics(time, labels) {
-  monitor.registerMetric(metricsDefs.time);
-  monitor.registerMetric(metricsDefs.status);
-
-  metrics.write(metricsDefs.time, time, labels);
-  // metrics.write(metricsDefs.status, 1, labels);
+  metrics._write(metricsDefs.time, time, labels);
+  metrics._write(metricsDefs.status, 1, labels);
 }
 
 /**
