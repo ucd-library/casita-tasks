@@ -2,7 +2,7 @@ import {logger, config, KafkaConsumer, waitForTopics, waitUntil, Monitoring} fro
 import metrics from '../../init/google-cloud-metrics.js';
 import exec from './exec.js';
 
-const metrics = 'custom.googleapis.com/grb/time-to-worker';
+const METRIC_TYPE = 'custom.googleapis.com/grb/time-to-worker';
 let metric = metrics.find(item => item.type === METRIC_TYPE);
 let monitor = new Monitoring('casita-worker');
 monitor.registerMetric(metric);
@@ -32,7 +32,7 @@ let kafkaConsumer = KafkaConsumer({
 
         let timestamp = message.value.time;
         monitor.setMaxMetric(
-          metric,
+          METRIC_TYPE,
           'task',
           {
             task: message.value.data.task

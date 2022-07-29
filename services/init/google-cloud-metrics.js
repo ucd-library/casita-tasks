@@ -124,8 +124,8 @@ const metrics = [
 
   // worker
   {
-    description: 'Decorder to GOES product writer service time',
-    displayName: 'Time to GOES product writer service',
+    description: 'Time spent in tasks kafka topic.  a6t -> worker',
+    displayName: 'Time to Worker',
     type: 'custom.googleapis.com/grb/time-to-worker',
     metricKind: 'GAUGE',
     valueType: 'INT64',
