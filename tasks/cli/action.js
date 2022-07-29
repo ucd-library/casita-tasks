@@ -66,7 +66,7 @@ async function action(opts, cmd) {
     await sendMetrics(
       Date.now()-startTime,
       {
-        command : config.command,
+        command : config.command.current,
         status : 'success'
       }
     );
