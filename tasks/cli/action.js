@@ -86,6 +86,8 @@ async function action(opts, cmd) {
   if( config.kafka.print === true ) {
     console.log(resp);
   }
+
+  setTimeout(() => process.exit(), 25);
 }
 
 export default action;
