@@ -13,16 +13,16 @@ monitor.registerMetric(metricsDefs.status);
 async function handleError(e, startTime) {
   logger.error(e);
 
-  if( config.metrics ) {
+  if( config.google.metrics ) {
     await sendMetrics(
-      startTime-Date.now(),
+      Date.now()-startTime,
       {
         command : config.command.current,
         status : 'error'
       }
     );
     
-    setTimeout(() => process.exit(100), 50);
+    setTimeout(() => process.exit(100), 100);
     return;
   }
 
@@ -30,8 +30,8 @@ async function handleError(e, startTime) {
 }
 
 function sendMetrics(time, labels) {
-  metrics._write(metricsDefs.time, time, labels);
-  metrics._write(metricsDefs.status, 1, labels);
+  monitor._write(metricsDefs.time.type, time, labels);
+  monitor._write(metricsDefs.status.type, 1, labels);
 }
 
 /**
@@ -62,9 +62,9 @@ async function action(opts, cmd) {
     return;
   }
 
-  if( config.metrics ) {
+  if( config.google.metrics ) {
     await sendMetrics(
-      startTime-Date.now(),
+      Date.now()-startTime,
       {
         command : config.command,
         status : 'success'

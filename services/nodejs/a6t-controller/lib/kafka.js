@@ -23,9 +23,9 @@ class CasitaKafkaWorkerExec {
     }
 
     // get earliest time for all messages
-    let timestamp = metadata.msgs[0].time;
+    let timestamp = new Date(metadata.msgs[0].time).getTime();
     metadata.msgs.forEach(msg => {
-      if( msg.time < timestamp ) timestamp = msg.time;
+      if( new Date(msg.time).getTime() < timestamp ) timestamp = new Date(msg.time).getTime();
     });
 
     // send a6t compose time metric
