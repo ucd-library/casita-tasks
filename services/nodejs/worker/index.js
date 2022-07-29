@@ -25,6 +25,7 @@ let kafkaConsumer = KafkaConsumer({
   });
 
   await kafkaConsumer.run({
+    autoCommitInterval: 5000,
     eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
       try {
         message.value = JSON.parse(message.value.toString())

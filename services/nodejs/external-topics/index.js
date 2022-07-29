@@ -84,6 +84,7 @@ function onMessage(topic, msg) {
   });
 
   await kafkaConsumer.run({
+    autoCommitInterval: 5000,
     eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
       try {
         await onMessage(topic, message);
