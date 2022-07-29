@@ -30,7 +30,7 @@ let kafkaConsumer = KafkaConsumer({
         message.value = JSON.parse(message.value.toString())
         logger.debug('casita worker received message: ', message, {topic, partition});
 
-        let timestamp = message.value.time;
+        let timestamp = new Date(message.value.time).getTime();
         monitor.setMaxMetric(
           METRIC_TYPE,
           'task',

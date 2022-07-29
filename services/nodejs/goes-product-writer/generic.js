@@ -6,8 +6,8 @@ import send from './send.js';
 const {apidUtils} = decoder;
 
 async function handleGenericMessage(metadata, payload, monitor, metric) {
-  var dataObj = new Date(946728000000 + metadata.headers.SECONDS_SINCE_EPOCH*1000);
-  var [date, time] = dataObj.toISOString().split('T');
+  var dateObj = new Date(946728000000 + metadata.headers.SECONDS_SINCE_EPOCH*1000);
+  var [date, time] = dateObj.toISOString().split('T');
   time = time.replace(/\..*/, '');
 
   let product = apidUtils.get(metadata.apid);
@@ -60,7 +60,7 @@ async function handleGenericMessage(metadata, payload, monitor, metric) {
   monitor.setMaxMetric(
     metric.type,
     'channel', 
-    Date.now() - new Date(metadata.time).getTime(),
+    Date.now() - dateObj.getTime(),
     {
       apid: metadata.apid,
       channel: metadata.streamName

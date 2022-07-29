@@ -9,8 +9,8 @@ async function handleImageMessage(metadata, payload, monitor, metric) {
   let product = apidUtils.get(metadata.apid);
   if( !product.imageScale && !product.label ) return;
 
-  var dataObj = new Date(946728000000 + metadata.imagePayload.SECONDS_SINCE_EPOCH*1000);
-  var [date, time] = dataObj.toISOString().split('T');
+  var dateObj = new Date(946728000000 + metadata.imagePayload.SECONDS_SINCE_EPOCH*1000);
+  var [date, time] = dateObj.toISOString().split('T');
   time = time.replace(/\..*/, '');
 
   let productInfo = {
@@ -60,7 +60,7 @@ async function handleImageMessage(metadata, payload, monitor, metric) {
   monitor.setMaxMetric(
     metric.type,
      'channel', 
-     Date.now() - new Date(metadata.time).getTime(),
+     Date.now() - dateObj.getTime(),
      {
       apid: metadata.apid,
       channel: metadata.streamName
