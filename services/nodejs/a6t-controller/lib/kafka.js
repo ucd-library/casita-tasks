@@ -32,10 +32,10 @@ class CasitaKafkaWorkerExec {
     monitor.setMaxMetric(
       METRIC_TYPE,
       'task', 
+      Date.now() - timestamp,
       {
         task: metadata.task
-      },
-      Date.now() - timestamp
+      }
     );
 
     await this.connect();
