@@ -30,7 +30,7 @@ class CasitaKafkaWorkerExec {
 
     // send a6t compose time metric
     monitor.setMaxMetric(
-      PACKET_RATE_METRIC_TYPE,
+      METRIC_TYPE,
       'task', 
       {
         task: metadata.task
