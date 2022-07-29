@@ -34,10 +34,10 @@ let kafkaConsumer = KafkaConsumer({
         monitor.setMaxMetric(
           METRIC_TYPE,
           'task',
+          Date.now() - timestamp,
           {
             task: message.value.data.task
-          },
-          Date.now() - timestamp
+          }
         );
 
         await exec(message.value.data.cmd);
