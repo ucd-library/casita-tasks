@@ -5,6 +5,7 @@ import path from 'path';
 
 const DIRECTION = config.expire.direction;
 const MAX_DEPTH = config.expire.default.maxDepth;
+const H_TO_MS = 1000 * 60 * 60;
 
 class Expire {
 
@@ -87,7 +88,7 @@ class Expire {
       let def = config.expire.custom[key];
 
       if( proot.match(def.regex) ) {
-        if( age > def.expireTime * 1000 * 60 * 60 ) {
+        if( age > def.expireTime * H_TO_MS ) {
           logger.debug(`expire dir (custom=${key}): `+file);
           await this.remove(file);
         } else if( depth >= (def.maxDepth || MAX_DEPTH) ) {
@@ -102,14 +103,14 @@ class Expire {
     // if beyond max depth stop crawling
     if( MAX_DEPTH !== -1 && depth >= MAX_DEPTH ) {
       // if dir is expired, remove it and all files
-      if( age > config.expire.default.expireTime * 1000 * 60 * 60) {
+      if( age > config.expire.default.expireTime * H_TO_MS) {
         logger.debug(`expire dir (depth=${depth}): `+file);
         await this.remove(file);
       }
       return;
     }
 
-    if( age > config.expire.default.expireTime * 1000 ) {
+    if( age > config.expire.default.expireTime * H_TO_MS) {
       logger.debug(`expire (depth=${depth}): `+file);
       await this.remove(file);
       return;
