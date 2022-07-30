@@ -11,7 +11,7 @@ const cors = Cors({
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   exposedHeaders : ['content-type', 'link', 'content-disposition', 'content-length', 'pragma', 'expires', 'cache-control'],
   allowedHeaders : ['authorization', 'range', 'cookie', 'content-type', 'prefer', 'slug', 'cache-control', 'accept'],
-  credentials: true
+  credentials: false
 });
 
 const app = express();
