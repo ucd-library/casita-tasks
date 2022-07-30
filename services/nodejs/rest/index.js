@@ -23,7 +23,6 @@ proxy.on('error', err => logger.warn('api proxy error', err));
 const wsServiceMap = {};
 
 app.use(compression());
-app.use(cors);
 
 // handle websocket upgrade requests
 server.on('upgrade', (req, socket, head) => {
@@ -37,9 +36,6 @@ server.on('upgrade', (req, socket, head) => {
     }
   }
 });
-
-// register the /_/task-graph api
-app.use('/_', controllers);
 
 // register services
 if( config?.rest?.proxyServices ) {
@@ -57,6 +53,11 @@ if( config?.rest?.proxyServices ) {
     });
   }
 }
+
+app.use(cors);
+
+// register the /_/task-graph api
+app.use('/_', controllers);
 
 app.use(
   express.static(config.fs.nfsRoot), 
