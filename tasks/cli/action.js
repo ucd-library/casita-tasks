@@ -29,9 +29,9 @@ async function handleError(e, startTime) {
   setTimeout(() => process.exit(100), 25);
 }
 
-function sendMetrics(time, labels) {
-  monitor._write(metricsDefs.time.type, time, labels);
-  monitor._write(metricsDefs.status.type, 1, labels);
+async function sendMetrics(time, labels) {
+  await monitor._write(metricsDefs.time.type, time, labels);
+  await monitor._write(metricsDefs.status.type, 1, labels);
 }
 
 /**

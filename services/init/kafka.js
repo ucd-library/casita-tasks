@@ -1,7 +1,7 @@
 // make sure topic names match node-commons/config.js => kafka.topics[*].name
 
 // this should match the num of replicates
-const DEFAULT_PARTITIONS = 3;
+const DEFAULT_PARTITIONS = parseInt(process.env.DEFAULT_PARTITIONS || 3);
 
 const topics = [
   {
