@@ -21,9 +21,6 @@ async function handleError(e, startTime) {
         status : 'error'
       }
     );
-    
-    setTimeout(() => process.exit(100), 100);
-    return;
   }
 
   setTimeout(() => process.exit(100), 25);

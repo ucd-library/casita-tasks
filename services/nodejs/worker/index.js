@@ -24,12 +24,15 @@ let kafkaConsumer = KafkaConsumer({
     topics: [config.kafka.topics.tasks]
   });
 
+  let lastMessageCompletedAt = Date.now();
+
   await kafkaConsumer.run({
-    autoCommitInterval: 5000,
+    heartbeatInterval	: 10 * 1000,
     eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
       try {
         message.value = JSON.parse(message.value.toString())
         logger.debug('casita worker received message: ', {topic, partition, offset: message.offset});
+        logger.debug('kafka message fetch time: ', (Date.now()-lastMessageCompletedAt));
 
         let timestamp = new Date(message.value.time).getTime();
         monitor.setMaxMetric(
@@ -45,6 +48,7 @@ let kafkaConsumer = KafkaConsumer({
       } catch(e) {
         logger.error('kafka message error', e);
       }
+      lastMessageCompletedAt = Date.now();
     }
   });
 
