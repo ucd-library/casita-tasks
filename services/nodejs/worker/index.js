@@ -10,6 +10,7 @@ monitor.registerMetric(metric);
 // init kafka
 let kafkaConsumer = KafkaConsumer({
   groupId : config.kafka.groups.worker,
+  heartbeatInterval	: 10 * 1000
 });
 
 (async function() {
@@ -27,7 +28,6 @@ let kafkaConsumer = KafkaConsumer({
   let lastMessageCompletedAt = Date.now();
 
   await kafkaConsumer.run({
-    heartbeatInterval	: 10 * 1000,
     eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
       try {
         message.value = JSON.parse(message.value.toString())
