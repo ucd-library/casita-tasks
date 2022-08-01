@@ -13,6 +13,8 @@ monitor.registerMetric(metric);
 // init kafka
 let kafkaConsumer = KafkaConsumer({
   groupId : config.kafka.groups.productWriter,
+  maxBytesPerPartition : 1048576 * 20, // 20mb
+  maxBytes : 1048576 * 50 // 450mb
 });
 
 async function onMessage(msg) {
