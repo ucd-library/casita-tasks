@@ -36,20 +36,20 @@ let processor = new BinaryStreamProcessor({
 
     monitor.incrementMetric(
       PACKET_RATE_METRIC_TYPE,
-      'valid', 
+      'status', 
       {
         channel: process.env.GRB_FILE,
-        valid : true
+        status : 'valid'
       },
       packetsPerSecond
     );
 
     monitor.incrementMetric(
       PACKET_RATE_METRIC_TYPE,
-      'channel', 
+      'status', 
       {
         channel: process.env.GRB_FILE,
-        valid: false
+        status: 'invalid'
       },
       invalidPacketsPerSecond
     );

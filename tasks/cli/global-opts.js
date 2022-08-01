@@ -29,7 +29,7 @@ function wrapOpts(program) {
           .default('kafka')
           .env('KAFKA_HOST')
       )
-      .option('--print-kafka-msg', 'send kafka message to stdout')
+      .option('-p, --print-kafka-msg', 'send kafka message to stdout')
       .option('--quiet', 'disabled stdout/stderr')
       .option('--debug-config', 'print config to stdout')
   })

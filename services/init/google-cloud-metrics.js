@@ -64,8 +64,8 @@ const metrics = [
         description: 'UCD GRB Box Channel',
       },
       {
-        key: 'valid',
-        valueType: 'BOOL',
+        key: 'status',
+        valueType: 'STRING',
         description: 'Valid or invalid packet',
       }
     ]
@@ -126,7 +126,7 @@ const metrics = [
   {
     description: 'Time spent in tasks kafka topic.  a6t -> worker',
     displayName: 'Time to Worker',
-    type: 'custom.googleapis.com/grb/time-to-worker',
+    type: 'custom.googleapis.com/casita/time-to-worker',
     metricKind: 'GAUGE',
     valueType: 'INT64',
     unit: 'ms',
@@ -137,14 +137,9 @@ const metrics = [
         description: 'CASITA ENV',
       },
       {
-        key: 'apid',
+        key: 'task',
         valueType: 'STRING',
-        description: 'GOES-R GRB APID',
-      },
-      {
-        key: 'channel',
-        valueType: 'STRING',
-        description: 'UCD GRB Box Channel',
+        description: 'CaSITA task to execute',
       }
     ]
   },
@@ -157,19 +152,14 @@ const metrics = [
     unit: 'ms',
     labels: [
       {
-        key: 'instance',
+        key: 'env',
         valueType: 'STRING',
-        description: 'CaSITA instance name',
+        description: 'CASITA ENV',
       },
       {
-        key: 'command',
+        key: 'task',
         valueType: 'STRING',
-        description: 'bash command that was run',
-      },
-      {
-        key: 'status',
-        valueType: 'STRING',
-        description: 'ex: success, error',
+        description: 'CaSITA task to execute',
       }
     ]
   },
@@ -182,19 +172,19 @@ const metrics = [
     unit: '1',
     labels: [
       {
-        key: 'instance',
+        key: 'env',
         valueType: 'STRING',
-        description: 'CaSITA instance name',
+        description: 'CASITA ENV',
       },
       {
-        key: 'command',
+        key: 'task',
         valueType: 'STRING',
-        description: 'bash command that was run',
+        description: 'CaSITA task to execute',
       },
       {
-        key: 'status',
-        valueType: 'STRING',
-        description: 'ex: success, error',
+        key: 'exitCode',
+        valueType: 'INT64',
+        description: 'returned process exit code',
       }
     ]
   }

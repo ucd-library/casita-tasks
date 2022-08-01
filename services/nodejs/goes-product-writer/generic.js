@@ -59,7 +59,7 @@ async function handleGenericMessage(metadata, payload, monitor, metric) {
 
   monitor.setMaxMetric(
     metric.type,
-    'channel', 
+    'apid',
     Date.now() - dateObj.getTime(),
     {
       apid: metadata.apid,
