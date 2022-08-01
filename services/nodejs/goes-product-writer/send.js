@@ -12,12 +12,12 @@ async function send(productInfo, file, data) {
     file = path.join(config.fs.nfsRoot, file);
     productInfo.file = path.parse(file);
 
-    fs.mkdirpSync(productInfo.file.dir);
-    if( fs.existsSync(file) ) {
-      fs.unlinkSync(file)
-    }
+    await fs.mkdirp(productInfo.file.dir);
+    // if( fs.existsSync(file) ) {
+    //   fs.unlink(file)
+    // }
 
-    fs.writeFileSync(file, data);
+    await fs.writeFile(file, data);
 
     kafkaProducer.send({
       topic : config.kafka.topics.productWriter,
