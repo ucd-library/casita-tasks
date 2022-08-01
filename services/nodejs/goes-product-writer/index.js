@@ -64,7 +64,6 @@ async function updateChannelStatusTable(metadata) {
   });
 
   await kafkaConsumer.run({
-    autoCommitInterval: 5000,
     eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
       try {
         await onMessage(message);
