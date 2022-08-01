@@ -1,4 +1,5 @@
-import kafkaWorker from './kafka.js';
+// import kafkaWorker from './kafka.js';
+import rabbitMqWorker from './rabbitmq.js';
 import pathUtils from 'path';
 import fs from 'fs';
 import {config} from '@ucd-lib/casita-worker';
@@ -20,6 +21,8 @@ function isBandReady(msgs) {
   
   return (metadata.fragmentsCount <= fragments.length);
 }
+
+rabbitMqWorker.connect();
 
 
 const dag = {
@@ -45,7 +48,7 @@ const dag = {
         date, hour, minsec, band, apid, 'blocks', x+'-'+y,
         'fragment-metadata.json');
 
-      return kafkaWorker.exec(`${CASITA_CMD} image jp2-to-png -p -e --metadata-file=${fmFile}`, {task, msgs});
+      return rabbitMqWorker.exec(`${CASITA_CMD} image jp2-to-png -p -e --metadata-file=${fmFile}`, {task, msgs});
     }
   },
 
@@ -62,7 +65,7 @@ const dag = {
         date, hour, minsec, band, apid, 'blocks', x+'-'+y,
         'image.png');
 
-      return kafkaWorker.exec(`${CASITA_CMD} block-ring-buffer insert -p -e --file=${pngFile}`, {task, msgs});
+      return rabbitMqWorker.exec(`${CASITA_CMD} block-ring-buffer insert -p -e --file=${pngFile}`, {task, msgs});
     }
   },
 
@@ -80,7 +83,7 @@ const dag = {
 
     sink : (key, msgs) => {
       let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
-      return kafkaWorker.exec(`${CASITA_CMD} image ca-project -p -e --product=${product} --time=${date}T${hour}:${minsec}`, msgs);
+      return rabbitMqWorker.exec(`${CASITA_CMD} image ca-project -p -e --product=${product} --time=${date}T${hour}:${minsec}`, msgs);
     }
   },
 
@@ -126,7 +129,7 @@ const dag = {
       let task = TOPICS.lightning;
       let data = msgs[0].data;
       let file = pathUtils.resolve(data.file.dir, data.file.base);
-      return kafkaWorker.exec(`${CASITA_CMD} generic parse-lightning -p -e --file=${file} `, {task, msgs});
+      return rabbitMqWorker.exec(`${CASITA_CMD} generic parse-lightning -p -e --file=${file} `, {task, msgs});
     }
   },
 

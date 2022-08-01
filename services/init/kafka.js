@@ -19,13 +19,13 @@ const topics = [
       'retention.ms' : (1000 * 60 * 60 * 48),  // 48 hours
     }
   },
-  {
-    name : 'tasks',
-    partitions : parseInt(process.env.MAX_WORKERS || 25),
-    options : {
-      'retention.ms' : (1000 * 60 * 60 * 48),  // 48 hours
-    }
-  },
+  // {
+  //   name : 'tasks',
+  //   partitions : parseInt(process.env.MAX_WORKERS || 25),
+  //   options : {
+  //     'retention.ms' : (1000 * 60 * 60 * 48),  // 48 hours
+  //   }
+  // },
   {
     name : 'block-composite-image',
     partitions : DEFAULT_PARTITIONS

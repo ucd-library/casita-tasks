@@ -1,4 +1,4 @@
-import {logger, config, KafkaConsumer, KafkaProducer, sendMessage, waitForTopics, waitUntil, Monitoring} from '@ucd-lib/casita-worker';
+import {logger, config, KafkaProducer, RabbitMQ, sendMessage, waitForTopics, waitUntil, Monitoring} from '@ucd-lib/casita-worker';
 import metrics from '../../init/google-cloud-metrics.js';
 import exec from './exec.js';
 
@@ -14,11 +14,11 @@ monitor.registerMetric(metricsDefs.exectime);
 monitor.registerMetric(metricsDefs.status);
 
 // init kafka
-let kafkaConsumer = KafkaConsumer({
-  groupId : config.kafka.groups.worker,
-  heartbeatInterval	: 10 * 1000
-});
-
+// let kafkaConsumer = KafkaConsumer({
+//   groupId : config.kafka.groups.worker,
+//   heartbeatInterval	: 10 * 1000
+// });
+let rabbitMq = new RabbitMQ();
 let kafkaProducer = KafkaProducer();
 
 async function findAndSendMessage(stdout, topic) {
@@ -37,73 +37,78 @@ async function findAndSendMessage(stdout, topic) {
 
       logger.debug('Sending kafka task response message', msg);
       await sendMessage(msg, kafkaProducer);
-    } catch(e) {
-      console.log(e);
-    };
+    } catch(e) {};
   }
 }
 
 (async function() {
   await waitUntil(config.kafka.host, config.kafka.port);
-  await kafkaConsumer.connect();
+  // await kafkaConsumer.connect();
   await kafkaProducer.connect();
 
-  logger.info(`Waiting for topic: ${config.kafka.topics.tasks}`);
-  await waitForTopics([config.kafka.topics.tasks]);
+  await rabbitMq.connect();
 
-  logger.info(`Topic ready ${config.kafka.topics.tasks}, subscribing`);
-  await kafkaConsumer.subscribe({
-    topics: [config.kafka.topics.tasks]
-  });
+  // logger.info(`Waiting for topic: ${config.kafka.topics.tasks}`);
+  // await waitForTopics([config.kafka.topics.tasks]);
+
+  // logger.info(`Topic ready ${config.kafka.topics.tasks}, subscribing`);
+  // await kafkaConsumer.subscribe({
+  //   topics: [config.kafka.topics.tasks]
+  // });
 
   let lastMessageCompletedAt = Date.now();
 
-  await kafkaConsumer.run({
-    eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
-      try {
-        message.value = JSON.parse(message.value.toString())
-        logger.debug('casita worker received message: ', {topic, partition, offset: message.offset});
-        logger.debug('kafka message fetch time: ', (Date.now()-lastMessageCompletedAt));
+  // await kafkaConsumer.run({
+  //   eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
+  rabbitMq.listen(config.rabbitMq.queues.tasks, async msg => {
+    try {
+      msg.content = JSON.parse(msg.content.toString());
 
-        // time message was put on queue
-        let timestamp = new Date(message.value.time).getTime();
-        monitor.setMaxMetric(
-          metricsDefs.ttw.type,
-          'task',
-          Date.now() - timestamp,
-          {
-            task: message.value.data.task
-          }
-        );
+      // message.value = JSON.parse(message.value.toString())
+      // logger.debug('casita worker received message: ', {topic, partition, offset: message.offset});
+      logger.debug('rabbitmq message fetch time: ', (Date.now()-lastMessageCompletedAt));
 
-        // see how long the exec step takes and record
-        timestamp = Date.now();
-        let {stdout, exitCode} = await exec(message.value.data.cmd);
-        await findAndSendMessage(stdout, message.value.data.task);
+      // time message was put on queue
+      let timestamp = new Date(msg.content.time).getTime();
+      monitor.setMaxMetric(
+        metricsDefs.ttw.type,
+        'task',
+        Date.now() - timestamp,
+        {
+          task: msg.content.data.task
+        }
+      );
 
-        monitor.setMaxMetric(
-          metricsDefs.exectime.type,
-          'task',
-          Date.now() - timestamp,
-          {
-            task: message.value.data.task
-          }
-        );
+      // see how long the exec step takes and record
+      timestamp = Date.now();
+      let {stdout, exitCode} = await exec(msg.content.data.cmd);
+      await findAndSendMessage(stdout, msg.content.data.task);
 
-        monitor.incrementMetric(
-          metricsDefs.status.type,
-          'task',
-          {
-            task: message.value.data.task,
-            exitCode
-          }
-        );
+      monitor.setMaxMetric(
+        metricsDefs.exectime.type,
+        'task',
+        Date.now() - timestamp,
+        {
+          task: msg.content.data.task
+        }
+      );
 
-      } catch(e) {
-        logger.error('kafka message error', e);
-      }
-      lastMessageCompletedAt = Date.now();
+      monitor.incrementMetric(
+        metricsDefs.status.type,
+        'task',
+        {
+          task: msg.content.data.task,
+          exitCode
+        }
+      );
+
+    } catch(e) {
+      logger.error('error processing queue message', e);
     }
+
+    // TODO: we should have nack with default give up...
+    await rabbitMq.ack(msg);
+    lastMessageCompletedAt = Date.now();
   });
 
 })()

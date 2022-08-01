@@ -39,6 +39,7 @@ function handlePortEnv(value) {
 
 // k8s inserts a kafka port like tcp://10.109.128.0:9092.  clean up
 let kafkaPort = handlePortEnv(env.KAFKA_PORT);
+let rabbitMqPort = handlePortEnv(env.RABBITMQ_PORT);
 
 
 let config = {
@@ -103,6 +104,18 @@ let config = {
       table : 'public.blocks_ring_buffer',
       size : 10, // days,
       preloadTablePrefix : 'raster'
+    }
+  },
+
+  rabbitMq : {
+    host : env.RABBITMQ_HOST || 'rabbitmq-service',
+    port : parseInt(rabbitMqPort || 5672),
+    defaultPriority : 10,
+    queues : {
+      tasks : 'tasks'
+    },
+    config : {
+      heartbeat : 60*30
     }
   },
 

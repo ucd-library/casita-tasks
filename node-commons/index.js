@@ -6,6 +6,7 @@ import waitUntil from './wait-until.js';
 import pg from './pg.js';
 import utils from './utils.js';
 import exec from './exec.js';
+import RabbitMQ from './rabbitmq.js';
 
 export {
   KafkaConsumer, 
@@ -18,5 +19,6 @@ export {
   sendMessage,
   pg,
   utils, 
-  exec
+  exec,
+  RabbitMQ
 }
