@@ -39,7 +39,7 @@ const dag = {
   // },
 
   [TOPICS.blockCompositeImage] : {
-    enabled: false,
+    enabled: true,
     dependencies : [TOPICS.productWriter],
 
     where : msg => ['image-fragment.jp2', 'fragment-metadata.json'].includes(msg.data.file.base),
