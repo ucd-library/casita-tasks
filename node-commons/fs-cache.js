@@ -18,7 +18,7 @@ class FsCache {
     await this.connect();
 
     if( !contents ) {
-      contents = await fs.readFile(file, 'utf-8');
+      contents = await fs.readFile(file);
     }
 
     let key = this.getKey(file);
@@ -28,11 +28,12 @@ class FsCache {
     return contents;
   }
 
-  async get(file) {
+  async get(file, asString=false) {
     await this.connect();
     let key = this.getKey(file);
-    let contents = await redis.client.get(key);
+    let contents = await redis.client.getBuffer(key);
     if( !contents ) contents = this.set(file);
+    if( asString === true ) return contents.toString('utf8');
     return contents;
   }
 

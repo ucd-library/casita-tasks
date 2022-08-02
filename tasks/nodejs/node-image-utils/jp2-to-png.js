@@ -6,20 +6,24 @@ import scale from './lib/scale.js';
 
 async function run() {
   let rootDir = path.parse(config.metadataFile).dir;
-  let metadata = JSON.parse(await fsCache.get(config.metadataFile));
+  let metadata = JSON.parse(await fsCache.get(config.metadataFile), true);
   let data = {};
 
   for( let i = 0; i < metadata.fragmentsCount; i++ ) {
     logger.debug('Reading file: '+path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'));
     data['fragment_data_'+i] = {
-      data : await fs.readFile(path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'))
+      data : await fsCache.get(path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'))
     }
+    console.log(data['fragment_data_'+i]);
     metadata[`fragment_headers_${i}`] = JSON.parse(
-      await fsCache.get(path.join(rootDir, 'fragments', i+'', 'image-fragment-metadata.json'))
+      await fsCache.get(path.join(rootDir, 'fragments', i+'', 'image-fragment-metadata.json'), true)
     );
   }
 
   const images = await jp2ToPng(metadata, data);
+
+  await fs.mkdirp(rootDir);
+  await fs.writeFile(config.metadataFile, JSON.stringify(metadata));
 
   logger.debug('Writing file: '+path.join(rootDir, 'image.png'));
   await fs.writeFile(path.join(rootDir, 'image.png'), images.sciPng);

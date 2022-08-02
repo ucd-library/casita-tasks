@@ -55,7 +55,8 @@ async function handleImageMessage(metadata, payload, monitor, metric) {
     await send(
       productInfo,
       path.join(basePath, 'fragments', metadata.index+'', 'image-fragment.jp2'), 
-      payload
+      payload,
+      true
     );
   }
 

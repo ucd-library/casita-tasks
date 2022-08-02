@@ -19,7 +19,7 @@ async function isBandReady(msgs) {
   metadata = metadata[0].data.file;
   let file = pathUtils.join(metadata.dir, metadata.base);
   
-  let info = await fsCache.get(file);
+  let info = await fsCache.get(file, true);
   info = JSON.parse(info);
 
   if ( info.fragmentsCount <= fragments.length ) {

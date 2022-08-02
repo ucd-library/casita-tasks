@@ -54,7 +54,7 @@ async function handleGenericMessage(metadata, payload, monitor, metric) {
 
   logger.debug('Sending generic:  '+ basePath);
 
-  await send(productInfo, path.join(basePath, 'metadata.json'), JSON.stringify(metadata), true);
+  await send(productInfo, path.join(basePath, 'metadata.json'), JSON.stringify(metadata));
   await send(productInfo, path.join(basePath, 'payload.bin'), payload);
 
   monitor.setMaxMetric(
