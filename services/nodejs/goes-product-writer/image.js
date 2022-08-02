@@ -1,5 +1,5 @@
 import decoder from '@ucd-lib/goes-r-packet-decoder';
-import {config, logger} from '@ucd-lib/casita-worker';
+import {config, logger, fsCache} from '@ucd-lib/casita-worker';
 import path from 'path';
 import send from './send.js';
 
@@ -42,13 +42,15 @@ async function handleImageMessage(metadata, payload, monitor, metric) {
     await send(
       productInfo,
       path.join(basePath, 'fragment-metadata.json'), 
-      JSON.stringify(metadata)
+      JSON.stringify(metadata),
+      true
     );
   } else {
     await send(
       productInfo,
       path.join(basePath, 'fragments', metadata.index+'', 'image-fragment-metadata.json'), 
-      JSON.stringify(metadata)
+      JSON.stringify(metadata),
+      true
     );
     await send(
       productInfo,

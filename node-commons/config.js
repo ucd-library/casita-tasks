@@ -124,6 +124,10 @@ let config = {
     port : redisPort || '6379'
   },
 
+  fsCache : {
+    expire : 1000 * 60 * 60 // 1 hour
+  },
+
   // remove files from nfs
   expire : {
     direction : env.EXPIRE_DIRECTION || 'forward',

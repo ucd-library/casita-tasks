@@ -1,15 +1,14 @@
 // import kafkaWorker from './kafka.js';
 import rabbitMqWorker from './rabbitmq.js';
 import pathUtils from 'path';
-import fs from 'fs';
-import {config, redis} from '@ucd-lib/casita-worker';
+import {config, fsCache} from '@ucd-lib/casita-worker';
+
 
 const LIGHTNING_PAYLOAD_APIDS = /^(301|302)$/;
 
 // const CASITA_CMD = 'casita';
 const CASITA_CMD = 'node /casita/tasks/cli/casita.js';
 const TOPICS = config.kafka.topics;
-const REDIS_PREFIX = 'a6t-cache-'
 
 async function isBandReady(msgs) {
   let fragments = msgs.filter(item => item.data.file.base === 'image-fragment.jp2');
@@ -19,17 +18,8 @@ async function isBandReady(msgs) {
 
   metadata = metadata[0].data.file;
   let file = pathUtils.join(metadata.dir, metadata.base);
-  let key = REDIS_PREFIX+file;
-
-  let info = await redis.client.get(REDIS_PREFIX+file);
-
-  // cache so we don't keep reading from NFS disk
-  if( !info ) {
-    info = fs.readFileSync(pathUtils.join(metadata.dir, metadata.base), 'utf-8');
-    await redis.client.set(key, info);
-    await redis.client.expire(key, 30 * 1000);
-  }
-
+  
+  let info = await fsCache.get(file);
   info = JSON.parse(info);
 
   if ( info.fragmentsCount <= fragments.length ) {
@@ -41,7 +31,6 @@ async function isBandReady(msgs) {
 }
 
 rabbitMqWorker.connect();
-redis.connect();
 
 
 const dag = {

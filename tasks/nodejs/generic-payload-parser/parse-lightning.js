@@ -1,4 +1,4 @@
-import {config, utils} from '@ucd-lib/casita-worker'; 
+import {config, utils, fsCache} from '@ucd-lib/casita-worker'; 
 import decoder from '@ucd-lib/goes-r-packet-decoder';
 import fs from 'fs';
 import path from 'path';

@@ -1,11 +1,11 @@
 import fs from 'fs-extra';
 import path from 'path';
 import {v4} from 'uuid';
-import {logger, config, KafkaProducer} from '@ucd-lib/casita-worker';
+import {logger, config, KafkaProducer, fsCache} from '@ucd-lib/casita-worker';
 
 let kafkaProducer = KafkaProducer();
 
-async function send(productInfo, file, data) {
+async function send(productInfo, file, data, cache=false) {
   try {
 
     productInfo = Object.assign({}, productInfo);
@@ -18,6 +18,7 @@ async function send(productInfo, file, data) {
     // }
 
     await fs.writeFile(file, data);
+    if( cache ) await fsCache.set(file, data);
 
     kafkaProducer.send({
       topic : config.kafka.topics.productWriter,

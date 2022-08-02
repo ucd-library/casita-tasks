@@ -1,4 +1,4 @@
-import {config, logger, utils } from '@ucd-lib/casita-worker';
+import {config, logger, utils, fsCache } from '@ucd-lib/casita-worker';
 import path from 'path';
 import fs from 'fs-extra';
 import jp2ToPng from "./lib/jp2-to-png.js";
@@ -6,7 +6,7 @@ import scale from './lib/scale.js';
 
 async function run() {
   let rootDir = path.parse(config.metadataFile).dir;
-  let metadata = JSON.parse(fs.readFileSync(config.metadataFile, 'utf-8'));
+  let metadata = JSON.parse(await fsCache.get(config.metadataFile));
   let data = {};
 
   for( let i = 0; i < metadata.fragmentsCount; i++ ) {
@@ -15,7 +15,7 @@ async function run() {
       data : await fs.readFile(path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'))
     }
     metadata[`fragment_headers_${i}`] = JSON.parse(
-      await fs.readFile(path.join(rootDir, 'fragments', i+'', 'image-fragment-metadata.json'), 'utf-8')
+      await fsCache.get(path.join(rootDir, 'fragments', i+'', 'image-fragment-metadata.json'))
     );
   }
 
