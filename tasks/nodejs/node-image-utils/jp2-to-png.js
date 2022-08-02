@@ -14,7 +14,6 @@ async function run() {
     data['fragment_data_'+i] = {
       data : await fsCache.get(path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'))
     }
-    console.log(data['fragment_data_'+i]);
     metadata[`fragment_headers_${i}`] = JSON.parse(
       await fsCache.get(path.join(rootDir, 'fragments', i+'', 'image-fragment-metadata.json'), true)
     );
