@@ -21,18 +21,18 @@ async function isBandReady(msgs) {
   let file = pathUtils.join(metadata.dir, metadata.base);
   let key = REDIS_PREFIX+file;
 
-  metadata = await redis.client.get(REDIS_PREFIX+file);
+  let info = await redis.client.get(REDIS_PREFIX+file);
 
   // cache so we don't keep reading from NFS disk
-  if( !metadata ) {
-    metadata = fs.readFileSync(pathUtils.join(metadata.dir, metadata.base), 'utf-8');
-    await redis.client.set(key, JSON.stringify(metadata));
+  if( !info ) {
+    info = fs.readFileSync(pathUtils.join(metadata.dir, metadata.base), 'utf-8');
+    await redis.client.set(key, JSON.stringify(info));
     await redis.client.expire(key, 30 * 1000);
   }
 
-  metadata = JSON.parse(metadata);
+  info = JSON.parse(info);
 
-  if ( metadata.fragmentsCount <= fragments.length ) {
+  if ( info.fragmentsCount <= fragments.length ) {
     await redis.client.del(key);
     return true;
   }
