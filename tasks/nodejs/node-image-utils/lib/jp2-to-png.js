@@ -1,3 +1,4 @@
+import { logger } from '@ucd-lib/casita-worker';
 import JpgImage from './jpxInt16.js';
 import {PNG} from 'pngjs';
 import config from './config.js';
@@ -42,9 +43,9 @@ async function run(metadata, data) {
   let rowOffset = 0;
   
   if( !config.apidProducts[metadata.apid] ) {
-    console.warn(`No product definition for apid (${metadata.apid}), using full 16bit to 8bit conversion`);
+    logger.warn(`No product definition for apid (${metadata.apid}), using full 16bit to 8bit conversion`);
   } else {
-    console.log(`Using apid (${metadata.apid}) definition: ${JSON.stringify(config.apidProducts[metadata.apid])}`);
+    logger.debug(`Using apid (${metadata.apid}) definition: ${JSON.stringify(config.apidProducts[metadata.apid])}`);
   }
   let productDef = config.apidProducts[metadata.apid] || {};
   let bitMask = productDef.bitMask || 0xFFFF;
@@ -63,7 +64,7 @@ async function run(metadata, data) {
     try {
       jpgImage.parseCodestream(data[`fragment_data_${i}`].data, 0, data[`fragment_data_${i}`].data.length);
     } catch(e) {
-      console.error(e);
+      logger.error(e);
       continue;
     }
 
