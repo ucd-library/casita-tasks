@@ -26,7 +26,7 @@ async function isBandReady(msgs) {
   // cache so we don't keep reading from NFS disk
   if( !info ) {
     info = fs.readFileSync(pathUtils.join(metadata.dir, metadata.base), 'utf-8');
-    await redis.client.set(key, JSON.stringify(info));
+    await redis.client.set(key, info);
     await redis.client.expire(key, 30 * 1000);
   }
 
@@ -75,7 +75,7 @@ const dag = {
   [TOPICS.ringBuffer] : {
     enabled: true,
     dependencies : [TOPICS.blockCompositeImage],
-    where : msg => msg.data.band.match(/^(1|2|7)$/),
+    where : msg => msg.data.band.match(/^(1|2|7)$/) ? true : false,
     sink : (key, msgs) => {
       let task = TOPICS.ringBuffer;
       let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
