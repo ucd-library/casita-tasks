@@ -9,7 +9,7 @@ if( config.logging.quiet !== true ) {
 }
 
 // wire in stack driver if google cloud service account provided
-if( config.google.applicationCredentials ) {
+if( config.google.applicationCredentials && config.logging.quiet !== true) {
 
   // create bunyan logger for stackdriver
   let loggingBunyan = new LoggingBunyan({

@@ -1,6 +1,5 @@
 import config from './config.js';
 import logger from './logger.js';
-import fs from 'fs'
 import monitoring from '@google-cloud/monitoring';
 
 // https://cloud.google.com/monitoring/custom-metrics/creating-metrics

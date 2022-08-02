@@ -89,7 +89,7 @@ let config = {
   },
 
   logging : {
-    quite : (env.LOG_QUITE === 'true'),
+    quiet : (env.LOG_QUIET === 'true'),
     name : env.LOG_NAME || 'casita-worker',
     level : env.LOG_LEVEL || 'info'
   },
@@ -158,9 +158,12 @@ let config = {
 
 export default config
 function update(args, cmd) {
-  let parent = cmd.parent ? cmd.parent.name() : '';
-  args.command = 'tasks/nodejs/'+((parent ? parent+'/' : '') + cmd.name()).replace(/casita-/g, '');
-  args.commandRef = getCommandReference(args.command);
+  // TODO: can we itegrate this with module runner?
+  if( cmd ) {
+    let parent = cmd.parent ? cmd.parent.name() : '';
+    args.command = 'tasks/nodejs/'+((parent ? parent+'/' : '') + cmd.name()).replace(/casita-/g, '');
+    args.commandRef = getCommandReference(args.command);
+  }
 
   if( args.kafkaPort ) {
     args.kafkaPort = handlePortEnv(args.kafkaPort);

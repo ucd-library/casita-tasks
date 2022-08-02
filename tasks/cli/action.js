@@ -1,4 +1,4 @@
-import {config, logger, Monitoring} from '@ucd-lib/casita-worker';
+import {config, logger} from '@ucd-lib/casita-worker';
 import {update as updateConfig} from '../../node-commons/config.js';
 
 async function handleError(e, startTime) {

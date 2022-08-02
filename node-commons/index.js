@@ -1,6 +1,6 @@
-import {KafkaConsumer, KafkaProducer, waitForTopics, sendMessage} from './kafka.js';
 import config from "./config.js"
 import logger from "./logger.js"
+import {KafkaConsumer, KafkaProducer, waitForTopics, sendMessage} from './kafka.js';
 import Monitoring from "./metrics.js";
 import waitUntil from './wait-until.js';
 import pg from './pg.js';

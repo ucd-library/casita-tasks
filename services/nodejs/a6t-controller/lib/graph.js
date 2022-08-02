@@ -39,7 +39,7 @@ const dag = {
   // },
 
   [TOPICS.blockCompositeImage] : {
-    enabled: true,
+    enabled: false,
     dependencies : [TOPICS.productWriter],
 
     where : msg => ['image-fragment.jp2', 'fragment-metadata.json'].includes(msg.data.file.base),
@@ -55,7 +55,16 @@ const dag = {
         date, hour, minsec, band, apid, 'blocks', x+'-'+y,
         'fragment-metadata.json');
 
-      return rabbitMqWorker.exec(`${CASITA_CMD} image jp2-to-png -p -e --metadata-file=${fmFile}`, {task, msgs});
+      return rabbitMqWorker.exec({
+          module : 'node-image-utils/jp2-to-png.js',
+          args : {
+            kafkaExternal : true,
+            metadataFile : fmFile
+          }
+        }, 
+        {task, msgs}
+      );
+      // return rabbitMqWorker.exec(`${CASITA_CMD} image jp2-to-png -p -e --metadata-file=${fmFile}`, {task, msgs});
     }
   },
 
@@ -128,15 +137,23 @@ const dag = {
     enabled : true,
     dependencies : [TOPICS.productWriter],
 
-    groupBy : msg => `${msg.data.product}-${msg.data.date}-${msg.data.hour}-${msg.data.minsec}-${msg.data.ms}-${msg.data.apid}-${msg.data.file.base}`,
     where : msg => (msg.data.apid.match(LIGHTNING_PAYLOAD_APIDS)) && (msg.data.file.base === 'payload.bin'),
-    ready : () => true,
-
     sink : (key, msgs) => {
       let task = TOPICS.lightning;
       let data = msgs[0].data;
       let file = pathUtils.resolve(data.file.dir, data.file.base);
-      return rabbitMqWorker.exec(`${CASITA_CMD} generic parse-lightning -p -e --file=${file} `, {task, msgs});
+
+      return rabbitMqWorker.exec({
+          module : 'generic-payload-parser/parse-lightning.js',
+          args : {
+            kafkaExternal : true,
+            file : file
+          }
+        },
+        {task, msgs}
+      );
+
+      // return rabbitMqWorker.exec(`${CASITA_CMD} generic parse-lightning -p -e --file=${file} `, {task, msgs});
     }
   },
 

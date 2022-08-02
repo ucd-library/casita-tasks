@@ -1,6 +1,7 @@
 import {logger, config, KafkaProducer, RabbitMQ, sendMessage, waitForTopics, waitUntil, Monitoring} from '@ucd-lib/casita-worker';
 import metrics from '../../init/google-cloud-metrics.js';
 import exec from './exec.js';
+import moduleRunner from './module.js';
 
 const metricsDefs = {
   ttw : metrics.find(item => item.type === 'custom.googleapis.com/casita/time-to-worker'),
@@ -39,6 +40,20 @@ async function findAndSendMessage(stdout, topic) {
       await sendMessage(msg, kafkaProducer);
     } catch(e) {};
   }
+}
+
+async function sendFromModule(module, data, args, topic) {
+  try {
+    let msg = {
+      topic : topic,
+      source : module,
+      data : data,
+      external: args.kafkaExternal ? true : false
+    };
+
+    logger.debug('Sending kafka task response message', msg);
+    await sendMessage(msg, kafkaProducer);
+  } catch(e) {}
 }
 
 (async function() {
@@ -81,8 +96,24 @@ async function findAndSendMessage(stdout, topic) {
 
       // see how long the exec step takes and record
       timestamp = Date.now();
-      let {stdout, exitCode} = await exec(msg.content.data.cmd);
-      await findAndSendMessage(stdout, msg.content.data.task);
+      let exitCode = 0;
+      let cmd = msg.content.data.cmd;
+
+      if( cmd.module ) {
+
+        try {
+          let data = await moduleRunner.run(cmd.module, cmd.args);
+          await sendFromModule(cmd.module, data, cmd.args, msg.content.data.task);
+        } catch(e) {
+          logger.error('failed to run', msg.content.data, e);
+          exitCode = 1;
+        }
+
+      } else {
+        let response = await exec(cmd);
+        await findAndSendMessage(response.stdout, msg.content.data.task);
+        exitCode = response.exitCode;
+      }
 
       monitor.setMaxMetric(
         metricsDefs.exectime.type,
