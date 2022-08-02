@@ -23,7 +23,6 @@ async function isBandReady(msgs) {
   info = JSON.parse(info);
 
   if ( info.fragmentsCount <= fragments.length ) {
-    await redis.client.del(key);
     return true;
   }
 
