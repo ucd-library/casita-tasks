@@ -7,6 +7,7 @@ import pg from './pg.js';
 import utils from './utils.js';
 import exec from './exec.js';
 import RabbitMQ from './rabbitmq.js';
+import redis from './redis.js';
 
 export {
   KafkaConsumer, 
@@ -20,5 +21,6 @@ export {
   pg,
   utils, 
   exec,
+  redis,
   RabbitMQ
 }

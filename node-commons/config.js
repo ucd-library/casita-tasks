@@ -40,7 +40,7 @@ function handlePortEnv(value) {
 // k8s inserts a kafka port like tcp://10.109.128.0:9092.  clean up
 let kafkaPort = handlePortEnv(env.KAFKA_PORT);
 let rabbitMqPort = handlePortEnv(env.RABBITMQ_PORT);
-
+let redisPort = handlePortEnv(env.REDIS_PORT);
 
 let config = {
   instance : env.INSTANCE_ENV || 'sandbox',
@@ -117,6 +117,11 @@ let config = {
     config : {
       heartbeat : 60*30
     }
+  },
+
+  redis : {
+    host : env.REDIS_HOST || 'redis-master',
+    port : redisPort || '6379'
   },
 
   // remove files from nfs

@@ -2,27 +2,46 @@
 import rabbitMqWorker from './rabbitmq.js';
 import pathUtils from 'path';
 import fs from 'fs';
-import {config} from '@ucd-lib/casita-worker';
+import {config, redis} from '@ucd-lib/casita-worker';
 
 const LIGHTNING_PAYLOAD_APIDS = /^(301|302)$/;
 
 // const CASITA_CMD = 'casita';
 const CASITA_CMD = 'node /casita/tasks/cli/casita.js';
 const TOPICS = config.kafka.topics;
+const REDIS_PREFIX = 'a6t-cache-'
 
-function isBandReady(msgs) {
+async function isBandReady(msgs) {
   let fragments = msgs.filter(item => item.data.file.base === 'image-fragment.jp2');
   let metadata = msgs.filter(item => item.data.file.base === 'fragment-metadata.json');
   
   if( !metadata.length ) return false;
 
   metadata = metadata[0].data.file;
-  metadata = JSON.parse(fs.readFileSync(pathUtils.join(metadata.dir, metadata.base), 'utf-8'));
-  
-  return (metadata.fragmentsCount <= fragments.length);
+  let file = pathUtils.join(metadata.dir, metadata.base);
+  let key = REDIS_PREFIX+file;
+
+  metadata = await redis.client.get(REDIS_PREFIX+file);
+
+  // cache so we don't keep reading from NFS disk
+  if( !metadata ) {
+    metadata = fs.readFileSync(pathUtils.join(metadata.dir, metadata.base), 'utf-8');
+    await redis.client.set(key, JSON.stringify(metadata));
+    await redis.client.expire(key, 30 * 1000);
+  }
+
+  metadata = JSON.parse(metadata);
+
+  if ( metadata.fragmentsCount <= fragments.length ) {
+    await redis.client.del(key);
+    return true;
+  }
+
+  return false;
 }
 
 rabbitMqWorker.connect();
+redis.connect();
 
 
 const dag = {
