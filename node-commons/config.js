@@ -102,7 +102,13 @@ let config = {
 
     ringBuffer : {
       table : 'public.blocks_ring_buffer',
-      size : 10, // days,
+      // by band, in days
+      size : {
+        default : 1,
+        1 : 2,
+        2 : 2,
+        7 : 10
+      },
       preloadTablePrefix : 'raster'
     }
   },

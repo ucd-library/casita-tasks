@@ -40,7 +40,10 @@ class BlockRingBuffer {
     logger.debug(resp);
 
     let isoDate = meta.datetime.toISOString();
-    let expire = new Date(meta.datetime.getTime() + (1000 * 60 * 60 * 24 * BUFFER_SIZE)).toISOString();
+    // buffer size is in days
+    let bs = BUFFER_SIZE[parseInt(meta.band)];
+    if( !bs ) bs = BUFFER_SIZE.default;
+    let expire = new Date(meta.datetime.getTime() + (1000 * 60 * 60 * 24 * bs)).toISOString();
 
     try {
       await pg.query(`DELETE from ${TABLE} where expire <= $1 cascade`, [new Date().toISOString()]);
