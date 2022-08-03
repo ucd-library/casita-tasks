@@ -125,7 +125,7 @@ let config = {
   },
 
   fsCache : {
-    expire : 1000 * 60 * 60 // 15 min
+    expire : 1000 * 60 * 30 // 30 min
   },
 
   // remove files from nfs

@@ -37,6 +37,10 @@ class FsCache {
     return contents;
   }
 
+  del(file) {
+    return redis.client.del(this.getKey(file));
+  }
+
 }
 
 const instance = new FsCache();

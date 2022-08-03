@@ -38,6 +38,11 @@ async function run() {
 
   let pathData = utils.getDataFromPath(rootDir);
   rootDir = rootDir.replace(config.fs.nfsRoot, '');
+
+  for( let i = 0; i < metadata.fragmentsCount; i++ ) {
+    await fsCache.del(path.join(rootDir, 'fragments', i+'', 'image-fragment.jp2'))
+  }
+
   return {
     files : [
       path.join(rootDir, 'image.png'), 
