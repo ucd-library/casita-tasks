@@ -33,10 +33,10 @@ class BlockRingBuffer {
   getBufferSize(meta) {
     for( let size of BUFFER_SIZE ) {
       if( meta[size.key]+'' === size.value+'' ) {
-        return {query: `${size.key} = '${size.value}'`, size: size.size};
+        return size.size;
       }
     }
-    return {query: '', size: DEFAULT_BUFFER_SIZE};
+    return DEFAULT_BUFFER_SIZE;
   }
 
   async insert(file, meta) {
@@ -52,11 +52,11 @@ class BlockRingBuffer {
     let isoDate = meta.datetime.toISOString();
     // buffer size is in days
     let buffer = this.getBufferSize(meta);
-    let expire = new Date(meta.datetime.getTime() + (1000 * 60 * 60 * 24 * buffer.size)).toISOString();
+    let expire = new Date(meta.datetime.getTime() + Math.ceil(1000 * 60 * 60 * 24 * buffer)).toISOString();
 
     try {
       if( buffer.query ) buffer.query = buffer.query+' and '
-      await pg.query(`DELETE from ${TABLE} where ${buffer.query} expire <= $1 cascade`, [new Date().toISOString()]);
+      await pg.query(`DELETE from ${TABLE} where expire <= $1 cascade`, [new Date().toISOString()]);
     } catch (e) { }
 
     try {
