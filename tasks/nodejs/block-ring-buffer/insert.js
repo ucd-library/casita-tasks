@@ -3,7 +3,8 @@ import { config, logger, pg, exec, utils } from '@ucd-lib/casita-worker';
 import {v4} from 'uuid';
 
 const PRELOAD_TABLE_PREFIX = config.pg.ringBuffer.preloadTablePrefix;
-const BUFFER_SIZE = config.pg.ringBuffer.size;
+const BUFFER_SIZE = config.pg.ringBuffer.sizes;
+const DEFAULT_BUFFER_SIZE = config.pg.ringBuffer.defaultSize;
 const TABLE = config.pg.ringBuffer.table;
 
 class BlockRingBuffer {
@@ -29,6 +30,15 @@ class BlockRingBuffer {
     return fileData;
   }
 
+  getBufferSize(meta) {
+    for( let size of BUFFER_SIZE ) {
+      if( meta[size.key]+'' === size.value+'' ) {
+        return {query: `${size.key} = '${size.value}'`, size: size.size};
+      }
+    }
+    return {query: '', size: DEFAULT_BUFFER_SIZE};
+  }
+
   async insert(file, meta) {
     await pg.connect();
 
@@ -41,12 +51,12 @@ class BlockRingBuffer {
 
     let isoDate = meta.datetime.toISOString();
     // buffer size is in days
-    let bs = BUFFER_SIZE[parseInt(meta.band)];
-    if( !bs ) bs = BUFFER_SIZE.default;
-    let expire = new Date(meta.datetime.getTime() + (1000 * 60 * 60 * 24 * bs)).toISOString();
+    let buffer = this.getBufferSize(meta);
+    let expire = new Date(meta.datetime.getTime() + (1000 * 60 * 60 * 24 * buffer.size)).toISOString();
 
     try {
-      await pg.query(`DELETE from ${TABLE} where expire <= $1 cascade`, [new Date().toISOString()]);
+      if( buffer.query ) buffer.query = buffer.query+' and '
+      await pg.query(`DELETE from ${TABLE} where ${buffer.query} expire <= $1 cascade`, [new Date().toISOString()]);
     } catch (e) { }
 
     try {
@@ -91,8 +101,10 @@ class BlockRingBuffer {
     } catch(e) {
       logger.error(e);
     }
-
-    await pg.end();
+    
+    if( config.pg.disconnectAfterExec === true ) {
+      await pg.end();
+    }
 
     return blocks_ring_buffer_id;
   }

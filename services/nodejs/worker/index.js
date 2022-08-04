@@ -1,4 +1,4 @@
-import {logger, config, KafkaProducer, RabbitMQ, sendMessage, waitForTopics, waitUntil, Monitoring} from '@ucd-lib/casita-worker';
+import {logger, config, KafkaProducer, RabbitMQ, sendMessage, waitUntil, Monitoring} from '@ucd-lib/casita-worker';
 import metrics from '../../init/google-cloud-metrics.js';
 import exec from './exec.js';
 import moduleRunner from './module.js';

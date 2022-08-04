@@ -81,7 +81,16 @@ const dag = {
         date, hour, minsec, band, apid, 'blocks', x+'-'+y,
         'image.png');
 
-      return rabbitMqWorker.exec(`${CASITA_CMD} block-ring-buffer insert -p -e --file=${pngFile}`, {task, msgs});
+      return rabbitMqWorker.exec({
+        module : 'block-ring-buffer/insert.js',
+          args : {
+            kafkaExternal : true,
+            file : pngFile
+          }
+        }, 
+        {task, msgs}
+      );
+      // return rabbitMqWorker.exec(`${CASITA_CMD} block-ring-buffer insert -p -e --file=${pngFile}`, {task, msgs});
     }
   },
 

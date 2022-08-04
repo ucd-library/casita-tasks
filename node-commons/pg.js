@@ -47,8 +47,9 @@ class PG {
   async end() {
     await this._client.release();
     await this.client.end();
-    this.client = null
     this._client = null;
+    this.connected = false;
+    this.connecting = null;
   }
 }
 
