@@ -131,11 +131,14 @@ class Expire {
    * @param {String} file File to remove 
    */
   async remove(file) {
-    try {
-      await fs.remove(file);
-    } catch(e) {
+    // TODO: currently there seems to be a bug in fs-extra where this call
+    // runs out of memory. Switching to rm -rf child proc for now.
+
+    // try {
+    // await fs.remove(file);
+    // } catch(e) {
       await this.removeExec(file);
-    }
+    // }
   }
 
   /**
@@ -147,6 +150,7 @@ class Expire {
    */
   async removeExec(file) {
     try {
+      // logger.debug("fs.remove() failed, attemting rm -rf child process")
       await exec(`rm -rf ${file}`);
     } catch(e) {
       logger.error('Failed to expire file: '+file, e);

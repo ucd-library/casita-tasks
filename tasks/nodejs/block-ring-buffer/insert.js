@@ -56,7 +56,7 @@ class BlockRingBuffer {
 
     try {
       if( buffer.query ) buffer.query = buffer.query+' and '
-      await pg.query(`DELETE from ${TABLE} where expire <= $1 cascade`, [new Date().toISOString()]);
+      await pg.query(`DELETE from ${TABLE} where expire <= now() cascade`);
     } catch (e) { }
 
     try {
