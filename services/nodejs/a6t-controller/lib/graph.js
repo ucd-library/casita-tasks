@@ -97,7 +97,9 @@ const dag = {
   [TOPICS.ringBufferHourlyStats] : {
     enabled: true,
     dependencies : [TOPICS.ringBuffer],
-    where : msg => msg.data.band === '7' && msg.data.x+'-'+msg.data.y === '6664-852' ? true : false,
+    where : msg => {
+      return msg.data.band === '7' && msg.data.x+'-'+msg.data.y === '1666-213' ? true : false
+    },
     sink : (key, msgs) => {
       let task = TOPICS.ringBufferHourlyStats;
       let {blocks_ring_buffer_id} = msgs[0].data;
@@ -121,9 +123,11 @@ const dag = {
     groupBy : msg => `${msg.data.product}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.band}`,
     where : msg => {
       return [
-        '6664-852', '8332-852', '6664-1860','8332-1860', // conus
-        '12656-2628', '14464-2628', '12656-3640', '14464-3640' // fulldisk
-      ].includes(`${msg.data.x},${msg.data.y}`);
+        '6664-852', '8332-852', '6664-1860','8332-1860', // conus b2
+        '12656-2628', '14464-2628', '12656-3640', '14464-3640', // fulldisk b2
+        '1666-213', '2083-213', '1666-465','2083-465', // conus b7
+        '3164-657', '3616-657', '3164-910', '3616-910' // fulldisk b7
+      ].includes(`${msg.data.x}-${msg.data.y}`);
     },
     ready : (key, msgs) => msgs.length === 4,
 
