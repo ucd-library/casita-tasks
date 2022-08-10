@@ -21,6 +21,11 @@ async function run() {
     }
   } else if( metadata.apid === '301' ) {
     outcontent = lightningPayloadParser.parseEventData(data);
+    for( let flash of outcontent ) {
+      let xy = await project(flash.event_lon, flash.event_lat);
+      flash.event_x = xy.x;
+      flash.event_y = xy.y;
+    }
   }
 
   fs.writeFileSync(outfile, JSON.stringify(outcontent));

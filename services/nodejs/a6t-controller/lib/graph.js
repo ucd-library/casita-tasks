@@ -97,7 +97,7 @@ const dag = {
   [TOPICS.ringBufferHourlyStats] : {
     enabled: true,
     dependencies : [TOPICS.ringBuffer],
-    where : msg => msg.data.band === 7 && msg.data.x+'-'+msg.data.y === '6664-852' ? true : false,
+    where : msg => msg.data.band === '7' && msg.data.x+'-'+msg.data.y === '6664-852' ? true : false,
     sink : (key, msgs) => {
       let task = TOPICS.ringBuffer;
       let {blocks_ring_buffer_id} = msgs[0].data;
