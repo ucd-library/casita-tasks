@@ -42,6 +42,16 @@ const topics = [
     name : 'ring-buffer-ext',
     partitions : 1
   },
+  
+  {
+    name : 'ring-buffer-hourly-stats',
+    partitions : DEFAULT_PARTITIONS
+  },
+  {
+    name : 'ring-buffer-hourly-stats-ext',
+    partitions : 1
+  },
+
   {
     name : 'lightning',
     partitions : DEFAULT_PARTITIONS

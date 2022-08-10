@@ -78,6 +78,7 @@ let config = {
       tasks : 'tasks',
       blockCompositeImage : 'block-composite-image',
       ringBuffer : 'ring-buffer',
+      ringBufferHourlyStats : 'ring-buffer-hourly-stats',
       lightning : 'lightning',
       lightningGroupStats : 'lightning-grouped-stats'
     },

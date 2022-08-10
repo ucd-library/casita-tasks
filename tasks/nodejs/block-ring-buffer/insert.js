@@ -55,8 +55,7 @@ class BlockRingBuffer {
     let expire = new Date(meta.datetime.getTime() + Math.ceil(1000 * 60 * 60 * 24 * buffer)).toISOString();
 
     try {
-      if( buffer.query ) buffer.query = buffer.query+' and '
-      await pg.query(`DELETE from ${TABLE} where expire <= now() cascade`);
+      await pg.query(`DELETE from ${TABLE} cascade where expire <= now()`);
     } catch (e) { }
 
     try {
