@@ -91,7 +91,6 @@ class BlockRingBuffer {
       RETURNING blocks_ring_buffer_id`;
 
     resp = await pg.query(cmd);
-    logger.info(resp);
 
     let blocks_ring_buffer_id, priorHourDate;
     try {

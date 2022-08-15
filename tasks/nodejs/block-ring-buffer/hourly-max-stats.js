@@ -37,7 +37,7 @@ async function insert(blocks_ring_buffer_id) {
     WITH hmax AS (
       SELECT date FROM blocks_ring_buffer WHERE blocks_ring_buffer_id = $1
     )
-    SELECT product, blocks_ring_buffer FROM ${TABLE} tbl WHERE tbl.date = hmax.date AND
+    SELECT product, blocks_ring_buffer_id FROM ${TABLE} tbl WHERE tbl.date = hmax.date AND
     (product = "${meta.product}-hourly-max-10d-average" OR
     product = "${meta.product}-hourly-max-10d-min" OR
     product = "${meta.product}-hourly-max-10d-max" OR
