@@ -29,10 +29,13 @@ class CasitaRabbitMqWorkerExec {
     }
 
     // get earliest time for all messages
-    let timestamp = new Date(metadata.msgs[0].time).getTime();
-    metadata.msgs.forEach(msg => {
-      if( new Date(msg.time).getTime() < timestamp ) timestamp = new Date(msg.time).getTime();
-    });
+    let timestamp = Date.now();
+    if( metadata.msgs ) {
+      let timestamp = new Date(metadata.msgs[0].time).getTime();
+      metadata.msgs.forEach(msg => {
+        if( new Date(msg.time).getTime() < timestamp ) timestamp = new Date(msg.time).getTime();
+      });
+    }
 
     // send a6t compose time metric
     monitor.setMaxMetric(

@@ -21,14 +21,23 @@ async function insert(blocks_ring_buffer_id) {
 
   if (resp.rows[0].blocks_ring_buffer_id !== -1) {
     await pg.query(`SELECT create_hourly_max_stats(${resp.rows[0].blocks_ring_buffer_id});`);
-  }
-
+  } 
+// console.log(`
+// WITH hmax AS (
+//   SELECT date FROM blocks_ring_buffer WHERE blocks_ring_buffer_id = $1
+// )
+// SELECT product, blocks_ring_buffer FROM ${TABLE} tbl WHERE tbl.date = hmax.date AND
+// (product = "${meta.product}-hourly-max-10d-average" OR
+// product = "${meta.product}-hourly-max-10d-min" OR
+// product = "${meta.product}-hourly-max-10d-max" OR
+// product = "${meta.product}-hourly-max-10d-stddev") 
+// `, resp.rows[0].blocks_ring_buffer_id);
   // grab the ids
   let idsResp = await pg.query(`
     WITH hmax AS (
-      SELECT date FROM blocks_ring_buffer_id WHERE blocks_ring_buffer_id $1
+      SELECT date FROM blocks_ring_buffer WHERE blocks_ring_buffer_id = $1
     )
-    SELECT product, blocks_ring_buffer_id FROM ${TABLE} tbl WHERE tbl.date = hmax.date AND
+    SELECT product, blocks_ring_buffer FROM ${TABLE} tbl WHERE tbl.date = hmax.date AND
     (product = "${meta.product}-hourly-max-10d-average" OR
     product = "${meta.product}-hourly-max-10d-min" OR
     product = "${meta.product}-hourly-max-10d-max" OR
@@ -48,4 +57,8 @@ async function insert(blocks_ring_buffer_id) {
   return meta;
 }
 
-export default insert;
+async function run() {
+  return insert(config.blocks_ring_buffer_id || config.id);
+}
+
+export default run;

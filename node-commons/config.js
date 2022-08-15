@@ -7,11 +7,7 @@ const env = process.env;
 const __dirname = path.parse(import.meta.url.replace('file://', '')).dir;
 
 let dotPathMap = {
-  'debugConfig' : 'debugConfig',
   'quiet': 'logging.quiet',
-  'directory' : 'directory',
-  'file' : 'file',
-  'metadataFile' : 'metadataFile',
   'metrics' : 'google.metrics',
   'googleApplicationCredentials' : 'google.applicationCredentials',
   'googleProjectId' : 'google.projectId',
@@ -181,6 +177,13 @@ function update(args, cmd) {
     config, 
     merge(config, dot.transform(dotPathMap, args))
   );
+
+  // check for root properties not defined in map
+  for( let key in args ) {
+    if( config[key] ) continue;
+    config[key] = args[key];
+  }
+
 };
 export {update}
 
