@@ -180,7 +180,7 @@ function update(args, cmd) {
 
   // check for root properties not defined in map
   for( let key in args ) {
-    if( config[key] ) continue;
+    if( dotPathMap[key] ) continue;
     config[key] = args[key];
   }
 
