@@ -10,7 +10,8 @@ const metricsDefs = {
   status : metrics.find(item => item.type === 'custom.googleapis.com/casita/worker-execution-status')
 }
 
-let monitor = new Monitoring('casita-worker-'+(process.env.HOSTNAME || v4()));
+let workerId = 'casita-worker-'+(process.env.HOSTNAME || v4());
+let monitor = new Monitoring(workerId);
 monitor.registerMetric(metricsDefs.ttw);
 monitor.registerMetric(metricsDefs.exectime);
 monitor.registerMetric(metricsDefs.status);
@@ -91,7 +92,8 @@ async function sendFromModule(module, data, args, topic) {
         'task',
         Date.now() - timestamp,
         {
-          task: msg.content.data.task
+          task: msg.content.data.task,
+          workerId
         }
       );
 
@@ -121,7 +123,8 @@ async function sendFromModule(module, data, args, topic) {
         'task',
         Date.now() - timestamp,
         {
-          task: msg.content.data.task
+          task: msg.content.data.task,
+          workerId
         }
       );
 
@@ -130,7 +133,8 @@ async function sendFromModule(module, data, args, topic) {
         'task',
         {
           task: msg.content.data.task,
-          exitCode
+          exitCode,
+          workerId
         }
       );
 

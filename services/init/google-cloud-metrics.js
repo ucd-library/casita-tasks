@@ -140,6 +140,11 @@ const metrics = [
         key: 'task',
         valueType: 'STRING',
         description: 'CaSITA task to execute',
+      },
+      {
+        key: 'workerId',
+        valueType: 'STRING',
+        description: 'CaSITA worder id',
       }
     ]
   },
@@ -160,6 +165,11 @@ const metrics = [
         key: 'task',
         valueType: 'STRING',
         description: 'CaSITA task to execute',
+      },
+      {
+        key: 'workerId',
+        valueType: 'STRING',
+        description: 'CaSITA worder id',
       }
     ]
   },
@@ -180,6 +190,11 @@ const metrics = [
         key: 'task',
         valueType: 'STRING',
         description: 'CaSITA task to execute',
+      },
+      {
+        key: 'workerId',
+        valueType: 'STRING',
+        description: 'CaSITA worder id',
       },
       {
         key: 'exitCode',
