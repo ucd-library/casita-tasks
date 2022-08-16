@@ -2,6 +2,7 @@ import {logger, config, KafkaProducer, RabbitMQ, sendMessage, waitUntil, Monitor
 import metrics from '../../init/google-cloud-metrics.js';
 import exec from './exec.js';
 import moduleRunner from './module.js';
+import {v4} from 'uuid';
 
 const metricsDefs = {
   ttw : metrics.find(item => item.type === 'custom.googleapis.com/casita/time-to-worker'),
@@ -9,7 +10,7 @@ const metricsDefs = {
   status : metrics.find(item => item.type === 'custom.googleapis.com/casita/worker-execution-status')
 }
 
-let monitor = new Monitoring('casita-worker');
+let monitor = new Monitoring('casita-worker-'+(process.env.HOSTNAME || v4()));
 monitor.registerMetric(metricsDefs.ttw);
 monitor.registerMetric(metricsDefs.exectime);
 monitor.registerMetric(metricsDefs.status);

@@ -23,34 +23,36 @@ BEGIN
     FROM blocks_ring_buffer br
     WHERE br.blocks_ring_buffer_id = blocks_ring_buffer_id_in
     AND product = br.product;
+  
+  RAISE INFO 'Creating stats for %s %s %s %s', product_in, date_in, x_in, y_in;
 
   SELECT blocks_ring_buffer_id INTO average_id 
     FROM blocks_ring_buffer
     WHERE 
     x = x_in AND y = y_in 
     AND date = date_in
-    AND product = product_in || '-hourly-max-10d-average';
+    AND product = product_in || '-10d-average';
 
   SELECT blocks_ring_buffer_id INTO max_id 
     FROM blocks_ring_buffer
     WHERE
     x = x_in AND y = y_in
     AND date = date_in
-    AND product = product_in || '-hourly-max-10d-max';
+    AND product = product_in || '-10d-max';
 
   SELECT blocks_ring_buffer_id INTO min_id 
     FROM blocks_ring_buffer
     WHERE
     x = x_in AND y = y_in
     AND date = date_in
-    AND product = product_in || '-hourly-max-10d-min';
+    AND product = product_in || '-10d-min';
 
   SELECT blocks_ring_buffer_id INTO stddev_id 
     FROM blocks_ring_buffer
     WHERE
     x = x_in AND y = y_in 
     AND date = date_in
-    AND product = product_in || '-hourly-max-10d-stddev';
+    AND product = product_in || '-10d-stddev';
 
   IF( average_id IS NOT NULL ) THEN
     RAISE WARNING 'Average product already exists for blocks_ring_buffer_id %s', blocks_ring_buffer_id_in;
@@ -86,7 +88,7 @@ BEGIN
       i.x as x,
       i.y as y,
       i.satellite as satellite,
-      product_in || '-hourly-max-10d-average' as product,
+      product_in || '-10d-average' as product,
       i.apid as apid,
       i.band as band,
       i.expire as expire,
@@ -112,7 +114,7 @@ BEGIN
       i.x as x,
       i.y as y,
       i.satellite as satellite,
-      product_in || '-hourly-max-10d-max',
+      product_in || '-10d-max',
       i.apid as apid,
       i.band as band,
       i.expire as expire,
@@ -134,7 +136,7 @@ BEGIN
       i.x as x,
       i.y as y,
       i.satellite as satellite,
-      product_in || '-hourly-max-10d-min',
+      product_in || '-10d-min',
       i.apid as apid,
       i.band as band,
       i.expire as expire,
@@ -183,7 +185,7 @@ BEGIN
       i.x as x,
       i.y as y,
       i.satellite as satellite,
-      product_in || '-hourly-max-10d-stddev',
+      product_in || '-10d-stddev',
       i.apid as apid,
       i.band as band,
       i.expire as expire,
@@ -220,7 +222,7 @@ CREATE OR REPLACE FUNCTION get_rasters_for_hmax_stats (
     rb.band = time_range.band AND 
     rb.x = time_range.x AND 
     rb.y = time_range.y AND 
-    rb.product = time_range.product || '-hourly-max' AND 
+    rb.product = time_range.product AND 
     date_trunc('day', rb.date) != date_trunc('day', time_range.date) AND
     extract(hour from rb.date) >= time_range.start AND
     extract(hour from rb.date) <= time_range.end AND

@@ -17,11 +17,10 @@ async function insert(blocks_ring_buffer_id) {
   }
 
   let priorHourDate = new Date(meta.date.getTime() - 1000 * 60 * 60);
-  resp = await pg.query(`SELECT create_hourly_max('${meta.product}', ${meta.x}, ${meta.y}, '${priorHourDate.toISOString()}') as blocks_ring_buffer_id`);
+  resp = await pg.query(`SELECT create_all_hourly_max('${meta.product}', ${meta.x}, ${meta.y}, '${priorHourDate.toISOString()}') as blocks_ring_buffer_id`);
 
-  if (resp.rows[0].blocks_ring_buffer_id !== -1) {
-    await pg.query(`SELECT create_hourly_max_stats(${resp.rows[0].blocks_ring_buffer_id});`);
-  } 
+  await pg.query(`SELECT create_hourly_max_stats(${resp.rows[0].blocks_ring_buffer_id});`);
+  
 // console.log(`
 // WITH hmax AS (
 //   SELECT date FROM blocks_ring_buffer WHERE blocks_ring_buffer_id = $1
@@ -38,10 +37,10 @@ async function insert(blocks_ring_buffer_id) {
       SELECT date FROM blocks_ring_buffer WHERE blocks_ring_buffer_id = $1
     )
     SELECT product, blocks_ring_buffer_id FROM ${TABLE} tbl, hmax WHERE tbl.date = hmax.date AND
-    (product = "${meta.product}-hourly-max-10d-average" OR
-    product = "${meta.product}-hourly-max-10d-min" OR
-    product = "${meta.product}-hourly-max-10d-max" OR
-    product = "${meta.product}-hourly-max-10d-stddev") 
+    (product = '${meta.product}-hourly-max-10d-average' OR
+    product = '${meta.product}-hourly-max-10d-min' OR
+    product = '${meta.product}-hourly-max-10d-max' OR
+    product = '${meta.product}-hourly-max-10d-stddev') 
   `, [resp.rows[0].blocks_ring_buffer_id]);
 
   meta.pgHStatsIds = {

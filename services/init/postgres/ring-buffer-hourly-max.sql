@@ -71,12 +71,14 @@ CREATE OR REPLACE FUNCTION create_all_hourly_max (
   band_in INTEGER,
   x_in INTEGER,
   y_in INTEGER
-) RETURNS VOID AS $$
+) RETURNS INTEGER AS $$
   DECLARE
     index INTEGER;
     hours INTEGER;
     hid INTEGER;
     min_date TIMESTAMP;
+    hmax_product_name TEXT;
+    brbid INTEGER;
   BEGIN
 
   SELECT 
@@ -102,6 +104,21 @@ CREATE OR REPLACE FUNCTION create_all_hourly_max (
   END LOOP;
 
   RAISE INFO 'Create Max product for blocks_ring_buffer %,% hours: %', x_in, y_in, hours;
+
+  SELECT product_in || '-hourly-max' into  hmax_product_name;
+
+  SELECT
+    blocks_ring_buffer_id into brbid
+  FROM 
+    blocks_ring_buffer
+  WHERE
+    x = x_in AND y = y_in AND
+    band = band_in AND
+    product = hmax_product_name
+  ORDER BY date desc
+  LIMIT 1;
+
+  RETURN brbid;
 
 END;
 $$ LANGUAGE plpgsql;
