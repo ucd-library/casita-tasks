@@ -7,7 +7,7 @@ const SCALE_FACTOR = 2;
 
 async function scale(file, band=1) {
   let info = config.bandResolutions[parseInt(band)];
-  let scale = info.resolution/SCALE_FACTOR;
+  let scale = (info?.resolution || 1)/SCALE_FACTOR;
 
   let imageData = await readPng(file);
 
