@@ -17,7 +17,7 @@ async function insert(blocks_ring_buffer_id) {
   }
 
   let priorHourDate = new Date(meta.date.getTime() - 1000 * 60 * 60);
-  resp = await pg.query(`SELECT create_all_hourly_max('${meta.product}', ${meta.x}, ${meta.y}, '${priorHourDate.toISOString()}') as blocks_ring_buffer_id`);
+  resp = await pg.query(`SELECT create_all_hourly_max('${meta.product}', ${meta.band}, ${meta.x}, ${meta.y}) as blocks_ring_buffer_id`);
 
   await pg.query(`SELECT create_hourly_max_stats(${resp.rows[0].blocks_ring_buffer_id});`);
   
