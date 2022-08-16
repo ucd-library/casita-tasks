@@ -164,8 +164,7 @@ class Monitoring {
       resource: {
         type: 'global',
         labels: {
-          project_id: config.google.projectId,
-          instance_id: this.serviceId
+          project_id: config.google.projectId
         },
       },
       points: [dataPoint],
