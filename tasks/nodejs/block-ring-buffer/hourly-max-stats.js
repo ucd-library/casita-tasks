@@ -43,7 +43,7 @@ async function insert(blocks_ring_buffer_id) {
     product = '${meta.product}-hourly-max-10d-stddev') 
   `, [resp.rows[0].blocks_ring_buffer_id]);
 
-  meta.pgHStatsIds = {
+  meta.blocks_ring_buffer_ids = {
     'hourly-max' : resp.rows[0].blocks_ring_buffer_id
   };
 
