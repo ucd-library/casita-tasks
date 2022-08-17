@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION create_hourly_max (
 ) RETURNS INTEGER AS $$
   DECLARE
     brbid INTEGER;
+    brhbid INTEGER;
     hmax_product_name TEXT;
   BEGIN
 
@@ -52,7 +53,7 @@ CREATE OR REPLACE FUNCTION create_hourly_max (
   GROUP BY x, y, product, apid, band, satellite;
 
   SELECT
-    blocks_ring_buffer_id into brbid
+    blocks_ring_buffer_id into brhbid
   FROM 
     blocks_ring_buffer
   WHERE
@@ -60,9 +61,23 @@ CREATE OR REPLACE FUNCTION create_hourly_max (
     product = hmax_product_name AND 
     date = date_trunc('hour', date_in);
 
-  RAISE INFO 'Create Max product for blocks_ring_buffer % % % %', product_in, x_in, y_in, date_trunc('hour', date_in);
+  INSERT INTO derived_blocks_metadata (blocks_ring_buffer_id, parent_block_id, date, x, y, satellite, product, apid, band)
+  SELECT
+    brhbid as blocks_ring_buffer_id,
+    blocks_ring_buffer_id as parent_block_id,
+    date, x, y, satellite, product, apid, band
+  FROM
+    blocks_ring_buffer
+  WHERE
+    product = product_in AND
+    band = band_in AND
+    x = x_in AND 
+    y = y_in AND
+    date_trunc('hour', date) = date_trunc('hour', date_in);
 
-  RETURN brbid;
+  RAISE INFO 'Create Max product for blocks_ring_buffer % % % % %', brhbid, product_in, x_in, y_in, date_trunc('hour', date_in);
+
+  RETURN brhbid;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -103,7 +118,7 @@ CREATE OR REPLACE FUNCTION create_all_hourly_max (
     index := index + 1;
   END LOOP;
 
-  RAISE INFO 'Create Max product for blocks_ring_buffer %,% hours: %', x_in, y_in, hours;
+  RAISE INFO 'Created Max product for blocks_ring_buffer %,% hours: %', x_in, y_in, hours;
 
   SELECT product_in || '-hourly-max' into  hmax_product_name;
 
