@@ -1,5 +1,5 @@
 import fs from 'fs-extra';
-import path from path;
+import path from 'path';
 import { config, logger, pg, exec, utils } from '@ucd-lib/casita-worker';
 import {v4} from 'uuid';
 
@@ -35,8 +35,8 @@ async function insert(blocks_ring_buffer_id) {
     WHERE 
       date = $1 AND
       band = $2 AND
-      x = $2 AND 
-      y = $3 AND
+      x = $3 AND 
+      y = $4 AND
       (
         product = '${meta.product}-hourly-max' OR
         product = '${meta.product}-hourly-max-10d-average' OR
@@ -47,24 +47,27 @@ async function insert(blocks_ring_buffer_id) {
   `, [timestamp, meta.band, meta.x, meta.y]);
 
   meta.date = timestamp;
-  let diskPath = path.resolve(config.fs.nfsRoot. utils.getPathFromData(meta));
+  let diskPath = path.resolve(config.fs.nfsRoot, utils.getPathFromData(meta));
   await fs.mkdirp(diskPath);
 
   meta.blocks_ring_buffer_ids = {};
   meta.files = [];
 
   // write files to disk
-  let file = '', shortProductName;
-  for( let row of idsResp ) {
+  // let file = '', shortProductName = 0;
+  for( let row of idsResp.rows ) {
+
     shortProductName = row.product.replace(meta.product+'-', '');
     meta.blocks_ring_buffer_ids[shortProductName] = row.blocks_ring_buffer_id;
     file = path.resolve(diskPath, shortProductName+'.png');
+    meta.files.push(file);
 
     // TODO: should we always override?
     // can we detect what updated?
     if( fs.existsSync(file) ) continue;
     
-    let pngResp = await pg.query(`SELECT
+    let pngResp = await pg.query(`
+      SELECT
         ST_asPNG(rast) as rast
       FROM
         ${TABLE}
@@ -73,7 +76,7 @@ async function insert(blocks_ring_buffer_id) {
     `);
     
     await fs.writeFile(file, pngResp.rows[0].rast);
-  };
+  }
   
   meta.blocks_ring_buffer_id = blocks_ring_buffer_id;
 

@@ -45,7 +45,7 @@ class Utils {
           break;
         } else {
           p.push('blocks');
-          continuel
+          continue;
         }
       }
 
