@@ -54,7 +54,7 @@ async function insert(blocks_ring_buffer_id) {
   meta.files = [];
 
   // write files to disk
-  // let file = '', shortProductName = 0;
+  let file = '', shortProductName = 0;
   for( let row of idsResp.rows ) {
 
     shortProductName = row.product.replace(meta.product+'-', '');
