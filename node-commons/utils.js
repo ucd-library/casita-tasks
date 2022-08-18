@@ -64,6 +64,10 @@ class Utils {
         p.push(date);
         p.push(time.split(':')[0]);
         p.push(time.split(':').splice(1,2).join('-'));
+      
+      } else if ( item === 'x' || item === 'y' ) {
+        if( item === 'y' ) continue;
+        p.push(metadata.x+'-'+metadata.y);
       } else {
         p.push(metadata[item]);
       }
