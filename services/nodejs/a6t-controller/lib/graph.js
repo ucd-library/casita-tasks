@@ -117,6 +117,27 @@ const dag = {
     }
   },
 
+  [TOPICS.thermalAnomaly] : {
+    enabled: true,
+    dependencies : [TOPICS.ringBufferHourlyStats],
+    where :  msg.data.band === '7',
+    sink : (key, msgs) => {
+      let task = TOPICS.thermalAnomaly;
+      let {blocks_ring_buffer_id} = msgs[0].data;
+
+      return rabbitMqWorker.exec({
+        module : 'thermal-anomaly/detection.js',
+          args : {
+            kafkaExternal : true,
+            blocks_ring_buffer_id
+          }
+        }, 
+        {task, msgs}
+      );
+      // return rabbitMqWorker.exec(`${CASITA_CMD} block-ring-buffer insert -p -e --file=${pngFile}`, {task, msgs});
+    }
+  },
+
   'ca-projection' : {
     enabled: false,
     dependencies : [config.kafka.topics.ringBuffer],

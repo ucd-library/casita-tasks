@@ -75,6 +75,7 @@ let config = {
       blockCompositeImage : 'block-composite-image',
       ringBuffer : 'ring-buffer',
       ringBufferHourlyStats : 'ring-buffer-hourly-stats',
+      thermalAnomaly : 'thermal-anomaly',
       lightning : 'lightning',
       lightningGroupStats : 'lightning-grouped-stats'
     },

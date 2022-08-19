@@ -53,6 +53,15 @@ const topics = [
   },
 
   {
+    name : 'thermal-anomaly',
+    partitions : DEFAULT_PARTITIONS
+  },
+  {
+    name : 'thermal-anomaly-ext',
+    partitions : 1
+  },
+
+  {
     name : 'lightning',
     partitions : DEFAULT_PARTITIONS
   },
