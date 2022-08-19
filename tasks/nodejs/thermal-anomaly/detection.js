@@ -232,4 +232,4 @@ const instance = new EventDetection();
 function run() {
   return instance.addClassifiedPixels(config.blocksRingBufferId);  
 }
-export default run();
+export default run;
