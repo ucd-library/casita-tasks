@@ -120,7 +120,7 @@ const dag = {
   [TOPICS.thermalAnomaly] : {
     enabled: true,
     dependencies : [TOPICS.ringBufferHourlyStats],
-    where :  msg.data.band === '7',
+    where :  msg => msg.data.band === '7',
     sink : (key, msgs) => {
       let task = TOPICS.thermalAnomaly;
       let {blocks_ring_buffer_id} = msgs[0].data;
