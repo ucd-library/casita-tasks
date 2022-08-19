@@ -150,6 +150,11 @@ let config = {
     }
   },
 
+  thermalAnomaly : {
+    eventRadius : 5,
+    stddevClassifier : 4
+  },
+
   // external api routes that are proxied by
   // main rest service
   rest : {
