@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS web_push_subscriptions (
   payload JSONB NOT NULL,
   UNIQUE(payload)
 );
+CREATE INDEX IF NOT EXISTS web_push_subscriptions_endpoint_idx ON web_push_subscriptions ((payload->>'endpoint'));
 
 CREATE TABLE IF NOT EXISTS web_push_notifications (
   web_push_notifications_id SERIAL PRIMARY KEY,
@@ -11,6 +12,7 @@ CREATE TABLE IF NOT EXISTS web_push_notifications (
   type TEXT NOT NULL,
   UNIQUE(web_push_subscriptions_id, type)
 );
+CREATE INDEX IF NOT EXISTS web_push_notifications_type_idx ON web_push_notifications (type);
 
 CREATE OR REPLACE VIEW web_push_notifications_view AS
   SELECT 
@@ -31,7 +33,7 @@ BEGIN
     web_push_notifications_id into wpnid
   FROM 
     web_push_notifications
-  WHERE payload->>"endpoint" = payload_in->>"endpoint";
+  WHERE payload->>'endpoint' = payload_in->>'endpoint';
 
   IF ( wpnid is NULL) THEN
     INSERT INTO 
@@ -55,7 +57,7 @@ DECLARE
 BEGIN
   
   WITH sub AS ( 
-    select web_push_notifications_id from web_push_notifications where payload->>"endpoint" = endpoint_in 
+    select web_push_notifications_id from web_push_notifications where payload->>'endpoint' = endpoint_in 
   ) 
   DELETE FROM 
     web_push_notifications CASCADE 
@@ -65,7 +67,7 @@ BEGIN
   DELETE FROM 
     web_push_subscriptions 
   WHERE 
-    payload->>"endpoint" = endpoint_in;
+    payload->>'endpoint' = endpoint_in;
 
 END ; 
 $$ LANGUAGE plpgsql;
