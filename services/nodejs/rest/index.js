@@ -5,6 +5,7 @@ import {logger, config} from '@ucd-lib/casita-worker';
 import httpProxy from 'http-proxy';
 import http from 'http';
 import Cors from 'cors';
+import bodyParser from 'body-parser';
 import controllers from './controllers/index.js'
 
 const cors = Cors({
@@ -23,6 +24,7 @@ proxy.on('error', err => logger.warn('api proxy error', err));
 const wsServiceMap = {};
 
 app.use(compression());
+app.use(bodyParser.json());
 
 // handle websocket upgrade requests
 server.on('upgrade', (req, socket, head) => {

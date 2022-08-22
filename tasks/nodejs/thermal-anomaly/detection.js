@@ -66,6 +66,8 @@ class EventDetection {
       }
     }
 
+    eventSet.continued = Array.from(eventSet.continued);
+    eventSet.new = Array.from(eventSet.new);
 
     return eventSet;
   }
@@ -94,7 +96,7 @@ class EventDetection {
 
     await this.addToActiveThermalEvent(resp.rows, id, info);
 
-    return resp.rows[0];
+    return resp.rows[0].thermal_anomaly_event_id;
   }
 
   async addToActiveThermalEvent(events, id, info) {
@@ -115,7 +117,7 @@ class EventDetection {
     // now check add pixels used;
     await this.addPxHistory(resp.rows[0].thermal_anomaly_event_px_id, info);
 
-    return event;
+    return event.thermal_anomaly_event_id;
   }
 
   async addPxHistory(thermal_anomaly_event_px_id, info) {

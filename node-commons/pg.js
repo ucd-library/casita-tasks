@@ -13,7 +13,8 @@ class PG {
       host : config.pg.host, 
       user : config.pg.user, 
       port : config.pg.port,
-      database : config.pg.database
+      database : config.pg.database,
+      max : 3
     });
 
     this.client.on('end', async () => {
