@@ -60,6 +60,19 @@ CREATE TABLE IF NOT EXISTS thermal_anomaly_event_px_stats_px (
   UNIQUE(thermal_anomaly_event_px_id, thermal_anomaly_stats_px_id)
 );
 
+CREATE OR REPLACE VIEW thermal_anomaly_stats_px_view AS 
+  SELECT
+    px.*,
+    po.satellite,
+    po.product,
+    po.band,
+    po.apid,
+    r.thermal_anomaly_event_px_id
+  FROM 
+    thermal_anomaly_stats_px px
+  LEFT JOIN thermal_anomaly_event_px_stats_px r on r.thermal_anomaly_stats_px_id = px.thermal_anomaly_stats_px_id
+  LEFT JOIN thermal_anomaly_stats_product po on po.thermal_anomaly_stats_product_id = px.thermal_anomaly_stats_product_id;
+
 CREATE OR REPLACE VIEW active_thermal_anomaly_events AS
   SELECT
     te.thermal_anomaly_event_id,

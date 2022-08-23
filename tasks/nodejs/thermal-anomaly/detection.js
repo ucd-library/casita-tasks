@@ -1,4 +1,6 @@
-import {logger, pg, config} from '@ucd-lib/casita-worker';
+import {logger, pg, config, utils} from '@ucd-lib/casita-worker';
+import fs from 'fs-extra';
+import path from 'path';
 
 class EventDetection {
 
@@ -68,6 +70,8 @@ class EventDetection {
 
     eventSet.continued = Array.from(eventSet.continued);
     eventSet.new = Array.from(eventSet.new);
+
+    // eventSet.files = this.createNFSProducts(eventSet, {blocksRingBufferId, classifier});
 
     return eventSet;
   }
@@ -226,6 +230,114 @@ class EventDetection {
       WHERE blocks_ring_buffer_id = $1`, [blocks_ring_buffer_id]);
     if( !resp.rows.length ) return -1;
     return resp.rows[0].value;
+  }
+
+  async createNFSProducts(eventSet, args) {
+    if( eventSet.continued.length === 0 && eventSet.new.length === 0 ) {
+      return;
+    }
+
+    let files = new Set(), pfiles;
+    for( let event of eventSet.continued ) {
+      pfiles = await this.createNFSProduct(event, args);
+      pfiles.forEach(f => files.add(f));
+    }
+    for( let event of eventSet.new ) {
+      pfiles = await this.createNFSProduct(event, args);
+      pfiles.forEach(f => files.add(f));
+    }
+
+    return Array.from(files);
+  }
+
+  async createNFSProduct(eventId, args) {
+    // get event
+    let resp = await pg.query('SELECT * FROM thermal_anomaly_event WHERE thermal_anomaly_event_id = $1', [eventId]);
+    let event = resp.rows[0];
+
+    // get date, product
+    resp = await pg.query('SELETE date, product, x, y FROM blocks_ring_buffer WHERE blocks_ring_buffer_id = $1', [args.blocksRingBufferId]);
+    let {date, product, x, y} = resp.rows[0];
+
+    // get all pixels for date
+    resp = await pg.query(`
+      SELECT 
+        *,
+        ST_asGeoJson(ST_PixelAsPolygon(pixel_x, pixel_y)) as geometry
+      FROM 
+        thermal_anomaly_event_px 
+      WHERE 
+        thermal_anomaly_event_id = $1 AND
+        date = $2`, 
+      [eventId, date]
+    );
+    
+    let geojson = {
+      type : 'FeatureCollection',
+      features : []
+    }
+
+    for( let pixel of resp.rows ) {
+      pixel.history = (await pg.query('SELECT *, FROM thermal_anomaly_stats_px_view WHERE thermal_anomaly_event_px_id = $1', pixel.thermal_anomaly_event_px_id)).rows;
+      
+      // TODO: project ... how and where?
+      geojson.features.push({
+        type : 'Feature',
+        geometry : pixel.geometry,
+        properties : pixel
+      });
+    }
+
+    // get prior hour
+    let lastHour = new Date(date.toISOString().replace(/T.*/, ''));
+    lastHour = new Date(lastHour.getTime() - (3600 * 1000));
+
+
+    // copy stats images
+    let imageSrc = utils.getPathFromData({
+      satellite : event.satellite,
+      product,
+      date : lastHour,
+      band : event.band,
+      apid : event.apid,
+      x, y
+    });
+
+    let imageDst = utils.getPathFromData({
+      satellite : event.satellite,
+      product : config.thermalAnomaly.product,
+      date : lastHour,
+      band : event.band,
+      apid : event.apid,
+      x, y
+    });
+
+    let files = [];
+    for( let taProduct in config.thermalAnomaly.products ) {
+      await fs.mkdirpSync(imageDst);
+      await fs.copyFile(
+        path.join(imageSrc, taProduct+'.png'),
+        path.join(imageDst, taProduct+'.png')
+      );
+      files.push(path.join(imageDst, taProduct+'.png'));
+    }
+
+    let geojsonPath = utils.getPathFromData({
+      satellite : event.satellite,
+      product : config.thermalAnomaly.product,
+      date,
+      band : event.band,
+      apid : event.apid,
+      x, y
+    });
+
+    await fs.writeFile(
+      path.join(geojsonPath, eventId+'-features.json'),
+      JSON.stringify(geojson)
+    );
+    files.push(path.join(geojsonPath, eventId+'-features.json'));
+
+    return files;
   }
 
 }
