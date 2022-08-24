@@ -14,7 +14,7 @@ class EventQuery {
    * 
    * @returns {Promise} resolves to Array 
    */
-  async getEvents(opts) {
+  async getEvents(opts={}) {
     let where = [];
     let args = [];
 
