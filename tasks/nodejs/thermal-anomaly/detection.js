@@ -71,7 +71,7 @@ class EventDetection {
     eventSet.continued = Array.from(eventSet.continued);
     eventSet.new = Array.from(eventSet.new);
 
-    // eventSet.files = this.createNFSProducts(eventSet, {blocksRingBufferId, classifier});
+    // eventSet.files = await this.createNFSProducts(eventSet, {blocksRingBufferId, classifier});
 
     return eventSet;
   }
@@ -299,7 +299,18 @@ class EventDetection {
     }
 
     for( let pixel of resp.rows ) {
-      pixel.history = (await pg.query('SELECT *, FROM thermal_anomaly_stats_px_view WHERE thermal_anomaly_event_px_id = $1', pixel.thermal_anomaly_event_px_id)).rows;
+      let pixelHistoryResp = await pg.query(
+        'SELECT date, product, value FROM thermal_anomaly_stats_px_view WHERE thermal_anomaly_event_px_id = $1', 
+        [pixel.thermal_anomaly_event_px_id]
+      );
+
+      let history = {};
+      pixelHistoryResp.rows.forEach(item => {
+        let date = item.date.toISOString();
+        if( !history[date] ) history[date] = {};
+        history[date][item.product.replace(/.*-hourly-max-?/, '') || 'hourly-max'] = item.value;
+      })
+      pixel.history = history;
       
       // TODO: project ... how and where?
       geojson.features.push({
@@ -334,8 +345,8 @@ class EventDetection {
     });
 
     let files = [];
-    for( let taProduct in config.thermalAnomaly.products ) {
-      await fs.mkdirpSync(imageDst);
+    for( let taProduct of config.thermalAnomaly.products ) {
+      await fs.mkdirp(path.join(config.fs.nfsRoot, imageDst));
       await fs.copyFile(
         path.join(config.fs.nfsRoot, imageSrc, taProduct+'.png'),
         path.join(config.fs.nfsRoot, imageDst, taProduct+'.png')
@@ -352,6 +363,7 @@ class EventDetection {
       x, y
     });
 
+    await fs.mkdirp(path.join(config.fs.nfsRoot, geojsonPath));
     await fs.writeFile(
       path.join(config.fs.nfsRoot, geojsonPath, eventId+'-features.json'),
       JSON.stringify(geojson)

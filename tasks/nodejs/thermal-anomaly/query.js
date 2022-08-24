@@ -14,7 +14,7 @@ class EventQuery {
    * 
    * @returns {Promise} resolves to Array 
    */
-  getEvents(opts) {
+  async getEvents(opts) {
     let where = [];
     let args = [];
 
@@ -41,10 +41,36 @@ class EventQuery {
     if( where.length ) where = 'where '+where.join(' AND ');
     else where = '';
 
-    return pg.query('SELECT * FROM thermal_anomaly_event '+where, args);
+    return (await pg.query('SELECT * FROM thermal_anomaly_event '+where, args)).rows;
+  }
+
+  async getEvent(id) {
+    let event = await pg.query(`SELECT * FROM thermal_anomaly_event WHERE thermal_anomaly_event_id = $1`, [id]);
+    if( !event.rows.length ) throw new Error('Unknown thermal_anomaly_event_id '+id);
+    event = event.rows[0];
+
+    let times = await pg.query(`SELECT 
+        count(*) as pixelCount, date 
+      FROM 
+        thermal_anomaly_event_px 
+      WHERE 
+        thermal_anomaly_event_id = $1 
+      GROUP BY 
+        date
+      ORDER BY 
+        date`, 
+      [id]
+    );
+
+    event.timestamps = [['timestamp', 'pixelCount']];
+    times.rows.forEach(item => {
+      event.timestamps.push([item.date.toISOString(), item.pixelCount]);
+    });
+
+    return event;
   }
 
 }
 
 const instance = new EventQuery();
-return instance;
+export default instance;
