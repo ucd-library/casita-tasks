@@ -14,7 +14,7 @@ class EventDetection {
     // grab all classified pixels
     let resp = await pg.query(
       `select * from ST_PixelOfValue(classify_thermal_anomaly($1, $2), 1);`,
-      [blocksRingBufferId, classifier]
+      [blocksRingBufferId, parseInt(classifier)]
     );
 
     let eventSet = {
@@ -116,7 +116,7 @@ class EventDetection {
     ) VALUES (
       $1, $2, $3, $4, $5, $6
     ) RETURNING thermal_anomaly_event_px_id`, 
-    [event.thermal_anomaly_event_id, info.date.toISOString(), info.block.x, info.block.y, info.pixel.x, info.pixel.y, classifier, value]);
+    [event.thermal_anomaly_event_id, info.date.toISOString(), info.block.x, info.block.y, info.pixel.x, info.pixel.y, info.classifier, value]);
 
     // now check add pixels used;
     await this.addPxHistory(resp.rows[0].thermal_anomaly_event_px_id, info);
@@ -316,8 +316,8 @@ class EventDetection {
     for( let taProduct in config.thermalAnomaly.products ) {
       await fs.mkdirpSync(imageDst);
       await fs.copyFile(
-        path.join(imageSrc, taProduct+'.png'),
-        path.join(imageDst, taProduct+'.png')
+        path.join(config.fs.nfsRoot, imageSrc, taProduct+'.png'),
+        path.join(config.fs.nfsRoot, imageDst, taProduct+'.png')
       );
       files.push(path.join(imageDst, taProduct+'.png'));
     }
@@ -332,7 +332,7 @@ class EventDetection {
     });
 
     await fs.writeFile(
-      path.join(geojsonPath, eventId+'-features.json'),
+      path.join(config.fs.nfsRoot, geojsonPath, eventId+'-features.json'),
       JSON.stringify(geojson)
     );
     files.push(path.join(geojsonPath, eventId+'-features.json'));
@@ -344,6 +344,9 @@ class EventDetection {
 
 const instance = new EventDetection();
 function run() {
-  return instance.addClassifiedPixels(config.blocksRingBufferId);  
+  return instance.addClassifiedPixels(
+    config.blocksRingBufferId,
+    config.classifier
+  );  
 }
 export default run;
