@@ -311,13 +311,15 @@ class EventDetection {
         history[date][item.product.replace(/.*-hourly-max-?/, '') || 'hourly-max'] = item.value;
       })
       pixel.history = history;
-      
-      // TODO: project ... how and where?
-      geojson.features.push({
+
+      let feature = {
         type : 'Feature',
-        geometry : pixel.geometry,
-        properties : pixel
-      });
+        geometry : JSON.parse(pixel.geometry),
+      }
+      delete pixel.geometry;
+      feature.properties = pixel;
+      
+      geojson.features.push(feature);
     }
 
     // get prior hour
