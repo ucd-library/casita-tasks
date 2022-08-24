@@ -59,9 +59,9 @@ class EventDetection {
 
         // the historical (stats) pixels will be added to tables in 
         if( events.length ) {
-          eventSet.continued.add(await this.addToActiveThermalEvent(events, id, info));
+          eventSet.continued.add(await this.addToActiveThermalEvent(events, blocksRingBufferId, info));
         } else {
-          eventSet.new.add(await this.addCreateThermalEvent(id, info));
+          eventSet.new.add(await this.addCreateThermalEvent(blocksRingBufferId, info));
         }
       } catch(e) {
         console.error(e);
@@ -77,12 +77,14 @@ class EventDetection {
   }
 
   async findActiveEvents(info) {
+    // not sure why, but the pg lib doesn't seem to be casting the pixel x/y as int
+    // so we have to specifically set them :/
     let resp = await pg.query(
       `select * from active_thermal_anomaly_events ate WHERE 
         product = $1 AND
-        x >= $2 - $4 AND x <= $2 + $4 AND
-        y >= $3 - $4 AND y <= $3 + $4`
-        [info.product, info.x, info.y, this.eventRadius]
+        pixel_x >= $2::INTEGER - $4::INTEGER AND pixel_x <= $2::INTEGER + $4::INTEGER AND
+        pixel_y >= $3::INTEGER - $4::INTEGER AND pixel_y <= $3::INTEGER + $4::INTEGER`,
+        [info.product, info.pixel.x, info.pixel.y, this.eventRadius]
     );
     return resp.rows;
   }
@@ -111,12 +113,30 @@ class EventDetection {
     logger.info('Adding thermal pixel for', event, info);
 
     let resp = await pg.query(`
-    INSERT INTO thermal_anomaly_event_px (
-      thermal_anomaly_event_id, date, block_x, block_y, pixel_x, pixel_y, classifier, value
-    ) VALUES (
-      $1, $2, $3, $4, $5, $6
-    ) RETURNING thermal_anomaly_event_px_id`, 
-    [event.thermal_anomaly_event_id, info.date.toISOString(), info.block.x, info.block.y, info.pixel.x, info.pixel.y, info.classifier, value]);
+      SELECT 
+        thermal_anomaly_event_px_id 
+      FROM 
+        thermal_anomaly_event_px
+      WHERE
+        thermal_anomaly_event_id = $1 AND
+        date = $2 AND
+        block_x = $3 AND
+        block_y = $4 AND
+        pixel_x = $5 AND
+        pixel_y = $6 AND
+        classifier = $7`, 
+      [event.thermal_anomaly_event_id, info.date.toISOString(), info.block.x, info.block.y, info.pixel.x, info.pixel.y, info.classifier]
+    );
+
+    if( !resp.rows.length ) {
+      resp = await pg.query(`
+      INSERT INTO thermal_anomaly_event_px (
+        thermal_anomaly_event_id, date, block_x, block_y, pixel_x, pixel_y, classifier, value
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8
+      ) RETURNING thermal_anomaly_event_px_id`, 
+      [event.thermal_anomaly_event_id, info.date.toISOString(), info.block.x, info.block.y, info.pixel.x, info.pixel.y, info.classifier, value]);
+    }
 
     // now check add pixels used;
     await this.addPxHistory(resp.rows[0].thermal_anomaly_event_px_id, info);
@@ -124,25 +144,25 @@ class EventDetection {
     return event.thermal_anomaly_event_id;
   }
 
-  async addPxHistory(thermal_anomaly_event_px_id, info) {
+  async addPxHistory(thermal_anomaly_event_px_id, pixel) {
     // get all stats product pixels for event
     let resp = await pg.query(
       `SELECT * FROM all_thermal_anomaly_px_values($1, $2, $3, $4, $5)`, 
-      [info.product, info.block.x, info.block.y, info.pixel.x, info.pixel.y]
+      [pixel.product, pixel.block.x, pixel.block.y, pixel.pixel.x, pixel.pixel.y]
     );
 
     let productIdCache = {};
 
-    for( let row of resp.rows ) {
-      let productId = [row.satellite, row.band, row.product, row.apid].join('-');
+    for( let statsProduct of resp.rows ) {
+      let productId = [statsProduct.satellite, statsProduct.band, statsProduct.product, statsProduct.apid].join('-');
 
       // get the product id for the pixel
       if( !productIdCache[productId] ) {
-        productIdCache[productId] = await this.getOrCreatePxProduct(info);
+        productIdCache[productId] = await this.getOrCreatePxProduct(statsProduct);
       }
-      row.thermal_anomaly_stats_product_id = productIdCache[productId];
+      statsProduct.thermal_anomaly_stats_product_id = productIdCache[productId];
 
-      row.thermal_anomaly_stats_px_id = await this.getOrCreateStatsPx(info);
+      statsProduct.thermal_anomaly_stats_px_id = await this.getOrCreateStatsPx(pixel, statsProduct);
 
 
       try {
@@ -150,15 +170,13 @@ class EventDetection {
             thermal_anomaly_event_px_stats_px (thermal_anomaly_event_px_id, thermal_anomaly_stats_px_id) 
           VALUES
             ($1, $2)`, 
-          [thermal_anomaly_event_px_id, row.thermal_anomaly_stats_px_id]
-        )
-      } catch(e) {
-        console.error(e);
-      }
+          [thermal_anomaly_event_px_id, statsProduct.thermal_anomaly_stats_px_id]
+        );
+      } catch(e) {}
     }
   }
 
-  async getOrCreateStatsPx(info) {
+  async getOrCreateStatsPx(pixel, statsProduct) {
     // lookup the product id, create if needed
     let existsResp = await pg.query(`SELECT 
         thermal_anomaly_stats_px_id
@@ -166,32 +184,33 @@ class EventDetection {
         thermal_anomaly_stats_px 
       WHERE
         thermal_anomaly_stats_product_id = $1 AND
-        block_x = $2 AND 
-        block_y = $3 AND
-        pixel_x = $4 AND 
-        pixel_y = $5
+        date = $2 AND
+        block_x = $3 AND 
+        block_y = $4 AND
+        pixel_x = $5 AND 
+        pixel_y = $6
       `,
-      [info.thermal_anomaly_stats_product_id, info.block.x, info.block.y, info.pixel.x, info.pixel.y]
+      [statsProduct.thermal_anomaly_stats_product_id, statsProduct.date, pixel.block.x, pixel.block.y, pixel.pixel.x, pixel.pixel.y]
     );
 
     if( !existsResp.rows.length ) {
       try {
         existsResp = await pg.query(`
           INSERT INTO 
-            thermal_anomaly_stats_px (thermal_anomaly_stats_product_id, block_x, block_y, pixel_x, pixel_y) 
+            thermal_anomaly_stats_px (thermal_anomaly_stats_product_id, date, block_x, block_y, pixel_x, pixel_y, value) 
           VALUES
-            ($1, $2, $3, $4, $5) RETURNING thermal_anomaly_stats_px_id`,
-          [info.thermal_anomaly_stats_product_id, info.block.x, info.block.y, info.pixel.x, info.pixel.y]
+            ($1, $2, $3, $4, $5, $6, $7) RETURNING thermal_anomaly_stats_px_id`,
+          [statsProduct.thermal_anomaly_stats_product_id, statsProduct.date, pixel.block.x, pixel.block.y, pixel.pixel.x, pixel.pixel.y, statsProduct.value]
         );
       } catch(e) {
         console.error(e);
       }
     }
 
-    return existsResp.rows[0].thermal_anomaly_event_px_id;
+    return existsResp.rows[0].thermal_anomaly_stats_px_id;
   }
 
-  async getOrCreatePxProduct(info) {
+  async getOrCreatePxProduct(statsProduct) {
     // lookup the product id, create if needed
     let existsResp = await pg.query(`SELECT 
         thermal_anomaly_stats_product_id
@@ -203,17 +222,17 @@ class EventDetection {
         product = $3 AND 
         apid = $4
       `,
-      [info.satellite, info.band, info.product, info.apid]
+      [statsProduct.satellite, statsProduct.band, statsProduct.product, statsProduct.apid]
     );
 
     if( !existsResp.rows.length ) {
       try {
         existsResp = await pg.query(`
           INSERT INTO 
-            thermal_anomaly_stats_product (satellite, product, apid, band) 
+            thermal_anomaly_stats_product (satellite, band, product, apid) 
           VALUES
-            ($1, $2, $3, $4) RETURNING thermal_anomaly_event_px_product_id`,
-          [info.satellite, info.band, info.product, info.apid]
+            ($1, $2, $3, $4) RETURNING thermal_anomaly_stats_product_id`,
+          [statsProduct.satellite, statsProduct.band, statsProduct.product, statsProduct.apid]
         );
       } catch(e) {
         console.error(e);
@@ -256,20 +275,22 @@ class EventDetection {
     let event = resp.rows[0];
 
     // get date, product
-    resp = await pg.query('SELETE date, product, x, y FROM blocks_ring_buffer WHERE blocks_ring_buffer_id = $1', [args.blocksRingBufferId]);
+    resp = await pg.query('SELECT date, product, x, y FROM blocks_ring_buffer WHERE blocks_ring_buffer_id = $1', [args.blocksRingBufferId]);
     let {date, product, x, y} = resp.rows[0];
 
     // get all pixels for date
     resp = await pg.query(`
       SELECT 
-        *,
-        ST_asGeoJson(ST_PixelAsPolygon(pixel_x, pixel_y)) as geometry
+        px.*,
+        ST_asGeoJson(ST_PixelAsPolygon(block.rast, px.pixel_x, px.pixel_y)) as geometry
       FROM 
-        thermal_anomaly_event_px 
-      WHERE 
-        thermal_anomaly_event_id = $1 AND
-        date = $2`, 
-      [eventId, date]
+        thermal_anomaly_event_px px,
+        blocks_ring_buffer block
+      WHERE
+        px.thermal_anomaly_event_id = $1 AND
+        px.date = $2 AND
+        block.blocks_ring_buffer_id = $3`, 
+      [eventId, date, args.blocksRingBufferId]
     );
     
     let geojson = {
@@ -345,7 +366,7 @@ class EventDetection {
 const instance = new EventDetection();
 function run() {
   return instance.addClassifiedPixels(
-    config.blocksRingBufferId,
+    config.blocksRingBufferId || config.id,
     config.classifier
   );  
 }

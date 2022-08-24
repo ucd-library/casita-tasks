@@ -11,7 +11,7 @@ class WebPushNotifications {
    * @param {Object} payload 
    * @param {String} type 
    */
-  register(payload, type) {
+  async register(payload, type) {
     if( typeof payload === 'object' ) {
       payload = JSON.stringify(payload);
     }
@@ -26,7 +26,7 @@ class WebPushNotifications {
    * @param {String} endpointUrl 
    * @param {String} type 
    */
-  unregister(endpointUrl, type) {
+  async unregister(endpointUrl, type) {
     let resp;
     if( !type ) {
       resp = await pg.query(`SELECT remove_web_push_notifications($1)`, [endpointUrl]);
@@ -55,7 +55,7 @@ class WebPushNotifications {
    * @param {String} type 
    * @param {Object} payload 
    */
-  sendNotifications(type, payload) {
+  async sendNotifications(type, payload) {
     let endpoints = await pg.query('SELECT * from web_push_notifications_view WHERE type = $1', [type]);
     logger.info(`Sending web push notification to ${endpoints.rows.length} endpoints`, payload);
 
@@ -73,7 +73,7 @@ class WebPushNotifications {
    * @param {Object} subscription 
    * @param {Object} payload 
    */
-  sendNotification(subscription, payload) {
+  async sendNotification(subscription, payload) {
     if( typeof subscription === 'string' ) {
       subscription = JSON.parse(subscription);
     }

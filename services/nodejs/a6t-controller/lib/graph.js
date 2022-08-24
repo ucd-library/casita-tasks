@@ -129,7 +129,7 @@ const dag = {
         module : 'thermal-anomaly/detection.js',
           args : {
             kafkaExternal : true,
-            blocks_ring_buffer_id
+            id: blocks_ring_buffer_id
           }
         }, 
         {task, msgs}
