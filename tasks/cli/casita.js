@@ -16,5 +16,6 @@ program
   .command('image', 'image manipulation')
   .command('block-ring-buffer', 'block ring buffer actions')
   .command('generic', 'non-image data parsing actions')
+  .command('thermal-anomaly', 'thermal-anomaly detection');
 
 program.parse(process.argv);
