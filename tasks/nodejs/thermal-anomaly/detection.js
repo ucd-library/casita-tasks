@@ -359,8 +359,7 @@ class EventDetection {
       product : config.thermalAnomaly.product,
       date,
       band : event.band,
-      apid : event.apid,
-      x, y
+      apid : event.apid
     });
 
     await fs.mkdirp(path.join(config.fs.nfsRoot, geojsonPath));
