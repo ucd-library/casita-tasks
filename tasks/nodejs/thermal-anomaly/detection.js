@@ -71,7 +71,7 @@ class EventDetection {
     eventSet.continued = Array.from(eventSet.continued);
     eventSet.new = Array.from(eventSet.new);
 
-    // eventSet.files = await this.createNFSProducts(eventSet, {blocksRingBufferId, classifier});
+    eventSet.files = await this.createNFSProducts(eventSet, {blocksRingBufferId, classifier});
 
     return eventSet;
   }
@@ -321,9 +321,9 @@ class EventDetection {
     }
 
     // get prior hour
-    let lastHour = new Date(date.toISOString().replace(/T.*/, ''));
-    lastHour = new Date(lastHour.getTime() - (3600 * 1000));
-
+    
+    let lastHour = new Date(date.toISOString().replace(/:.*/, ':00:00.000Z'));
+    lastHour = new Date(lastHour.getTime() - (60 * 60 * 1000));
 
     // copy stats images
     let imageSrc = utils.getPathFromData({
