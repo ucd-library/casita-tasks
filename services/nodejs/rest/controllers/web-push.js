@@ -45,3 +45,5 @@ router.delete('/unregister/:endpointUrl/:type?', async (req, res) => {
     })
   }
 });
+
+export default router;
