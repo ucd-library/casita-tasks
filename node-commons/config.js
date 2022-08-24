@@ -147,6 +147,11 @@ let config = {
         expireTime : 24 * 31,
         regex : /\/west\/ca-[a-z]+\/.+/,
         maxDepth : 3
+      },
+      thermalAnomaly : {
+        expireTime : 24 * 365 * 10,
+        regex : /\/west\/thermal-anomaly\//,
+        maxDepth : 3
       }
     }
   },

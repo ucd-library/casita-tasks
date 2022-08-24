@@ -50,7 +50,7 @@ class EventQuery {
     event = event.rows[0];
 
     let times = await pg.query(`SELECT 
-        count(*) as pixelCount, date 
+        count(*) as pixelcount, date 
       FROM 
         thermal_anomaly_event_px 
       WHERE 
@@ -64,7 +64,7 @@ class EventQuery {
 
     event.timestamps = [['timestamp', 'pixelCount']];
     times.rows.forEach(item => {
-      event.timestamps.push([item.date.toISOString(), item.pixelCount]);
+      event.timestamps.push([item.date.toISOString(), item.pixelcount]);
     });
 
     return event;
