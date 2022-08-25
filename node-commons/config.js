@@ -161,7 +161,10 @@ let config = {
     stddevClassifier : 4,
     product : 'thermal-anomaly',
     products : ['hourly-max', 'hourly-max-10d-average', 'hourly-max-10d-stddev',
-      'hourly-max-10d-max', 'hourly-max-10d-min']
+      'hourly-max-10d-max', 'hourly-max-10d-min'],
+    slack : {
+      urlSecret : 'slack-goesr-thermal-event-webook'
+    }
   },
 
   // external api routes that are proxied by

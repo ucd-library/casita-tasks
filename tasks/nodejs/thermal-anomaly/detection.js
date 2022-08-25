@@ -1,6 +1,7 @@
 import {logger, pg, config, utils} from '@ucd-lib/casita-worker';
 import fs from 'fs-extra';
 import path from 'path';
+import slack from './slack.js';
 
 class EventDetection {
 
@@ -24,6 +25,7 @@ class EventDetection {
 
     // nothing to see here
     if( resp.rows.length === 0 ) {
+      await this.closeOutEvents();
       return eventSet;
     }
 
@@ -68,12 +70,50 @@ class EventDetection {
       }
     }
 
+    await this.closeOutEvents();
+
     eventSet.continued = Array.from(eventSet.continued);
     eventSet.new = Array.from(eventSet.new);
 
     eventSet.files = await this.createNFSProducts(eventSet, {blocksRingBufferId, classifier});
 
+    for( let eventId of eventSet.new ) {
+      await slack(eventId);
+    }
+
     return eventSet;
+  }
+
+  async closeOutEvents() {
+    // close out any event over 48 hours old
+    await pg.query(`
+    UPDATE 
+      thermal_anomaly_event
+    SET 
+      active = false
+    FROM (
+      WITH latest_px AS (
+        SELECT 
+          max(px.date), e.thermal_anomaly_event_id 
+        FROM 
+          thermal_anomaly_event_px px
+        JOIN 
+          thermal_anomaly_event e ON px.thermal_anomaly_event_id = e.thermal_anomaly_event_id
+        WHERE 
+          e.active = true
+        GROUP BY 
+          e.thermal_anomaly_event_id
+      )
+      SELECT 
+        thermal_anomaly_event_id
+      FROM 
+        latest_px
+      WHERE 
+        max < (now() - interval '2 day')
+    ) AS inactive_events
+    WHERE 
+      thermal_anomaly_event.thermal_anomaly_event_id = inactive_events.thermal_anomaly_event_id
+    `);
   }
 
   async findActiveEvents(info) {
