@@ -9,6 +9,7 @@ import exec from './exec.js';
 import RabbitMQ from './rabbitmq.js';
 import redis from './redis.js';
 import fsCache from './fs-cache.js';
+import slack from './slack.js';
 
 export {
   KafkaConsumer, 
@@ -24,5 +25,6 @@ export {
   exec,
   redis,
   RabbitMQ,
-  fsCache
+  fsCache,
+  slack
 }
