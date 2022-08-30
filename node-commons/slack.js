@@ -5,4 +5,4 @@ async function sendMessage(url, data) {
   return webhook.send(data);
 };
 
-module.exports = sendMessage;
+export default sendMessage;
