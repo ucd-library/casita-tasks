@@ -53,6 +53,14 @@ const topics = [
   },
 
   {
+    name : 'ca-projection',
+    partitions : DEFAULT_PARTITIONS
+  },
+  {
+    name : 'ca-projection-ext',
+    partitions : 1
+  },
+  {
     name : 'lightning',
     partitions : DEFAULT_PARTITIONS
   },
