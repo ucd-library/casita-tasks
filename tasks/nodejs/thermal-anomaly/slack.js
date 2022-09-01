@@ -18,7 +18,7 @@ async function send(eventId) {
   
   return slack(url, {
     text: `️‍🔥 New Thermal Anomaly Event - ${eventId} - 
-    https://data.casita.library.ucdavis.edu/_/thermal-anomaly/event/${eventId}`,
+    https://thermal-anomaly.casita.library.ucdavis.edu/event-detail/${eventId}`,
     mrkdwn: true,
     attachments: []
   })
