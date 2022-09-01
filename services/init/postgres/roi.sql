@@ -466,47 +466,72 @@ from b;
 -- And now update these ROIs to be an aligned region
 update roi set boundary=(alignedTo(roi)).boundary, box=(alignedTo(roi)).box;
 
-create or replace view roi_x_fixed_image_block as
+create materialized view roi_x_fixed_image_block as
   select roi_id,fixed_image_block_id
     from abi g join abi_fixed_image fi using (goes_id)
          join abi_fixed_image_block b using (fixed_image_id)
          join roi r on st_intersects(b.wsen,st_transform(r.boundary,g.srid));
 
-create view rb as
-  select *,
-         format('%s-%s-%s-%s',satellite,product,x*res.size,y*res.size)
-           as fixed_image_block_id
-    from goes.blocks_ring_buffer
-         join abibands using(band)
-         join abiresolution res using (resolution);
+create or replace function fixed_image_block_id (
+in b goes.blocks_ring_buffer,
+out text)
+LANGUAGE SQL AS $$
+  with res as (select res.*
+                 from abibands join abiresolution res using (resolution)
+                                      where abibands.band=b.band)
+  select format('%s-%s-%s-%s',b.satellite,b.product,b.x*res.size,b.y*res.size)
+  $$;
 
 create table roi_buffer (
   roi_buffer_id serial primary key,
   roi_id text references roi(roi_id),
-  resolution abiresolution_id,
   date timestamp,
-  fixed_image_id fixed_image_id,
+  product text,
   band integer references abibands(band),
   rast raster);
 
-create or replace function blocks_to_roi
-  in date timestamp,in band abiband
-  on roi roi,
-  out geometry('Polygon')
-  LANGUAGE SQL AS $$
-  select
-  roi_id,date,product,band
-  st_clip(
-    st_transform(
-      st_union(
-         st_setsrid(st_setGeoReference(rb.rast,west,north,res*4,-res*4,0,0),srid)),
-        (r).rast),
-        st_setsrid(
-          st_makeEmptyRaster(
-            ((st_xmax(roi.boundary)-st_xmin(roi.boundary))/(500*res.size))::integer,
-            ((st_ymax(roi.boundary)-st_ymin(roi.boundary))/(500*res.size))::integer,
-            st_xmin(roi.boundary),
-            st_ymax(roi.boundary),500*res.size),roi.srid)
-  ) as rast
-  from j
-$$;
+create or replace function blocks_to_roi (
+  in in_date timestamp,
+  in in_band integer,
+  in in_roi_id text,
+  in in_product text,
+  out raster)
+--        out roi_buffer)
+LANGUAGE SQL AS $$
+with
+in_roi as (select * from roi where roi.roi_id=in_roi_id),
+blocks_in as (
+  select rb.rast,
+         st_xmin(fb.wsen) as west,
+         st_ymax(fb.wsen) as north,
+         abi.angle_inc*abi.sat_height*size as abi_res,
+         size*500 as roi_res,
+         abi.srid as goes_srid
+    from
+      in_roi,
+      goes.blocks_ring_buffer rb
+      join abi on (rb.satellite=abi.goes_id::text)
+      join roi_x_fixed_image_block f on rb.fixed_image_block_id=f.fixed_image_block_id
+      join abi_fixed_image_block fb using (fixed_image_block_id)
+      join abibands on (rb.band=abibands.band)
+      join abiresolution r using (resolution)
+   where rb.date=in_date and rb.band=in_band and in_roi.roi_id=f.roi_id
+     and in_product=rb.product
+)
+select
+--        null::integer,in_roi_id,in_date,in_product,in_band,
+st_clip(
+  st_transform(
+    st_union(
+      st_setsrid(st_setGeoReference(blocks_in.rast,blocks_in.west,blocks_in.north,abi_res,-abi_res,0,0),
+                 goes_srid)
+    ),
+    st_setsrid(
+      st_makeEmptyRaster(
+        ((st_xmax(in_roi.boundary)-st_xmin(in_roi.boundary))/(roi_res))::integer,
+        ((st_ymax(in_roi.boundary)-st_ymin(in_roi.boundary))/(roi_res))::integer,
+        st_xmin(in_roi.boundary),
+        st_ymax(in_roi.boundary),roi_res),in_roi.srid)
+  ),in_roi.boundary) as rast
+  from blocks_in,in_roi group by in_roi.boundary,in_roi.srid,abi_res,roi_res,goes_srid
+  $$;
