@@ -49,6 +49,14 @@ class BlockRingBuffer {
     let resp = await pg.query(stdout);
     logger.debug(resp);
 
+    if( !this.sanityCheck(preloadTable, band) ) {
+      await pg.query(`drop table ${preloadTable}`);
+      if( config.pg.disconnectAfterExec === true ) {
+        await pg.end();
+      }
+      return -1;
+    } 
+
     let isoDate = meta.datetime.toISOString();
     // buffer size is in days
     let buffer = this.getBufferSize(meta);
@@ -91,11 +99,10 @@ class BlockRingBuffer {
       RETURNING blocks_ring_buffer_id`;
 
     resp = await pg.query(cmd);
-
-    let blocks_ring_buffer_id, priorHourDate;
+    let blocks_ring_buffer_id = resp.rows[0].blocks_ring_buffer_id;
+    
     try {
       await pg.query(`drop table ${preloadTable}`);
-      blocks_ring_buffer_id = resp.rows[0].blocks_ring_buffer_id;
     } catch(e) {
       logger.error(e);
     }
@@ -105,6 +112,32 @@ class BlockRingBuffer {
     }
 
     return blocks_ring_buffer_id;
+  }
+
+  async sanityCheck(table, metadata) {
+    // todo; change based on band
+    let sanityCheckValue = 8000;
+
+    let resp = pg.query(`
+      with rast as (
+        select 
+          ST_Reclass(rast, 1,'[0-${sanityCheckValue-1}]:0,[${sanityCheckValue}-100000):1','4BUI', 0) as rast 
+        from 
+          ${table} 
+        limit 1
+      ),
+      classified as (
+        select ST_PixelOfValue(rast.rast, 1) from rast
+      )
+      select count(*) as count from classified`
+    );
+
+    let above = resp.rows[0].count;
+
+    resp = await pg.query(`select st_count(rast) as count from ${table}`);
+    let total = resp.rows[0].total;
+
+    return ((above / total) > 0.5);
   }
 }
 
