@@ -118,7 +118,7 @@ class BlockRingBuffer {
     // todo; change based on band
     let sanityCheckValue = 8000;
 
-    let resp = pg.query(`
+    let resp = await pg.query(`
       with rast as (
         select 
           ST_Reclass(rast, 1,'[0-${sanityCheckValue-1}]:0,[${sanityCheckValue}-100000):1','4BUI', 0) as rast 
@@ -135,7 +135,7 @@ class BlockRingBuffer {
     let above = resp.rows[0].count;
 
     resp = await pg.query(`select st_count(rast) as count from ${table}`);
-    let total = resp.rows[0].total;
+    let total = resp.rows[0].count;
 
     return ((above / total) > 0.5);
   }
