@@ -49,7 +49,7 @@ class BlockRingBuffer {
     let resp = await pg.query(stdout);
     logger.debug(resp);
 
-    if( !this.sanityCheck(preloadTable, band) ) {
+    if( !this.sanityCheck(preloadTable, meta) ) {
       await pg.query(`drop table ${preloadTable}`);
       if( config.pg.disconnectAfterExec === true ) {
         await pg.end();
