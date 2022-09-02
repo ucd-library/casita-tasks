@@ -49,7 +49,7 @@ class BlockRingBuffer {
     let resp = await pg.query(stdout);
     logger.debug(resp);
 
-    if( !this.sanityCheck(preloadTable, meta) ) {
+    if( !(await this.sanityCheck(preloadTable, meta)) ) {
       logger.warn('Sanity check failed for', meta);
       try {
         await pg.query(`drop table ${preloadTable}`);
