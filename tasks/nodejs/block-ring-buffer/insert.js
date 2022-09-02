@@ -140,7 +140,7 @@ class BlockRingBuffer {
     resp = await pg.query(`select st_count(rast) as count from ${table}`);
     let total = resp.rows[0].count;
 
-    return ((above / total) > 0.5);
+    return ((above / total) < 0.5);
   }
 }
 
