@@ -64,9 +64,9 @@ class EventQuery {
       [id]
     );
 
-    event.timestamps = [['timestamp', 'pixelCount']];
+    event.timestamps = [['timestamp', 'pixelCount', 'maxValue']];
     times.rows.forEach(item => {
-      event.timestamps.push([item.date.toISOString(), item.pixelcount]);
+      event.timestamps.push([item.date.toISOString(), item.pixelcount, item.maxvalue]);
     });
 
     return event;
