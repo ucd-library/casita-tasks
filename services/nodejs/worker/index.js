@@ -16,6 +16,19 @@ monitor.registerMetric(metricsDefs.ttw);
 monitor.registerMetric(metricsDefs.exectime);
 monitor.registerMetric(metricsDefs.status);
 
+// store current message so we can nack if SIGTERM is sent
+let currentMsg = null;
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM signal, now shutting down...');
+
+  if( currentMsg ) {
+    await rabbitMq.nack(msg);
+  }
+  await rabbitMq.close();
+
+  setTimeout(() => {process.exit(0)}, 100);
+});
+
 // init kafka
 // let kafkaConsumer = KafkaConsumer({
 //   groupId : config.kafka.groups.worker,
@@ -78,6 +91,7 @@ async function sendFromModule(module, data, args, topic) {
   // await kafkaConsumer.run({
   //   eachMessage: async ({topic, partition, message, heartbeat, pause}) => {
   rabbitMq.listen(config.rabbitMq.queues.tasks, async msg => {
+    currentMsg = msg;
     try {
       msg.content = JSON.parse(msg.content.toString());
 
