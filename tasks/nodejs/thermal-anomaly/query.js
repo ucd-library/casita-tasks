@@ -50,7 +50,9 @@ class EventQuery {
     event = event.rows[0];
 
     let times = await pg.query(`SELECT 
-        count(*) as pixelcount, date 
+        count(*) as pixelcount, 
+        max(value) as maxvalue, 
+        date 
       FROM 
         thermal_anomaly_event_px 
       WHERE 
