@@ -69,6 +69,7 @@ let config = {
     host : env.KAFKA_HOST || 'kafka',
     // TODO: if you update a topic name, make sure you do it in services/init/kafka.js as well
     topics : {
+      caProjection : 'ca-projection',
       decoder : 'goes-decoder',
       productWriter : 'goes-nfs-product',
       tasks : 'tasks',
@@ -144,8 +145,8 @@ let config = {
     },
     custom : {
       california : {
-        expireTime : 24 * 31,
-        regex : /\/west\/ca-[a-z]+\/.+/,
+        expireTime : 24 * 365 * 10,
+        regex : /\/west\/ca-[a-z]+\//,
         maxDepth : 3
       },
       thermalAnomaly : {

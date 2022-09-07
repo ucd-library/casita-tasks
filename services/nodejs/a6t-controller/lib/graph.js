@@ -138,12 +138,12 @@ const dag = {
     }
   },
 
-  'ca-projection' : {
+  [TOPICS.caProjection] : {
     enabled: true,
-    dependencies : [config.kafka.topics.ringBuffer],
+    dependencies : [TOPICS.ringBuffer],
     groupBy : msg => `${msg.data.product}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.band}`,
     where : msg => {
-      return [
+      return ['2', '7'].includes(msg.data.band+'') && [
         '6664-852', '8332-852', '6664-1860','8332-1860', // conus b2
         '12656-2628', '14464-2628', '12656-3640', '14464-3640', // fulldisk b2
         '1666-213', '2083-213', '1666-465','2083-465', // conus b7
@@ -153,9 +153,20 @@ const dag = {
     ready : (key, msgs) => msgs.length === 4,
 
     sink : (key, msgs) => {
-       console.log('\n\n\nca proj ready!', key);
-      let {satellite, product, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
-      return rabbitMqWorker.exec(`${CASITA_CMD} image ca-project -p -e --product=${product} --time=${date}T${hour}:${minsec}`, msgs);
+      let {satellite, product, datetime, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
+      
+      return rabbitMqWorker.exec({
+        module : 'ca-projection/create.js',
+          args : {
+            kafkaExternal : true,
+            band, product, 
+            datetime
+          }
+        }, 
+        {task, msgs}
+      );
+      
+      // return rabbitMqWorker.exec(`${CASITA_CMD} ca-projection  -p -e --product=${product} --time=${date}T${hour}:${minsec}`, msgs);
     }
   },
 

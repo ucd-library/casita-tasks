@@ -859,7 +859,7 @@ the roi_buffer database.
     having (count(*) > 3)
      order by count(*) desc
   )
-      insert into roi_buffer(roi_id,date,product,band,rast)
+      insert into roi_buffer(roi_id,date,product_id,band,rast)
   select roi_id,date,product,
          band,blocks_to_roi(date,abibands,roi,product)
     from g
