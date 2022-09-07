@@ -312,290 +312,59 @@
         );
       #+END_SRC
 
- #+RESULTS:
- | CREATE TABLE |
- |--------------|
+#+begin_src sql
+     with ul(fixed_image_id,row,w,h,cols) as (
+       values
+  ('west-fulldisk',0,1808,604,'{7232,9040,10848,12656}'),
+  ('west-fulldisk',604,1808,1012,'{3616,5424,7232,9040,10848,12656,14464,16272}'),
+  ('west-fulldisk',1616,1808,1012,'{3616,5424,7232,9040,10848,12656,14464,16272}'),
+  ('west-fulldisk',2628,1808,1012,'{1808,3616,5424,7232,9040,10848,12656,14464,16272,18080}'),
+  ('west-fulldisk',3640,1808,1012,'{1808,3616,5424,7232,9040,10848,12656,14464,16272,18080}'),
+  ('west-fulldisk',4652,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',5664,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',6676,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',7688,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',8700,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',9712,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',10724,1808,1008,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',11732,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',12744,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',13756,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',14768,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',15780,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',16792,1808,1012,'{0,1808,3616,5424,7232,9040,10848,12656,14464,16272,18080,19888}'),
+  ('west-fulldisk',17804,1808,1012,'{1808,3616,5424,7232,9040,10848,12656,14464,16272,18080}'),
+  ('west-fulldisk',18816,1808,1012,'{1808,3616,5424,7232,9040,10848,12656,14464,16272,18080}'),
+  ('west-fulldisk',19828,1808,1012,'{3616,5424,7232,9040,10848,12656,14464,16272}'),
+  ('west-fulldisk',20840,1808,856,'{5424,7232,9040,10848,12656,14464}'),
+  ('west-conus',0,1668,852,'{0,3332,6664,8332}'),
+  ('west-conus',0,1664,852,'{1668,5000}'),
+  ('west-conus',852,1668,1008,'{0,3332,6664,8332}'),
+  ('west-conus',852,1664,1008,'{1668,5000}'),
+  ('west-conus',1860,1668,1012,'{0,3332,6664,8332}'),
+  ('west-conus',1860,1664,1012,'{1668,5000}'),
+  ('west-conus',2872,1668,1012,'{0,3332,6664,8332}'),
+  ('west-conus',2872,1664,1012,'{1668,5000}'),
+  ('west-conus',3884,1668,1012,'{0,3332,6664,8332}'),
+  ('west-conus',3884,1664,1012,'{1668,5000}'),
+  ('west-conus',4896,1668,1104,'{0,3332,6664,8332}'),
+  ('west-conus',4896,1664,1104,'{1668,5000}')),
+  u as (
+    select fixed_image_id,w,h,row,unnest(cols::integer[]) as col
+      from ul
+  )
+         insert into abi_fixed_image_block
+     select format('%s-%s-%s',fixed_image_id,col,row) as fixed_image_block_id,
+            fixed_image_id::fixed_image_id,
+            st_makebox2d(st_makepoint(col,row),st_makepoint(col+w,row+h)) as box
+       from u
 
+#+end_src
 
- #+BEGIN_SRC sql
-   with i(fixed_image_block_id,fixed_image_id,box) as (
-     VALUES
-   ('west-fulldisk-7232-0','west-fulldisk'::fixed_image_id,'BOX(7232 0,9040 604)'::box2d),
-   ('west-fulldisk-9040-0','west-fulldisk'::fixed_image_id,'BOX(9040 0,10848 604)'::box2d),
-   ('west-fulldisk-10848-0','west-fulldisk'::fixed_image_id,'BOX(10848 0,12656 604)'::box2d),
-   ('west-fulldisk-12656-0','west-fulldisk'::fixed_image_id,'BOX(12656 0,14464 604)'::box2d),
-   ('west-fulldisk-3616-604','west-fulldisk'::fixed_image_id,'BOX(3616 604,5424 1616)'::box2d),
-   ('west-fulldisk-5424-604','west-fulldisk'::fixed_image_id,'BOX(5424 604,7232 1616)'::box2d),
-   ('west-fulldisk-7232-604','west-fulldisk'::fixed_image_id,'BOX(7232 604,9040 1616)'::box2d),
-   ('west-fulldisk-9040-604','west-fulldisk'::fixed_image_id,'BOX(9040 604,10848 1616)'::box2d),
-   ('west-fulldisk-10848-604','west-fulldisk'::fixed_image_id,'BOX(10848 604,12656 1616)'::box2d),
-   ('west-fulldisk-12656-604','west-fulldisk'::fixed_image_id,'BOX(12656 604,14464 1616)'::box2d),
-   ('west-fulldisk-14464-604','west-fulldisk'::fixed_image_id,'BOX(14464 604,16272 1616)'::box2d),
-   ('west-fulldisk-16272-604','west-fulldisk'::fixed_image_id,'BOX(16272 604,18080 1616)'::box2d),
-   ('west-fulldisk-3616-1616','west-fulldisk'::fixed_image_id,'BOX(3616 1616,5424 2628)'::box2d),
-   ('west-fulldisk-5424-1616','west-fulldisk'::fixed_image_id,'BOX(5424 1616,7232 2628)'::box2d),
-   ('west-fulldisk-7232-1616','west-fulldisk'::fixed_image_id,'BOX(7232 1616,9040 2628)'::box2d),
-   ('west-fulldisk-9040-1616','west-fulldisk'::fixed_image_id,'BOX(9040 1616,10848 2628)'::box2d),
-   ('west-fulldisk-10848-1616','west-fulldisk'::fixed_image_id,'BOX(10848 1616,12656 2628)'::box2d),
-   ('west-fulldisk-12656-1616','west-fulldisk'::fixed_image_id,'BOX(12656 1616,14464 2628)'::box2d),
-   ('west-fulldisk-14464-1616','west-fulldisk'::fixed_image_id,'BOX(14464 1616,16272 2628)'::box2d),
-   ('west-fulldisk-16272-1616','west-fulldisk'::fixed_image_id,'BOX(16272 1616,18080 2628)'::box2d),
-   ('west-fulldisk-1808-2628','west-fulldisk'::fixed_image_id,'BOX(1808 2628,3616 3640)'::box2d),
-   ('west-fulldisk-3616-2628','west-fulldisk'::fixed_image_id,'BOX(3616 2628,5424 3640)'::box2d),
-   ('west-fulldisk-5424-2628','west-fulldisk'::fixed_image_id,'BOX(5424 2628,7232 3640)'::box2d),
-   ('west-fulldisk-7232-2628','west-fulldisk'::fixed_image_id,'BOX(7232 2628,9040 3640)'::box2d),
-   ('west-fulldisk-9040-2628','west-fulldisk'::fixed_image_id,'BOX(9040 2628,10848 3640)'::box2d),
-   ('west-fulldisk-10848-2628','west-fulldisk'::fixed_image_id,'BOX(10848 2628,12656 3640)'::box2d),
-   ('west-fulldisk-12656-2628','west-fulldisk'::fixed_image_id,'BOX(12656 2628,14464 3640)'::box2d),
-   ('west-fulldisk-14464-2628','west-fulldisk'::fixed_image_id,'BOX(14464 2628,16272 3640)'::box2d),
-   ('west-fulldisk-16272-2628','west-fulldisk'::fixed_image_id,'BOX(16272 2628,18080 3640)'::box2d),
-   ('west-fulldisk-18080-2628','west-fulldisk'::fixed_image_id,'BOX(18080 2628,19888 3640)'::box2d),
-   ('west-fulldisk-1808-3640','west-fulldisk'::fixed_image_id,'BOX(1808 3640,3616 4652)'::box2d),
-   ('west-fulldisk-3616-3640','west-fulldisk'::fixed_image_id,'BOX(3616 3640,5424 4652)'::box2d),
-   ('west-fulldisk-5424-3640','west-fulldisk'::fixed_image_id,'BOX(5424 3640,7232 4652)'::box2d),
-   ('west-fulldisk-7232-3640','west-fulldisk'::fixed_image_id,'BOX(7232 3640,9040 4652)'::box2d),
-   ('west-fulldisk-9040-3640','west-fulldisk'::fixed_image_id,'BOX(9040 3640,10848 4652)'::box2d),
-   ('west-fulldisk-10848-3640','west-fulldisk'::fixed_image_id,'BOX(10848 3640,12656 4652)'::box2d),
-   ('west-fulldisk-12656-3640','west-fulldisk'::fixed_image_id,'BOX(12656 3640,14464 4652)'::box2d),
-   ('west-fulldisk-14464-3640','west-fulldisk'::fixed_image_id,'BOX(14464 3640,16272 4652)'::box2d),
-   ('west-fulldisk-16272-3640','west-fulldisk'::fixed_image_id,'BOX(16272 3640,18080 4652)'::box2d),
-   ('west-fulldisk-18080-3640','west-fulldisk'::fixed_image_id,'BOX(18080 3640,19888 4652)'::box2d),
-   ('west-fulldisk-0-4652','west-fulldisk'::fixed_image_id,'BOX(0 4652,1808 5664)'::box2d),
-   ('west-fulldisk-1808-4652','west-fulldisk'::fixed_image_id,'BOX(1808 4652,3616 5664)'::box2d),
-   ('west-fulldisk-3616-4652','west-fulldisk'::fixed_image_id,'BOX(3616 4652,5424 5664)'::box2d),
-   ('west-fulldisk-5424-4652','west-fulldisk'::fixed_image_id,'BOX(5424 4652,7232 5664)'::box2d),
-   ('west-fulldisk-7232-4652','west-fulldisk'::fixed_image_id,'BOX(7232 4652,9040 5664)'::box2d),
-   ('west-fulldisk-9040-4652','west-fulldisk'::fixed_image_id,'BOX(9040 4652,10848 5664)'::box2d),
-   ('west-fulldisk-10848-4652','west-fulldisk'::fixed_image_id,'BOX(10848 4652,12656 5664)'::box2d),
-   ('west-fulldisk-12656-4652','west-fulldisk'::fixed_image_id,'BOX(12656 4652,14464 5664)'::box2d),
-   ('west-fulldisk-14464-4652','west-fulldisk'::fixed_image_id,'BOX(14464 4652,16272 5664)'::box2d),
-   ('west-fulldisk-16272-4652','west-fulldisk'::fixed_image_id,'BOX(16272 4652,18080 5664)'::box2d),
-   ('west-fulldisk-18080-4652','west-fulldisk'::fixed_image_id,'BOX(18080 4652,19888 5664)'::box2d),
-   ('west-fulldisk-19888-4652','west-fulldisk'::fixed_image_id,'BOX(19888 4652,21696 5664)'::box2d),
-   ('west-fulldisk-0-5664','west-fulldisk'::fixed_image_id,'BOX(0 5664,1808 6676)'::box2d),
-   ('west-fulldisk-1808-5664','west-fulldisk'::fixed_image_id,'BOX(1808 5664,3616 6676)'::box2d),
-   ('west-fulldisk-3616-5664','west-fulldisk'::fixed_image_id,'BOX(3616 5664,5424 6676)'::box2d),
-   ('west-fulldisk-5424-5664','west-fulldisk'::fixed_image_id,'BOX(5424 5664,7232 6676)'::box2d),
-   ('west-fulldisk-7232-5664','west-fulldisk'::fixed_image_id,'BOX(7232 5664,9040 6676)'::box2d),
-   ('west-fulldisk-9040-5664','west-fulldisk'::fixed_image_id,'BOX(9040 5664,10848 6676)'::box2d),
-   ('west-fulldisk-10848-5664','west-fulldisk'::fixed_image_id,'BOX(10848 5664,12656 6676)'::box2d),
-   ('west-fulldisk-12656-5664','west-fulldisk'::fixed_image_id,'BOX(12656 5664,14464 6676)'::box2d),
-   ('west-fulldisk-14464-5664','west-fulldisk'::fixed_image_id,'BOX(14464 5664,16272 6676)'::box2d),
-   ('west-fulldisk-16272-5664','west-fulldisk'::fixed_image_id,'BOX(16272 5664,18080 6676)'::box2d),
-   ('west-fulldisk-18080-5664','west-fulldisk'::fixed_image_id,'BOX(18080 5664,19888 6676)'::box2d),
-   ('west-fulldisk-19888-5664','west-fulldisk'::fixed_image_id,'BOX(19888 5664,21696 6676)'::box2d),
-   ('west-fulldisk-0-6676','west-fulldisk'::fixed_image_id,'BOX(0 6676,1808 7688)'::box2d),
-   ('west-fulldisk-1808-6676','west-fulldisk'::fixed_image_id,'BOX(1808 6676,3616 7688)'::box2d),
-   ('west-fulldisk-3616-6676','west-fulldisk'::fixed_image_id,'BOX(3616 6676,5424 7688)'::box2d),
-   ('west-fulldisk-5424-6676','west-fulldisk'::fixed_image_id,'BOX(5424 6676,7232 7688)'::box2d),
-   ('west-fulldisk-7232-6676','west-fulldisk'::fixed_image_id,'BOX(7232 6676,9040 7688)'::box2d),
-   ('west-fulldisk-9040-6676','west-fulldisk'::fixed_image_id,'BOX(9040 6676,10848 7688)'::box2d),
-   ('west-fulldisk-10848-6676','west-fulldisk'::fixed_image_id,'BOX(10848 6676,12656 7688)'::box2d),
-   ('west-fulldisk-12656-6676','west-fulldisk'::fixed_image_id,'BOX(12656 6676,14464 7688)'::box2d),
-   ('west-fulldisk-14464-6676','west-fulldisk'::fixed_image_id,'BOX(14464 6676,16272 7688)'::box2d),
-   ('west-fulldisk-16272-6676','west-fulldisk'::fixed_image_id,'BOX(16272 6676,18080 7688)'::box2d),
-   ('west-fulldisk-18080-6676','west-fulldisk'::fixed_image_id,'BOX(18080 6676,19888 7688)'::box2d),
-   ('west-fulldisk-19888-6676','west-fulldisk'::fixed_image_id,'BOX(19888 6676,21696 7688)'::box2d),
-   ('west-fulldisk-0-7688','west-fulldisk'::fixed_image_id,'BOX(0 7688,1808 8700)'::box2d),
-   ('west-fulldisk-1808-7688','west-fulldisk'::fixed_image_id,'BOX(1808 7688,3616 8700)'::box2d),
-   ('west-fulldisk-3616-7688','west-fulldisk'::fixed_image_id,'BOX(3616 7688,5424 8700)'::box2d),
-   ('west-fulldisk-5424-7688','west-fulldisk'::fixed_image_id,'BOX(5424 7688,7232 8700)'::box2d),
-   ('west-fulldisk-7232-7688','west-fulldisk'::fixed_image_id,'BOX(7232 7688,9040 8700)'::box2d),
-   ('west-fulldisk-9040-7688','west-fulldisk'::fixed_image_id,'BOX(9040 7688,10848 8700)'::box2d),
-   ('west-fulldisk-10848-7688','west-fulldisk'::fixed_image_id,'BOX(10848 7688,12656 8700)'::box2d),
-   ('west-fulldisk-12656-7688','west-fulldisk'::fixed_image_id,'BOX(12656 7688,14464 8700)'::box2d),
-   ('west-fulldisk-14464-7688','west-fulldisk'::fixed_image_id,'BOX(14464 7688,16272 8700)'::box2d),
-   ('west-fulldisk-16272-7688','west-fulldisk'::fixed_image_id,'BOX(16272 7688,18080 8700)'::box2d),
-   ('west-fulldisk-18080-7688','west-fulldisk'::fixed_image_id,'BOX(18080 7688,19888 8700)'::box2d),
-   ('west-fulldisk-19888-7688','west-fulldisk'::fixed_image_id,'BOX(19888 7688,21696 8700)'::box2d),
-   ('west-fulldisk-0-8700','west-fulldisk'::fixed_image_id,'BOX(0 8700,1808 9712)'::box2d),
-   ('west-fulldisk-1808-8700','west-fulldisk'::fixed_image_id,'BOX(1808 8700,3616 9712)'::box2d),
-   ('west-fulldisk-3616-8700','west-fulldisk'::fixed_image_id,'BOX(3616 8700,5424 9712)'::box2d),
-   ('west-fulldisk-5424-8700','west-fulldisk'::fixed_image_id,'BOX(5424 8700,7232 9712)'::box2d),
-   ('west-fulldisk-7232-8700','west-fulldisk'::fixed_image_id,'BOX(7232 8700,9040 9712)'::box2d),
-   ('west-fulldisk-9040-8700','west-fulldisk'::fixed_image_id,'BOX(9040 8700,10848 9712)'::box2d),
-   ('west-fulldisk-10848-8700','west-fulldisk'::fixed_image_id,'BOX(10848 8700,12656 9712)'::box2d),
-   ('west-fulldisk-12656-8700','west-fulldisk'::fixed_image_id,'BOX(12656 8700,14464 9712)'::box2d),
-   ('west-fulldisk-14464-8700','west-fulldisk'::fixed_image_id,'BOX(14464 8700,16272 9712)'::box2d),
-   ('west-fulldisk-16272-8700','west-fulldisk'::fixed_image_id,'BOX(16272 8700,18080 9712)'::box2d),
-   ('west-fulldisk-18080-8700','west-fulldisk'::fixed_image_id,'BOX(18080 8700,19888 9712)'::box2d),
-   ('west-fulldisk-19888-8700','west-fulldisk'::fixed_image_id,'BOX(19888 8700,21696 9712)'::box2d),
-   ('west-fulldisk-0-9712','west-fulldisk'::fixed_image_id,'BOX(0 9712,1808 10724)'::box2d),
-   ('west-fulldisk-1808-9712','west-fulldisk'::fixed_image_id,'BOX(1808 9712,3616 10724)'::box2d),
-   ('west-fulldisk-3616-9712','west-fulldisk'::fixed_image_id,'BOX(3616 9712,5424 10724)'::box2d),
-   ('west-fulldisk-5424-9712','west-fulldisk'::fixed_image_id,'BOX(5424 9712,7232 10724)'::box2d),
-   ('west-fulldisk-7232-9712','west-fulldisk'::fixed_image_id,'BOX(7232 9712,9040 10724)'::box2d),
-   ('west-fulldisk-9040-9712','west-fulldisk'::fixed_image_id,'BOX(9040 9712,10848 10724)'::box2d),
-   ('west-fulldisk-10848-9712','west-fulldisk'::fixed_image_id,'BOX(10848 9712,12656 10724)'::box2d),
-   ('west-fulldisk-12656-9712','west-fulldisk'::fixed_image_id,'BOX(12656 9712,14464 10724)'::box2d),
-   ('west-fulldisk-14464-9712','west-fulldisk'::fixed_image_id,'BOX(14464 9712,16272 10724)'::box2d),
-   ('west-fulldisk-16272-9712','west-fulldisk'::fixed_image_id,'BOX(16272 9712,18080 10724)'::box2d),
-   ('west-fulldisk-18080-9712','west-fulldisk'::fixed_image_id,'BOX(18080 9712,19888 10724)'::box2d),
-   ('west-fulldisk-19888-9712','west-fulldisk'::fixed_image_id,'BOX(19888 9712,21696 10724)'::box2d),
-   ('west-fulldisk-0-10724','west-fulldisk'::fixed_image_id,'BOX(0 10724,1808 11732)'::box2d),
-   ('west-fulldisk-1808-10724','west-fulldisk'::fixed_image_id,'BOX(1808 10724,3616 11732)'::box2d),
-   ('west-fulldisk-3616-10724','west-fulldisk'::fixed_image_id,'BOX(3616 10724,5424 11732)'::box2d),
-   ('west-fulldisk-5424-10724','west-fulldisk'::fixed_image_id,'BOX(5424 10724,7232 11732)'::box2d),
-   ('west-fulldisk-7232-10724','west-fulldisk'::fixed_image_id,'BOX(7232 10724,9040 11732)'::box2d),
-   ('west-fulldisk-9040-10724','west-fulldisk'::fixed_image_id,'BOX(9040 10724,10848 11732)'::box2d),
-   ('west-fulldisk-10848-10724','west-fulldisk'::fixed_image_id,'BOX(10848 10724,12656 11732)'::box2d),
-   ('west-fulldisk-12656-10724','west-fulldisk'::fixed_image_id,'BOX(12656 10724,14464 11732)'::box2d),
-   ('west-fulldisk-14464-10724','west-fulldisk'::fixed_image_id,'BOX(14464 10724,16272 11732)'::box2d),
-   ('west-fulldisk-16272-10724','west-fulldisk'::fixed_image_id,'BOX(16272 10724,18080 11732)'::box2d),
-   ('west-fulldisk-18080-10724','west-fulldisk'::fixed_image_id,'BOX(18080 10724,19888 11732)'::box2d),
-   ('west-fulldisk-19888-10724','west-fulldisk'::fixed_image_id,'BOX(19888 10724,21696 11732)'::box2d),
-   ('west-fulldisk-0-11732','west-fulldisk'::fixed_image_id,'BOX(0 11732,1808 12744)'::box2d),
-   ('west-fulldisk-1808-11732','west-fulldisk'::fixed_image_id,'BOX(1808 11732,3616 12744)'::box2d),
-   ('west-fulldisk-3616-11732','west-fulldisk'::fixed_image_id,'BOX(3616 11732,5424 12744)'::box2d),
-   ('west-fulldisk-5424-11732','west-fulldisk'::fixed_image_id,'BOX(5424 11732,7232 12744)'::box2d),
-   ('west-fulldisk-7232-11732','west-fulldisk'::fixed_image_id,'BOX(7232 11732,9040 12744)'::box2d),
-   ('west-fulldisk-9040-11732','west-fulldisk'::fixed_image_id,'BOX(9040 11732,10848 12744)'::box2d),
-   ('west-fulldisk-10848-11732','west-fulldisk'::fixed_image_id,'BOX(10848 11732,12656 12744)'::box2d),
-   ('west-fulldisk-12656-11732','west-fulldisk'::fixed_image_id,'BOX(12656 11732,14464 12744)'::box2d),
-   ('west-fulldisk-14464-11732','west-fulldisk'::fixed_image_id,'BOX(14464 11732,16272 12744)'::box2d),
-   ('west-fulldisk-16272-11732','west-fulldisk'::fixed_image_id,'BOX(16272 11732,18080 12744)'::box2d),
-   ('west-fulldisk-18080-11732','west-fulldisk'::fixed_image_id,'BOX(18080 11732,19888 12744)'::box2d),
-   ('west-fulldisk-19888-11732','west-fulldisk'::fixed_image_id,'BOX(19888 11732,21696 12744)'::box2d),
-   ('west-fulldisk-0-12744','west-fulldisk'::fixed_image_id,'BOX(0 12744,1808 13756)'::box2d),
-   ('west-fulldisk-1808-12744','west-fulldisk'::fixed_image_id,'BOX(1808 12744,3616 13756)'::box2d),
-   ('west-fulldisk-3616-12744','west-fulldisk'::fixed_image_id,'BOX(3616 12744,5424 13756)'::box2d),
-   ('west-fulldisk-5424-12744','west-fulldisk'::fixed_image_id,'BOX(5424 12744,7232 13756)'::box2d),
-   ('west-fulldisk-7232-12744','west-fulldisk'::fixed_image_id,'BOX(7232 12744,9040 13756)'::box2d),
-   ('west-fulldisk-9040-12744','west-fulldisk'::fixed_image_id,'BOX(9040 12744,10848 13756)'::box2d),
-   ('west-fulldisk-10848-12744','west-fulldisk'::fixed_image_id,'BOX(10848 12744,12656 13756)'::box2d),
-   ('west-fulldisk-12656-12744','west-fulldisk'::fixed_image_id,'BOX(12656 12744,14464 13756)'::box2d),
-   ('west-fulldisk-14464-12744','west-fulldisk'::fixed_image_id,'BOX(14464 12744,16272 13756)'::box2d),
-   ('west-fulldisk-16272-12744','west-fulldisk'::fixed_image_id,'BOX(16272 12744,18080 13756)'::box2d),
-   ('west-fulldisk-18080-12744','west-fulldisk'::fixed_image_id,'BOX(18080 12744,19888 13756)'::box2d),
-   ('west-fulldisk-19888-12744','west-fulldisk'::fixed_image_id,'BOX(19888 12744,21696 13756)'::box2d),
-   ('west-fulldisk-0-13756','west-fulldisk'::fixed_image_id,'BOX(0 13756,1808 14768)'::box2d),
-   ('west-fulldisk-1808-13756','west-fulldisk'::fixed_image_id,'BOX(1808 13756,3616 14768)'::box2d),
-   ('west-fulldisk-3616-13756','west-fulldisk'::fixed_image_id,'BOX(3616 13756,5424 14768)'::box2d),
-   ('west-fulldisk-5424-13756','west-fulldisk'::fixed_image_id,'BOX(5424 13756,7232 14768)'::box2d),
-   ('west-fulldisk-7232-13756','west-fulldisk'::fixed_image_id,'BOX(7232 13756,9040 14768)'::box2d),
-   ('west-fulldisk-9040-13756','west-fulldisk'::fixed_image_id,'BOX(9040 13756,10848 14768)'::box2d),
-   ('west-fulldisk-10848-13756','west-fulldisk'::fixed_image_id,'BOX(10848 13756,12656 14768)'::box2d),
-   ('west-fulldisk-12656-13756','west-fulldisk'::fixed_image_id,'BOX(12656 13756,14464 14768)'::box2d),
-   ('west-fulldisk-14464-13756','west-fulldisk'::fixed_image_id,'BOX(14464 13756,16272 14768)'::box2d),
-   ('west-fulldisk-16272-13756','west-fulldisk'::fixed_image_id,'BOX(16272 13756,18080 14768)'::box2d),
-   ('west-fulldisk-18080-13756','west-fulldisk'::fixed_image_id,'BOX(18080 13756,19888 14768)'::box2d),
-   ('west-fulldisk-19888-13756','west-fulldisk'::fixed_image_id,'BOX(19888 13756,21696 14768)'::box2d),
-   ('west-fulldisk-0-14768','west-fulldisk'::fixed_image_id,'BOX(0 14768,1808 15780)'::box2d),
-   ('west-fulldisk-1808-14768','west-fulldisk'::fixed_image_id,'BOX(1808 14768,3616 15780)'::box2d),
-   ('west-fulldisk-3616-14768','west-fulldisk'::fixed_image_id,'BOX(3616 14768,5424 15780)'::box2d),
-   ('west-fulldisk-5424-14768','west-fulldisk'::fixed_image_id,'BOX(5424 14768,7232 15780)'::box2d),
-   ('west-fulldisk-7232-14768','west-fulldisk'::fixed_image_id,'BOX(7232 14768,9040 15780)'::box2d),
-   ('west-fulldisk-9040-14768','west-fulldisk'::fixed_image_id,'BOX(9040 14768,10848 15780)'::box2d),
-   ('west-fulldisk-10848-14768','west-fulldisk'::fixed_image_id,'BOX(10848 14768,12656 15780)'::box2d),
-   ('west-fulldisk-12656-14768','west-fulldisk'::fixed_image_id,'BOX(12656 14768,14464 15780)'::box2d),
-   ('west-fulldisk-14464-14768','west-fulldisk'::fixed_image_id,'BOX(14464 14768,16272 15780)'::box2d),
-   ('west-fulldisk-16272-14768','west-fulldisk'::fixed_image_id,'BOX(16272 14768,18080 15780)'::box2d),
-   ('west-fulldisk-18080-14768','west-fulldisk'::fixed_image_id,'BOX(18080 14768,19888 15780)'::box2d),
-   ('west-fulldisk-19888-14768','west-fulldisk'::fixed_image_id,'BOX(19888 14768,21696 15780)'::box2d),
-   ('west-fulldisk-0-15780','west-fulldisk'::fixed_image_id,'BOX(0 15780,1808 16792)'::box2d),
-   ('west-fulldisk-1808-15780','west-fulldisk'::fixed_image_id,'BOX(1808 15780,3616 16792)'::box2d),
-   ('west-fulldisk-3616-15780','west-fulldisk'::fixed_image_id,'BOX(3616 15780,5424 16792)'::box2d),
-   ('west-fulldisk-5424-15780','west-fulldisk'::fixed_image_id,'BOX(5424 15780,7232 16792)'::box2d),
-   ('west-fulldisk-7232-15780','west-fulldisk'::fixed_image_id,'BOX(7232 15780,9040 16792)'::box2d),
-   ('west-fulldisk-9040-15780','west-fulldisk'::fixed_image_id,'BOX(9040 15780,10848 16792)'::box2d),
-   ('west-fulldisk-10848-15780','west-fulldisk'::fixed_image_id,'BOX(10848 15780,12656 16792)'::box2d),
-   ('west-fulldisk-12656-15780','west-fulldisk'::fixed_image_id,'BOX(12656 15780,14464 16792)'::box2d),
-   ('west-fulldisk-14464-15780','west-fulldisk'::fixed_image_id,'BOX(14464 15780,16272 16792)'::box2d),
-   ('west-fulldisk-16272-15780','west-fulldisk'::fixed_image_id,'BOX(16272 15780,18080 16792)'::box2d),
-   ('west-fulldisk-18080-15780','west-fulldisk'::fixed_image_id,'BOX(18080 15780,19888 16792)'::box2d),
-   ('west-fulldisk-19888-15780','west-fulldisk'::fixed_image_id,'BOX(19888 15780,21696 16792)'::box2d),
-   ('west-fulldisk-0-16792','west-fulldisk'::fixed_image_id,'BOX(0 16792,1808 17804)'::box2d),
-   ('west-fulldisk-1808-16792','west-fulldisk'::fixed_image_id,'BOX(1808 16792,3616 17804)'::box2d),
-   ('west-fulldisk-3616-16792','west-fulldisk'::fixed_image_id,'BOX(3616 16792,5424 17804)'::box2d),
-   ('west-fulldisk-5424-16792','west-fulldisk'::fixed_image_id,'BOX(5424 16792,7232 17804)'::box2d),
-   ('west-fulldisk-7232-16792','west-fulldisk'::fixed_image_id,'BOX(7232 16792,9040 17804)'::box2d),
-   ('west-fulldisk-9040-16792','west-fulldisk'::fixed_image_id,'BOX(9040 16792,10848 17804)'::box2d),
-   ('west-fulldisk-10848-16792','west-fulldisk'::fixed_image_id,'BOX(10848 16792,12656 17804)'::box2d),
-   ('west-fulldisk-12656-16792','west-fulldisk'::fixed_image_id,'BOX(12656 16792,14464 17804)'::box2d),
-   ('west-fulldisk-14464-16792','west-fulldisk'::fixed_image_id,'BOX(14464 16792,16272 17804)'::box2d),
-   ('west-fulldisk-16272-16792','west-fulldisk'::fixed_image_id,'BOX(16272 16792,18080 17804)'::box2d),
-   ('west-fulldisk-18080-16792','west-fulldisk'::fixed_image_id,'BOX(18080 16792,19888 17804)'::box2d),
-   ('west-fulldisk-19888-16792','west-fulldisk'::fixed_image_id,'BOX(19888 16792,21696 17804)'::box2d),
-   ('west-fulldisk-1808-17804','west-fulldisk'::fixed_image_id,'BOX(1808 17804,3616 18816)'::box2d),
-   ('west-fulldisk-3616-17804','west-fulldisk'::fixed_image_id,'BOX(3616 17804,5424 18816)'::box2d),
-   ('west-fulldisk-5424-17804','west-fulldisk'::fixed_image_id,'BOX(5424 17804,7232 18816)'::box2d),
-   ('west-fulldisk-7232-17804','west-fulldisk'::fixed_image_id,'BOX(7232 17804,9040 18816)'::box2d),
-   ('west-fulldisk-9040-17804','west-fulldisk'::fixed_image_id,'BOX(9040 17804,10848 18816)'::box2d),
-   ('west-fulldisk-10848-17804','west-fulldisk'::fixed_image_id,'BOX(10848 17804,12656 18816)'::box2d),
-   ('west-fulldisk-12656-17804','west-fulldisk'::fixed_image_id,'BOX(12656 17804,14464 18816)'::box2d),
-   ('west-fulldisk-14464-17804','west-fulldisk'::fixed_image_id,'BOX(14464 17804,16272 18816)'::box2d),
-   ('west-fulldisk-16272-17804','west-fulldisk'::fixed_image_id,'BOX(16272 17804,18080 18816)'::box2d),
-   ('west-fulldisk-18080-17804','west-fulldisk'::fixed_image_id,'BOX(18080 17804,19888 18816)'::box2d),
-   ('west-fulldisk-1808-18816','west-fulldisk'::fixed_image_id,'BOX(1808 18816,3616 19828)'::box2d),
-   ('west-fulldisk-3616-18816','west-fulldisk'::fixed_image_id,'BOX(3616 18816,5424 19828)'::box2d),
-   ('west-fulldisk-5424-18816','west-fulldisk'::fixed_image_id,'BOX(5424 18816,7232 19828)'::box2d),
-   ('west-fulldisk-7232-18816','west-fulldisk'::fixed_image_id,'BOX(7232 18816,9040 19828)'::box2d),
-   ('west-fulldisk-9040-18816','west-fulldisk'::fixed_image_id,'BOX(9040 18816,10848 19828)'::box2d),
-   ('west-fulldisk-10848-18816','west-fulldisk'::fixed_image_id,'BOX(10848 18816,12656 19828)'::box2d),
-   ('west-fulldisk-12656-18816','west-fulldisk'::fixed_image_id,'BOX(12656 18816,14464 19828)'::box2d),
-   ('west-fulldisk-14464-18816','west-fulldisk'::fixed_image_id,'BOX(14464 18816,16272 19828)'::box2d),
-   ('west-fulldisk-16272-18816','west-fulldisk'::fixed_image_id,'BOX(16272 18816,18080 19828)'::box2d),
-   ('west-fulldisk-18080-18816','west-fulldisk'::fixed_image_id,'BOX(18080 18816,19888 19828)'::box2d),
-   ('west-fulldisk-3616-19828','west-fulldisk'::fixed_image_id,'BOX(3616 19828,5424 20840)'::box2d),
-   ('west-fulldisk-5424-19828','west-fulldisk'::fixed_image_id,'BOX(5424 19828,7232 20840)'::box2d),
-   ('west-fulldisk-7232-19828','west-fulldisk'::fixed_image_id,'BOX(7232 19828,9040 20840)'::box2d),
-   ('west-fulldisk-9040-19828','west-fulldisk'::fixed_image_id,'BOX(9040 19828,10848 20840)'::box2d),
-   ('west-fulldisk-10848-19828','west-fulldisk'::fixed_image_id,'BOX(10848 19828,12656 20840)'::box2d),
-   ('west-fulldisk-12656-19828','west-fulldisk'::fixed_image_id,'BOX(12656 19828,14464 20840)'::box2d),
-   ('west-fulldisk-14464-19828','west-fulldisk'::fixed_image_id,'BOX(14464 19828,16272 20840)'::box2d),
-   ('west-fulldisk-16272-19828','west-fulldisk'::fixed_image_id,'BOX(16272 19828,18080 20840)'::box2d),
-   ('west-fulldisk-5424-20840','west-fulldisk'::fixed_image_id,'BOX(5424 20840,7232 21696)'::box2d),
-   ('west-fulldisk-7232-20840','west-fulldisk'::fixed_image_id,'BOX(7232 20840,9040 21696)'::box2d),
-   ('west-fulldisk-9040-20840','west-fulldisk'::fixed_image_id,'BOX(9040 20840,10848 21696)'::box2d),
-   ('west-fulldisk-10848-20840','west-fulldisk'::fixed_image_id,'BOX(10848 20840,12656 21696)'::box2d),
-   ('west-fulldisk-12656-20840','west-fulldisk'::fixed_image_id,'BOX(12656 20840,14464 21696)'::box2d),
-   ('west-fulldisk-14464-20840','west-fulldisk'::fixed_image_id,'BOX(14464 20840,16272 21696)'::box2d),
-   ('west-conus-0-0','west-conus'::fixed_image_id,'BOX(0 0,1668 852)'::box2d),
-   ('west-conus-1668-0','west-conus'::fixed_image_id,'BOX(1668 0,3332 852)'::box2d),
-   ('west-conus-3332-0','west-conus'::fixed_image_id,'BOX(3332 0,5000 852)'::box2d),
-   ('west-conus-5000-0','west-conus'::fixed_image_id,'BOX(5000 0,6664 852)'::box2d),
-   ('west-conus-6664-0','west-conus'::fixed_image_id,'BOX(6664 0,8332 852)'::box2d),
-   ('west-conus-8332-0','west-conus'::fixed_image_id,'BOX(8332 0,10000 852)'::box2d),
-   ('west-conus-0-852','west-conus'::fixed_image_id,'BOX(0 852,1668 1860)'::box2d),
-   ('west-conus-1668-852','west-conus'::fixed_image_id,'BOX(1668 852,3332 1860)'::box2d),
-   ('west-conus-3332-852','west-conus'::fixed_image_id,'BOX(3332 852,5000 1860)'::box2d),
-   ('west-conus-5000-852','west-conus'::fixed_image_id,'BOX(5000 852,6664 1860)'::box2d),
-   ('west-conus-6664-852','west-conus'::fixed_image_id,'BOX(6664 852,8332 1860)'::box2d),
-   ('west-conus-8332-852','west-conus'::fixed_image_id,'BOX(8332 852,10000 1860)'::box2d),
-   ('west-conus-0-1860','west-conus'::fixed_image_id,'BOX(0 1860,1668 2872)'::box2d),
-   ('west-conus-1668-1860','west-conus'::fixed_image_id,'BOX(1668 1860,3332 2872)'::box2d),
-   ('west-conus-3332-1860','west-conus'::fixed_image_id,'BOX(3332 1860,5000 2872)'::box2d),
-   ('west-conus-5000-1860','west-conus'::fixed_image_id,'BOX(5000 1860,6664 2872)'::box2d),
-   ('west-conus-6664-1860','west-conus'::fixed_image_id,'BOX(6664 1860,8332 2872)'::box2d),
-   ('west-conus-8332-1860','west-conus'::fixed_image_id,'BOX(8332 1860,10000 2872)'::box2d),
-   ('west-conus-0-2872','west-conus'::fixed_image_id,'BOX(0 2872,1668 3884)'::box2d),
-   ('west-conus-1668-2872','west-conus'::fixed_image_id,'BOX(1668 2872,3332 3884)'::box2d),
-   ('west-conus-3332-2872','west-conus'::fixed_image_id,'BOX(3332 2872,5000 3884)'::box2d),
-   ('west-conus-5000-2872','west-conus'::fixed_image_id,'BOX(5000 2872,6664 3884)'::box2d),
-   ('west-conus-6664-2872','west-conus'::fixed_image_id,'BOX(6664 2872,8332 3884)'::box2d),
-   ('west-conus-8332-2872','west-conus'::fixed_image_id,'BOX(8332 2872,10000 3884)'::box2d),
-   ('west-conus-0-3884','west-conus'::fixed_image_id,'BOX(0 3884,1668 4896)'::box2d),
-   ('west-conus-1668-3884','west-conus'::fixed_image_id,'BOX(1668 3884,3332 4896)'::box2d),
-   ('west-conus-3332-3884','west-conus'::fixed_image_id,'BOX(3332 3884,5000 4896)'::box2d),
-   ('west-conus-5000-3884','west-conus'::fixed_image_id,'BOX(5000 3884,6664 4896)'::box2d),
-   ('west-conus-6664-3884','west-conus'::fixed_image_id,'BOX(6664 3884,8332 4896)'::box2d),
-   ('west-conus-8332-3884','west-conus'::fixed_image_id,'BOX(8332 3884,10000 4896)'::box2d),
-   ('west-conus-0-4896','west-conus'::fixed_image_id,'BOX(0 4896,1668 6000)'::box2d),
-   ('west-conus-1668-4896','west-conus'::fixed_image_id,'BOX(1668 4896,3332 6000)'::box2d),
-   ('west-conus-3332-4896','west-conus'::fixed_image_id,'BOX(3332 4896,5000 6000)'::box2d),
-   ('west-conus-5000-4896','west-conus'::fixed_image_id,'BOX(5000 4896,6664 6000)'::box2d),
-   ('west-conus-6664-4896','west-conus'::fixed_image_id,'BOX(6664 4896,8332 6000)'::box2d),
-   ('west-conus-8332-4896','west-conus'::fixed_image_id,'BOX(8332 4896,10000 6000)'::box2d)
-   )
-       insert into abi_fixed_image_block (fixed_image_block_id,fixed_image_id,box)
-   select i.fixed_image_block_id,i.fixed_image_id,i.box
-     from i left join abi_fixed_image_block b using (fixed_image_block_id)
-    where b is null;
- #+END_SRC
+#+RESULTS:
+| INSERT 0 266 |
+|--------------|
 
- #+RESULTS:
- | INSERT 0 266 |
- |--------------|
 
 ****** Block SRID coverage
   You can calculate what the region this corresponds to in the SRID for the
@@ -922,14 +691,46 @@ update roi set boundary=(alignedTo(roi)).boundary, box=(alignedTo(roi)).box;
    And now for any date in the ring buffer, we can say how many are ready to go.
 
    #+begin_src sql
+     create table products (
+       product_id text primary key,
+       description text
+       );
+   #+end_src
+
+
+   #+RESULTS:
+   |---|
+
+      #+begin_src sql
+        insert into products(product_id,description)
+        values
+        ('conus','Per band CONUS image product'),
+        ('fulldisk','Per band fulldisk image product'),
+        ('ca-hourly-max','Per band hourly max value'),
+        ('ca-hourly-max-10d-average','10 day running average of ca-hourly-max'),
+        ('ca-hourly-max-10d-max','10 day running max of ca-hourly-max'),
+        ('ca-hourly-max-10d-min','10 day running min of ca-hourly-max'),
+        ('ca-hourly-max-10d-stddev','10 day running stddev of ca-hourly-max')
+        ;
+
+   #+end_src
+
+   #+RESULTS:
+   | INSERT 0 7 |
+   |------------|
+
+
+   #+begin_src sql
      create table roi_buffer (
        roi_buffer_id serial primary key,
        roi_id text references roi(roi_id),
-       date timestamp,
-       product text,
+       product_id text references products(product_id),
        band integer references abibands(band),
+       date timestamp,
+       expire timestamp,
        rast raster,
-       unique(roi_id,date,product,band)
+       boundary geometry('Polygon'),
+       unique(roi_id,date,product_id,band)
      );
    #+end_src
 
@@ -972,10 +773,81 @@ update roi set boundary=(alignedTo(roi)).boundary, box=(alignedTo(roi)).box;
 | CREATE FUNCTION |
 |-----------------|
 
+We probably want to allow use directly from the roi id and the band, so we'll
+add another version.
+
+    #+begin_src sql
+      create or replace function blocks_to_roi (
+        in in_date timestamp,
+        in in_band_number integer,
+        in in_roi_id text,
+        in in_product text,
+        out raster)
+      LANGUAGE SQL AS $$
+      with
+      blocks_in as (
+        select image(rb) as image
+          from
+            blocks_ring_buffer rb
+            join roi_x_fixed_image_block f on rb.fixed_image_block_id=f.fixed_image_block_id
+         where rb.date=in_date
+           and rb.band=in_band_number
+           and in_roi_id=f.roi_id
+           and in_product=rb.product
+      )
+      select
+      st_clip(
+        st_transform(st_union(image),
+                     empty_raster((select roi from roi where roi_id=in_roi_id),
+                     (select b.size from abiBands b where b.band=in_band_number))),
+        (select boundary from roi where roi_id=in_roi_id)) as rast
+        from
+        blocks_in
+        $$;
+#+end_src
+
+#+RESULTS:
+| CREATE FUNCTION |
+|-----------------|
+
+
+
 *** Example Use
-This could be used to create a single raster, or a number of them.  For example,
-this creates roi_buffer data for all products are currently not in the
-roi_buffer database.
+This could be used to create a single raster, or a number of them.
+
+Here is a simple example using function that uses the primary keys. This example
+gets the statistics of the reporjected raster.
+
+#+begin_src sql :tangle no
+    select (st_metadata(rast)).*,(st_summarystats(rast)).*
+      from blocks_to_roi('2022-06-14 21:01:17',7,'ca','conus') as rast;
+#+end_src
+
+#+RESULTS:
+| upperleftx | upperlefty | width | height | scalex | scaley | skewx | skewy | srid | numbands | count |   sum |             mean |           stddev | min |  max |
+|------------+------------+-------+--------+--------+--------+-------+-------+------+----------+-------+-------+------------------+------------------+-----+------|
+|    -410000 |     460000 |    82 |    373 |   2000 |  -2000 |     0 |     0 | 3310 |        1 |    36 | 45601 | 1266.69444444444 | 380.517251721948 | 612 | 1810 |
+
+This could insert  that data into the roi_buffer
+
+#+begin_src sql :tangle no
+  insert into roi_buffer(date,band,expire,roi_id,product_id,rast)
+    select date, band, date+'10 days'::interval, roi_id,product_id,
+           blocks_to_roi(date,band,roi_id,product_id)
+      from
+  (values
+         ('2022-06-14 21:01:17'::date,7,'ca','conus'))
+    as foo(date,band,roi_id,product_id);
+
+#+end_src
+
+#+RESULTS:
+| INSERT 0 1 |
+|------------|
+
+
+For example, this creates roi_buffer data for all products are currently not in
+the roi_buffer database.
 
 #+begin_src sql :tangle no
   with g as (
