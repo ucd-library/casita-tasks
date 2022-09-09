@@ -31,6 +31,9 @@ class BlockRingBuffer {
   }
 
   getBufferSize(meta) {
+    if( process.env.BUFFER_SIZE ) {
+      return parseFloat(process.env.BUFFER_SIZE);
+    }
     for( let size of BUFFER_SIZE ) {
       if( meta[size.key]+'' === size.value+'' ) {
         return size.size;

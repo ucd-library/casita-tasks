@@ -140,21 +140,27 @@ const dag = {
 
   [TOPICS.caProjection] : {
     enabled: true,
+    expire : 60*10, // 10min
     dependencies : [TOPICS.ringBuffer],
     groupBy : msg => `${msg.data.product}-${msg.data.date}T${msg.data.hour}:${msg.data.minsec}-${msg.data.band}`,
     where : msg => {
-      return ['2', '7'].includes(msg.data.band+'') && [
+      let isBand = ['2', '7'].includes(msg.data.band+'');
+      let isBlock = [
         '6664-852', '8332-852', '6664-1860','8332-1860', // conus b2
         '12656-2628', '14464-2628', '12656-3640', '14464-3640', // fulldisk b2
         '1666-213', '2083-213', '1666-465','2083-465', // conus b7
         '3164-657', '3616-657', '3164-910', '3616-910' // fulldisk b7
       ].includes(`${msg.data.x}-${msg.data.y}`);
+      return isBand && isBlock;
     },
-    ready : (key, msgs) => msgs.length === 4,
+    ready : (key, msgs) => {
+      return (msgs.length === 4)
+    },
 
     sink : (key, msgs) => {
       let {satellite, product, datetime, date, hour, minsec, file, band, apid, x, y} = msgs[0].data;
-      
+      let task = TOPICS.caProjection;
+
       return rabbitMqWorker.exec({
         module : 'ca-projection/create.js',
           args : {

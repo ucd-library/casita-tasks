@@ -14,6 +14,7 @@ class PG {
       user : config.pg.user, 
       port : config.pg.port,
       database : config.pg.database,
+      options : '--search_path=public,roi',
       max : 3
     });
 
