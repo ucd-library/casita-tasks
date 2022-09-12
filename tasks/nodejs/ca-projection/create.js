@@ -51,7 +51,7 @@ async function run() {
   let tiffFile = path.join(config.fs.nfsRoot, p, 'image.tiff');
   let pngFile = path.join(config.fs.nfsRoot, p, 'image.png');
   let resp = await pg.query(`select 
-      ST_Astiff(rast) as tiff,
+      ST_Astiff(rast, 'LZW') as tiff,
       ST_AsPng(rast) as png
     from roi_buffer 
     where roi_buffer_id = ${roi_buffer_id}
