@@ -10,6 +10,11 @@ program
   .description('create the california roi')
   .action(action)
 
+  program
+  .command('hourly-max-stats')
+  .requiredOption('-i, --id <roi_buffer_id>', 'roi_buffer_id to run stats on')
+  .description('run hourly stats on given id')
+  .action(action)
 
 
 globalOpts(program)

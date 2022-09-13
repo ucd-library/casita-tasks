@@ -44,11 +44,11 @@ const topics = [
   },
   
   {
-    name : 'ring-buffer-hourly-stats',
+    name : 'ca-projection-hourly-stats',
     partitions : DEFAULT_PARTITIONS
   },
   {
-    name : 'ring-buffer-hourly-stats-ext',
+    name : 'ca-projection-hourly-stats-ext',
     partitions : 1
   },
 

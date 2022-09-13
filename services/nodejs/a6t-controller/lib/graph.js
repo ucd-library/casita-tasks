@@ -94,21 +94,21 @@ const dag = {
     }
   },
 
-  [TOPICS.ringBufferHourlyStats] : {
+  [TOPICS.caProjectionHourlyStats] : {
     enabled: true,
-    dependencies : [TOPICS.ringBuffer],
+    dependencies : [TOPICS.caProjection],
     where : msg => {
-      return msg.data.band === '7' && msg.data.x+'-'+msg.data.y === '1666-213' ? true : false
+      return msg.data.band+'' === '7'
     },
     sink : (key, msgs) => {
-      let task = TOPICS.ringBufferHourlyStats;
-      let {blocks_ring_buffer_id} = msgs[0].data;
+      let task = TOPICS.caProjectionHourlyStats;
+      let {roi_buffer_id} = msgs[0].data;
 
       return rabbitMqWorker.exec({
-        module : 'block-ring-buffer/hourly-max-stats.js',
+        module : 'ca-projection/hourly-max-stats.js',
           args : {
             kafkaExternal : true,
-            blocks_ring_buffer_id
+            roi_buffer_id
           }
         }, 
         {task, msgs}
@@ -119,7 +119,7 @@ const dag = {
 
   [TOPICS.thermalAnomaly] : {
     enabled: true,
-    dependencies : [TOPICS.ringBufferHourlyStats],
+    dependencies : [TOPICS.caProjectionHourlyStats],
     where :  msg => msg.data.band+'' === '7',
     sink : (key, msgs) => {
       let task = TOPICS.thermalAnomaly;

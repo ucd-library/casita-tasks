@@ -70,12 +70,12 @@ let config = {
     // TODO: if you update a topic name, make sure you do it in services/init/kafka.js as well
     topics : {
       caProjection : 'ca-projection',
+      caProjectionHourlyStats : 'ca-projection-hourly-stats',
       decoder : 'goes-decoder',
       productWriter : 'goes-nfs-product',
       tasks : 'tasks',
       blockCompositeImage : 'block-composite-image',
       ringBuffer : 'ring-buffer',
-      ringBufferHourlyStats : 'ring-buffer-hourly-stats',
       thermalAnomaly : 'thermal-anomaly',
       lightning : 'lightning',
       lightningGroupStats : 'lightning-grouped-stats'
@@ -110,6 +110,10 @@ let config = {
         {key : 'product', value: 'california', size : 10}
       ],
       preloadTablePrefix : 'raster'
+    },
+
+    roi : {
+      bufferTable : 'roi.roi_buffer',
     }
   },
 
@@ -146,7 +150,7 @@ let config = {
     custom : {
       california : {
         expireTime : 24 * 365 * 10,
-        regex : /\/west\/ca-[a-z]+\//,
+        regex : /\/west\/california\//,
         maxDepth : 3
       },
       thermalAnomaly : {

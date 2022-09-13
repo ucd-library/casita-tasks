@@ -9,13 +9,13 @@ class EventDetection {
     this.eventRadius = config.thermalAnomaly.eventRadius;
   }
 
-  async addClassifiedPixels(blocksRingBufferId, classifier) {
+  async addClassifiedPixels(roiBufferId, classifier) {
     if( !classifier ) classifier = config.thermalAnomaly.stddevClassifier;
 
     // grab all classified pixels
     let resp = await pg.query(
       `select * from ST_PixelOfValue(classify_thermal_anomaly($1, $2), 1);`,
-      [blocksRingBufferId, parseInt(classifier)]
+      [roiBufferId, parseInt(classifier)]
     );
 
     let eventSet = {
@@ -33,10 +33,10 @@ class EventDetection {
     let presp = await pg.query(`SELECT 
         product, x, y, date, satellite, band, apid 
       FROM 
-        blocks_ring_buffer 
+        roi_buffer 
       WHERE 
-        blocks_ring_buffer_id = $1`, 
-        [blocksRingBufferId]
+        roi_buffer_id = $1`, 
+        [roiBufferId]
     );
 
     let info = Object.assign({}, presp.rows[0]);
@@ -61,9 +61,9 @@ class EventDetection {
 
         // the historical (stats) pixels will be added to tables in 
         if( events.length ) {
-          eventSet.continued.add(await this.addToActiveThermalEvent(events, blocksRingBufferId, info));
+          eventSet.continued.add(await this.addToActiveThermalEvent(events, roiBufferId, info));
         } else {
-          eventSet.new.add(await this.addCreateThermalEvent(blocksRingBufferId, info));
+          eventSet.new.add(await this.addCreateThermalEvent(roiBufferId, info));
         }
       } catch(e) {
         console.error(e);
@@ -75,7 +75,7 @@ class EventDetection {
     eventSet.continued = Array.from(eventSet.continued);
     eventSet.new = Array.from(eventSet.new);
 
-    eventSet.files = await this.createNFSProducts(eventSet, {blocksRingBufferId, classifier});
+    eventSet.files = await this.createNFSProducts(eventSet, {roiBufferId, classifier});
 
     for( let eventId of eventSet.new ) {
       await slack(eventId);
@@ -121,10 +121,10 @@ class EventDetection {
     // so we have to specifically set them :/
     let resp = await pg.query(
       `select * from active_thermal_anomaly_events ate WHERE 
-        product = $1 AND
-        pixel_x >= $2::INTEGER - $4::INTEGER AND pixel_x <= $2::INTEGER + $4::INTEGER AND
-        pixel_y >= $3::INTEGER - $4::INTEGER AND pixel_y <= $3::INTEGER + $4::INTEGER`,
-        [info.product, info.pixel.x, info.pixel.y, this.eventRadius]
+        roi = $1 AND
+        x >= $2::INTEGER - $4::INTEGER AND x <= $2::INTEGER + $4::INTEGER AND
+        y >= $3::INTEGER - $4::INTEGER AND y <= $3::INTEGER + $4::INTEGER`,
+        [info.roi, info.pixel.x, info.pixel.y, this.eventRadius]
     );
     return resp.rows;
   }
@@ -134,11 +134,13 @@ class EventDetection {
 
     let resp = await pg.query(`
     INSERT INTO 
-      thermal_anomaly_event (created, satellite, product, apid, band)
+      thermal_anomaly_event (created, product, roi, band)
     VALUES ($1, $2, $3, $4, $5) 
     RETURNING thermal_anomaly_event_id`, [
-      info.date.toISOString(), info.satellite, info.product, info.apid, info.band
+      info.date.toISOString(), info.product, info.roi, info.band
     ]);
+
+    // TODO, create pixel
 
     await this.addToActiveThermalEvent(resp.rows, id, info);
 
@@ -282,11 +284,11 @@ class EventDetection {
     return existsResp.rows[0].thermal_anomaly_stats_product_id;
   }
 
-  async getPxValue(blocks_ring_buffer_id, x, y) {
+  async getPxValue(roi_buffer_id, x, y) {
     let resp = await pg.query(`
       SELECT ST_Value(rast, ${x}, ${y}) as value 
-      FROM blocks_ring_buffer
-      WHERE blocks_ring_buffer_id = $1`, [blocks_ring_buffer_id]);
+      FROM roi_buffer
+      WHERE roi_buffer_id = $1`, [roi_buffer_id]);
     if( !resp.rows.length ) return -1;
     return resp.rows[0].value;
   }
@@ -315,7 +317,7 @@ class EventDetection {
     let event = resp.rows[0];
 
     // get date, product
-    resp = await pg.query('SELECT date, product, x, y FROM blocks_ring_buffer WHERE blocks_ring_buffer_id = $1', [args.blocksRingBufferId]);
+    resp = await pg.query('SELECT date, product, x, y FROM roi_buffer WHERE roi_buffer_id = $1', [args.roiBufferId]);
     let {date, product, x, y} = resp.rows[0];
 
     // get all pixels for date
@@ -325,12 +327,12 @@ class EventDetection {
         ST_asGeoJson(ST_PixelAsPolygon(block.rast, px.pixel_x, px.pixel_y)) as geometry
       FROM 
         thermal_anomaly_event_px px,
-        blocks_ring_buffer block
+        roi_buffer block
       WHERE
         px.thermal_anomaly_event_id = $1 AND
         px.date = $2 AND
-        block.blocks_ring_buffer_id = $3`, 
-      [eventId, date, args.blocksRingBufferId]
+        block.roi_buffer_id = $3`, 
+      [eventId, date, args.roiBufferId]
     );
     
     let geojson = {
@@ -419,7 +421,7 @@ class EventDetection {
 const instance = new EventDetection();
 function run() {
   return instance.addClassifiedPixels(
-    config.blocksRingBufferId || config.id,
+    config.roi_buffer_id || config.id,
     config.classifier
   );  
 }

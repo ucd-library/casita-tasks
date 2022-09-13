@@ -82,10 +82,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION create_all_hourly_max (
-  product_in TEXT,
-  band_in INTEGER,
-  x_in INTEGER,
-  y_in INTEGER
+  roi_in TEXT,
+  band_in INTEGER
 ) RETURNS INTEGER AS $$
   DECLARE
     index INTEGER;
@@ -98,38 +96,35 @@ CREATE OR REPLACE FUNCTION create_all_hourly_max (
 
   SELECT 
     min(date) into min_date
-  FROM blocks_ring_buffer
+  FROM roi_buffer
   WHERE 
-    product = product_in AND
-    band = band_in AND
-    x = x_in and y = y_in;
+    roi_id = roi_in AND
+    band = band_in;
 
   SELECT 
     EXTRACT(EPOCH FROM max(date) - min(date))/3600 INTO hours    
-  FROM blocks_ring_buffer
+  FROM roi_buffer
   WHERE 
-    product = product_in AND
-    band = band_in AND
-    x = x_in and y = y_in;
+    roi_id = roi_in AND
+    band = band_in;
 
   index := 0;
   WHILE index < hours LOOP
-    select create_hourly_max(product_in, band_in, x_in, y_in, min_date + interval '1 hour' * index ) into hid;
+    select create_hourly_max(roi_in, band_in, min_date + interval '1 hour' * index ) into hid;
     index := index + 1;
   END LOOP;
 
-  RAISE INFO 'Created Max product for blocks_ring_buffer %,% hours: %', x_in, y_in, hours;
+  RAISE INFO 'Created Max product for roi_buffer %, % hours: %', roi_in, band_in, hours;
 
-  SELECT product_in || '-hourly-max' into  hmax_product_name;
+  SELECT roi_in || '-hourly-max' into  hmax_product_name;
 
   SELECT
-    blocks_ring_buffer_id into brbid
+    roi_buffer_id into brbid
   FROM 
-    blocks_ring_buffer
+    roi_buffer
   WHERE
-    x = x_in AND y = y_in AND
     band = band_in AND
-    product = hmax_product_name
+    product_id = hmax_product_name
   ORDER BY date desc
   LIMIT 1;
 

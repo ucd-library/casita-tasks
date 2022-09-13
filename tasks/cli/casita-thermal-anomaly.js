@@ -4,7 +4,7 @@ import action from './action.js';
 
 program
   .command('detection')
-  .requiredOption('-i, --id <blocks_ring_buffer_id>', 'blocks_ring_buffer_id to run stats on')
+  .requiredOption('-i, --id <roi_buffer_id>', 'roi_buffer_id to run stats on')
   .option('-c, --classifier <classifier>', 'classifier value')
   .description('find pixels above classifier')
   .action(action)
