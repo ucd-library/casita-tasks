@@ -48,11 +48,11 @@ with bands( band,wavelength,region,name,resolution) as (
   (15,12.3,'Infrared','Dirty longwave window','2km'),
   (16,13.3,'Infrared','CO2 longwave','2km')
 )
-insert into 
+insert into
   abibands (band,wavelength,region,name,resolution)
-select 
+select
   b.band,b.wavelength,b.region,b.name,b.resolution::abiResolution_id
-from 
+from
   bands b
 left join abibands x using (band) where x is null;
 
@@ -82,9 +82,9 @@ with i(goes_id, sat_longitude, sat_height, angle_ul,angle_inc, srid, proj4text) 
   ('west'::goes_id,-137,35786023,'{-0.151872, 0.151872}'::float[2],14e-6,888897,'+proj=geos +x_0=0 +y_0=0 +lon_0=-137 +sweep=x +h=35786023 +ellps=GRS80 +datum=NAD83 +units=m +no_defs')
 )
 insert into abi(goes_id, sat_longitude, sat_height, angle_ul,angle_inc, srid, proj4text)
-select 
+select
   goes_id, i.sat_longitude, i.sat_height, i.angle_ul,i.angle_inc, i.srid, i.proj4text
-from i 
+from i
 left join abi using (goes_id) where abi is null;
 
 insert into spatial_ref_sys (srid, proj4text)
@@ -290,7 +290,7 @@ create or replace function resolution (
   out float)
   LANGUAGE SQL AS $$
   select
-  angle_inc*sat_height as resolution
+  angle_inc*sat_height*size as resolution
   from abi
   join abi_fixed_image i using (goes_id),
   abibands b join abiresolution using (resolution)
