@@ -1,11 +1,12 @@
 * Regions of Interest (ROI)
-#+PROPERTY: header-args:sql s:engine postgresql :cmdline "service=casita" :tangle roi.sql
+#+PROPERTY: header-args:sql :engine postgresql :cmdline "service=casita" :tangle 005-roi.sql
 
   Regions of interest are a method of reprojecting and clipping GOES-R data into
   new datasets there are specific to regions and projections for further
   processing.  These products are more likely to be usable by a larger group of
   users.  For example, clipping and reprojecting GOES data to the [[https://spatialreference.org/ref/epsg/3310/][California
   Albers (EPSG:3310)]] makes the data more useful for Statewide datasets.
+
 
 ** Database setup
 
@@ -207,6 +208,22 @@
       |--------------|
       | INSERT 0 2   |
 
+      Add a function to calculate the minimum sub-lat resolution
+    #+begin_src sql
+      create or replace function resolution (
+        in abi abi,
+        out float)
+        LANGUAGE SQL AS $$
+        select
+        abi.angle_inc*abi.sat_height as resolution
+        $$;
+    #+end_src
+
+    #+RESULTS:
+    | CREATE FUNCTION |
+    |-----------------|
+
+
 ****** Proj 4 Updates
        We want to make sure that we add these goes projections into the standard
        locations. Now, there are a few of these GEOS projections. Previously, I had
@@ -381,7 +398,7 @@
         (st_ymax(i.angles)-st_ymax(b.box)*angle_inc)*sat_height as south,
         (st_xmin(i.angles)+st_xmax(b.box)*angle_inc)*sat_height as east,
         (st_ymax(i.angles)-st_ymin(b.box)*angle_inc)*sat_height as north,
-        angle_inc*sat_height as res,
+        g.resolution as res,
         g.srid
         from abi_fixed_image i
              join abi g using (goes_id)
@@ -414,18 +431,21 @@
 
 
 ** Regions of Interest (ROI)
-We also need to define our regions of interest. California which is our current
+
+   We also need to define our regions of interest. California which is our current
 only region of interest.  We'll create a roi table, but for now it just has
-California in it.
+California in it.  However, we are going to include a CA region of interest in
+both 3310 and goes-west (in our system, srid=888897)
 
 #+BEGIN_SRC sql
-create table if not exists roi (
-roi_id text primary key,
-srid integer references spatial_ref_sys,
-unaligned_box box2d,
-box box2d,
-boundary geometry('Polygon')
-);
+  create table if not exists roi (
+  roi_id text primary key,
+  srid integer references spatial_ref_sys,
+  res_500m float,
+  unaligned_box box2d,
+  box box2d,
+  boundary geometry('Polygon')
+  );
 #+END_SRC
 
 #+RESULTS:
@@ -438,49 +458,79 @@ components from our ROI. However, in this case, we have resoultions as 500,
 to a 10km scale
 
 #+BEGIN_SRC sql
-create or replace function alignedTo (
-in roi roi, in cnt integer default 10,
-out box box2d, out boundary geometry('Polygon'))
-LANGUAGE SQL AS $$
-with n as (select
-(st_xmin(roi.unaligned_box)/500/cnt) as xn,
-(st_ymin(roi.unaligned_box)/500/cnt) as yn,
-(st_xmax(roi.unaligned_box)/500/cnt) as xx,
-(st_ymax(roi.unaligned_box)/500/cnt) as yx
-),
-nx as (
-select
-st_makebox2d(
- st_makepoint(case when(xn<0) then floor(xn)*500*cnt else ceil(xn)*500*cnt end,
- case when(yn<0) then floor(yn)*500*cnt else ceil(yn)*500*cnt end),
- st_makepoint(case when(xx<0) then floor(xx)*500*cnt else ceil(xx)*500*cnt end,
-  case when(yx<0) then floor(yx)*500*cnt else ceil(yx)*500*cnt end)) as box
-from n
-)
-select box,st_setsrid(box,roi.srid) as boundary
-from nx;
-$$;
+  create or replace function alignedTo (
+  in roi roi,
+  in cnt int default 10,
+  out box box2d, out boundary geometry('Polygon'))
+  LANGUAGE SQL AS $$
+  with n as (select
+  (st_xmin(roi.unaligned_box)/(roi.res_500m*cnt)) as xn,
+  (st_ymin(roi.unaligned_box)/(roi.res_500m*cnt)) as yn,
+  (st_xmax(roi.unaligned_box)/(roi.res_500m*cnt)) as xx,
+  (st_ymax(roi.unaligned_box)/(roi.res_500m*cnt)) as yx
+  ),
+  nx as (
+  select
+  st_makebox2d(
+   st_makepoint(case when(xn<0) then floor(xn)*(roi.res_500m*cnt) else ceil(xn)*(roi.res_500m*cnt) end,
+   case when(yn<0) then floor(yn)*(roi.res_500m*cnt) else ceil(yn)*(roi.res_500m*cnt) end),
+   st_makepoint(case when(xx<0) then floor(xx)*(roi.res_500m*cnt) else ceil(xx)*(roi.res_500m*cnt) end,
+    case when(yx<0) then floor(yx)*(roi.res_500m*cnt) else ceil(yx)*(roi.res_500m*cnt) end)) as box
+  from n
+  )
+  select box,st_setsrid(box,roi.srid) as boundary
+  from nx;
+  $$;
 #+END_SRC
 
 #+RESULTS:
 | CREATE FUNCTION |
 |-----------------|
 
+
 #+BEGIN_SRC sql
-with b(roi_id,srid,unaligned_box) as (
- values ('ca',3310,'BOX(-410000 -660000,610000 460000)'::BOX2D)
+with b(roi_id,srid,res_500m,unaligned_box) as (
+ values ('ca',3310,500,'BOX(-410000 -660000,610000 460000)'::BOX2D)
 )
 insert into roi (roi_id,srid,unaligned_box)
 select roi_id,srid,unaligned_box
 from b;
 -- And now update these ROIs to be an aligned region
-update roi set boundary=(alignedTo(roi)).boundary, box=(alignedTo(roi)).box;
+update roi set boundary=(alignedTo(roi,10)).boundary, box=(alignedTo(roi,10)).box;
 #+END_SRC
 
 #+RESULTS:
 | INSERT 0 1 |
 |------------|
 | UPDATE 1   |
+
+
+#+begin_src sql
+    with w as (
+      select *,abi.resolution from abi where goes_id='west'
+    ),
+      roi_w as (
+        select goes_id,format('%s-goes-%s',roi_id,goes_id) as roi_id,
+               st_transform(st_setsrid(unaligned_box,roi.srid),w.srid) as bound
+          from roi,w
+      )
+        insert into roi(roi_id,srid,res_500m,unaligned_box)
+    select
+      roi_id,w.srid,w.resolution,bound
+      from w join roi_w using (goes_id);
+    -- update ROIs to aligned region
+  update roi
+     set boundary=(alignedTo(roi,10)).boundary,
+         box=(alignedTo(roi,10)).box
+         from abi where
+                     roi.srid=abi.srid;
+#+end_src
+
+#+RESULTS:
+| INSERT 0 1 |
+|------------|
+| UPDATE 1   |
+
 
 *** Raster Templates
     Once we have an ROI, then we can also create a function that will return an
@@ -495,10 +545,10 @@ update roi set boundary=(alignedTo(roi)).boundary, box=(alignedTo(roi)).box;
     select
           st_setsrid(
             st_makeEmptyRaster(
-              ((st_xmax(roi.boundary)-st_xmin(roi.boundary))/(in_size*500))::integer,
-              ((st_ymax(roi.boundary)-st_ymin(roi.boundary))/(in_size*500))::integer,
+              ((st_xmax(roi.boundary)-st_xmin(roi.boundary))/(in_size*roi.res_500m))::integer,
+              ((st_ymax(roi.boundary)-st_ymin(roi.boundary))/(in_size*roi.res_500m))::integer,
               st_xmin(roi.boundary),
-              st_ymax(roi.boundary),in_size*500),roi.srid)
+              st_ymax(roi.boundary),in_size*roi.res_500m),roi.srid)
   $$;
 #+END_SRC
 
@@ -614,7 +664,7 @@ update roi set boundary=(alignedTo(roi)).boundary, box=(alignedTo(roi)).box;
         out float)
         LANGUAGE SQL AS $$
         select
-        angle_inc*sat_height as resolution
+        angle_inc*sat_height*size as resolution
         from abi
         join abi_fixed_image i using (goes_id),
         abibands b join abiresolution using (resolution)
