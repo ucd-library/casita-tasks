@@ -17,8 +17,9 @@ CREATE TABLE IF NOT EXISTS thermal_anomaly_event_start_px (
   date timestamp NOT NULL,
   x INTEGER NOT NULL,
   y INTEGER NOT NULL,
-  prior_24h_average INTEGER[] NOT NULL,
-  prior_24h_stddev INTEGER[] NOT NULL,
+  prior_10d_hmax_average INTEGER[] NOT NULL,
+  prior_10d_hmax_stddev INTEGER[] NOT NULL,
+  prior_10d_hmax INTEGER[] NOT NULL,
   value INTEGER NOT NULL,
   UNIQUE(thermal_anomaly_event_id, date, x, y)
 );
@@ -131,6 +132,37 @@ CREATE OR REPLACE FUNCTION all_thermal_anomaly_px_values (
       product = roi_in || '-hourly-max-10d-max' OR
       product = roi_in || '-hourly-max'
     )
+  ORDER BY date;
+
+$$
+LANGUAGE SQL;
+
+CREATE OR REPLACE FUNCTION prior_px_values (
+  product_in TEXT,
+  roi_in TEXT,
+  px_x_in INTEGER,
+  px_y_in INTEGER
+) RETURNS table (
+  value INTEGER,
+  roi_buffer_id INTEGER,
+  product TEXT,
+  roi TEXT,
+  band TEXT,
+  date TIMESTAMP
+) AS $$
+
+  SELECT 
+    ST_Value(rast, px_x_in, px_y_in) as value,
+    roi_buffer_id,
+    product_id as product,
+    roi_id as roi,
+    band,
+    date
+  FROM 
+    roi_buffer 
+  WHERE
+    product = roi_in AND
+    date >= now() - interval '6 hours'
   ORDER BY date;
 
 $$

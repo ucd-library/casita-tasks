@@ -129,8 +129,8 @@ class EventDetection {
     return resp.rows;
   }
 
-  async addCreateThermalEvent(id, info) {
-    logger.info('Creating thermal event for', id, info);
+  async addCreateThermalEvent(roiBufferId, info) {
+    logger.info('Creating thermal event for', roiBufferId, info);
 
     let resp = await pg.query(`
     INSERT INTO 
@@ -142,15 +142,20 @@ class EventDetection {
 
     // TODO, create pixel
 
-    await this.addToActiveThermalEvent(resp.rows, id, info);
+    await this.addToActiveThermalEvent(resp.rows, roiBufferId, info, true);
 
     return resp.rows[0].thermal_anomaly_event_id;
   }
 
-  async addToActiveThermalEvent(events, id, info) {
+  async addToActiveThermalEvent(events, roiBufferId, info, pxStart=false) {
     // currently just use first event
     let event = Array.isArray(events) ? events[0] : events;
-    let value = await this.getPxValue(id, info.pixel.x, info.pixel.y);
+    let value = await this.getPxValue(roiBufferId, info.pixel.x, info.pixel.y);
+
+    if( pxStart ) {
+      this.addPxStart(event, info);
+    }
+
 
     logger.info('Adding thermal pixel for', event, info);
 
@@ -189,33 +194,51 @@ class EventDetection {
   async addPxHistory(thermal_anomaly_event_px_id, pixel) {
     // get all stats product pixels for event
     let resp = await pg.query(
-      `SELECT * FROM all_thermal_anomaly_px_values($1, $2, $3, $4, $5)`, 
-      [pixel.product, pixel.block.x, pixel.block.y, pixel.pixel.x, pixel.pixel.y]
+      `SELECT * FROM all_thermal_anomaly_px_values($1, $2, $3, $4)`, 
+      [pixel.product, pixel.roi, pixel.pixel.x, pixel.pixel.y]
     );
 
-    let productIdCache = {};
+    let productIdArray = {};
+    let productIdKV = {};
+
+    let now = new Date();
+    now = new Date(now.getFullYear(), now.getHours(), now.getDate(), 0, 0, 0, 0);
+    let maxHours = 24 * 10;
+
+    let products = ['-hourly-max-10d-stddev', '-hourly-max-10d-average', '-hourly-max'];
+    products = products.map(p => {
+      productIdArray[pixel.roi+p] = [];
+      return pixel.roi+p
+    });
 
     for( let statsProduct of resp.rows ) {
-      let productId = [statsProduct.satellite, statsProduct.band, statsProduct.product, statsProduct.apid].join('-');
-
-      // get the product id for the pixel
-      if( !productIdCache[productId] ) {
-        productIdCache[productId] = await this.getOrCreatePxProduct(statsProduct);
+      if( !productIdKV[statsProduct.product] ) {
+        productIdKV[statsProduct.product] = {};
       }
-      statsProduct.thermal_anomaly_stats_product_id = productIdCache[productId];
-
-      statsProduct.thermal_anomaly_stats_px_id = await this.getOrCreateStatsPx(pixel, statsProduct);
-
-
-      try {
-        await pg.query(`INSERT INTO 
-            thermal_anomaly_event_px_stats_px (thermal_anomaly_event_px_id, thermal_anomaly_stats_px_id) 
-          VALUES
-            ($1, $2)`, 
-          [thermal_anomaly_event_px_id, statsProduct.thermal_anomaly_stats_px_id]
-        );
-      } catch(e) {}
+      productIdKV[statsProduct.product][statsProduct.date.toISOString()] = value;
     }
+
+    for( let i = 1; i < maxHours; i++ ) {
+      let ts = new Date(now.getTime() - (i*1000*60*60));
+      products.forEach(product => {
+        let value = productIdKV[product][ts.toISOString()] || null;
+        productIdArray[product].push(value);
+      });
+    }
+
+    let priorValues = await pg.query(
+      `select * FROM prior_px_values($1, $2, $3, $4)`,
+      [pixel.product, pixel.roi, pixel.pixel.x, pixel.pixel.y]
+    );
+
+    try {
+      await pg.query(`INSERT INTO 
+          thermal_anomaly_event_px_stats_px (thermal_anomaly_event_px_id, thermal_anomaly_stats_px_id) 
+        VALUES
+          ($1, $2)`, 
+        [thermal_anomaly_event_px_id, statsProduct.thermal_anomaly_stats_px_id]
+      );
+    } catch(e) {}
   }
 
   async getOrCreateStatsPx(pixel, statsProduct) {
