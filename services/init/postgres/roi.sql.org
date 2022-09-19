@@ -1,5 +1,5 @@
 * Regions of Interest (ROI)
-#+PROPERTY: header-args:sql s:engine postgresql :cmdline "service=casita" :tangle roi.sql
+#+PROPERTY: header-args:sql s:engine postgresql :cmdline "service=casita" :tangle 005-roi.sql
 
   Regions of interest are a method of reprojecting and clipping GOES-R data into
   new datasets there are specific to regions and projections for further
@@ -614,7 +614,7 @@ update roi set boundary=(alignedTo(roi)).boundary, box=(alignedTo(roi)).box;
         out float)
         LANGUAGE SQL AS $$
         select
-        angle_inc*sat_height as resolution
+        angle_inc*sat_height*size as resolution
         from abi
         join abi_fixed_image i using (goes_id),
         abibands b join abiresolution using (resolution)
