@@ -207,7 +207,7 @@ const dag = {
   // },
 
   [TOPICS.lightning] : {
-    enabled : false,
+    enabled : true,
     dependencies : [TOPICS.productWriter],
 
     where : msg => (msg.data.apid.match(LIGHTNING_PAYLOAD_APIDS)) && (msg.data.file.base === 'payload.bin'),
