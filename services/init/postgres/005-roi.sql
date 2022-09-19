@@ -2,18 +2,18 @@ create schema if not exists roi;
 set search_path=roi,public;
 
 DO $$ BEGIN
-  create type goes_id as enum ('east','west');
-  create type instrument_id as enum ('abi');
-  create type packet_type_id as enum('metadata','data');
+create type goes_id as enum ('east','west');
+create type instrument_id as enum ('abi');
+create type packet_type_id as enum('metadata','data');
 EXCEPTION
   WHEN duplicate_object then null;
-END $$;
+    END $$;
 
 DO $$ BEGIN
-  create type abiResolution_id as enum ('500m','1km','2km','10km');
+        create type abiResolution_id as enum ('500m','1km','2km','10km');
 EXCEPTION
   WHEN duplicate_object then null;
-END $$;
+          END $$;
 
 create or replace view abiResolution(resolution,size) as
   (VALUES ('500m'::abiResolution_id,1),
@@ -58,13 +58,12 @@ left join abibands x using (band) where x is null;
 
 create or replace function size (
   in band abibands,
-  out integer
-)
-LANGUAGE SQL AS $$
+  out integer)
+  LANGUAGE SQL AS $$
   select r.size
   from abiresolution r
   where r.resolution = band.resolution
-$$;
+  $$;
 
 create table if not exists abi (
   goes_id goes_id primary key,
@@ -87,29 +86,29 @@ select
 from i
 left join abi using (goes_id) where abi is null;
 
-insert into spatial_ref_sys (srid, proj4text)
-select a.srid, a.proj4text
-from abi a
-left join spatial_ref_sys s using (srid)
-where s is null;
+insert into spatial_ref_sys (srid,proj4text)
+select a.srid,a.proj4text
+  from abi a
+       left join spatial_ref_sys s using (srid)
+ where s is null;
 
 DO $$
 BEGIN
-  create type image_id as enum ('fulldisk','conus','mesoscale');
-  create type fixed_image_id as enum ('east-fulldisk','west-fulldisk','east-conus','west-conus');
+create type image_id as enum ('fulldisk','conus','mesoscale');
+create type fixed_image_id as enum ('east-fulldisk','west-fulldisk','east-conus','west-conus');
 EXCEPTION
   WHEN duplicate_object then null;
 END
 $$;
 
 create table if not exists abi_fixed_image (
-  fixed_image_id fixed_image_id primary key,
-  goes_id goes_id,
-  image_id image_id,
-  angles box2d,
-  rc_box box2d,
-  width_height integer[2],
-  bbox geometry('Polygon')
+fixed_image_id fixed_image_id primary key,
+goes_id goes_id,
+image_id image_id,
+angles box2d,
+rc_box box2d,
+width_height integer[2],
+bbox geometry('Polygon')
 );
 
 with a(goes_id,name,angles) as
@@ -184,16 +183,15 @@ u as (
   select fixed_image_id,w,h,row,unnest(cols::integer[]) as col
     from ul
 )
-insert into abi_fixed_image_block
-select format('%s-%s-%s',fixed_image_id,col,row) as fixed_image_block_id,
-  fixed_image_id::fixed_image_id,
-  st_makebox2d(st_makepoint(col,row),st_makepoint(col+w,row+h)) as box
-from u;
+       insert into abi_fixed_image_block
+   select format('%s-%s-%s',fixed_image_id,col,row) as fixed_image_block_id,
+          fixed_image_id::fixed_image_id,
+          st_makebox2d(st_makepoint(col,row),st_makepoint(col+w,row+h)) as box
+     from u
 
 create or replace function wsen (
-  in b abi_fixed_image_block,
-  out geometry('Polygon')
-)
+in b abi_fixed_image_block,
+out geometry('Polygon'))
 LANGUAGE SQL AS $$
 with n as (
   select
@@ -201,59 +199,79 @@ with n as (
     (st_ymax(i.angles)-st_ymax(b.box)*angle_inc)*sat_height as south,
     (st_xmin(i.angles)+st_xmax(b.box)*angle_inc)*sat_height as east,
     (st_ymax(i.angles)-st_ymin(b.box)*angle_inc)*sat_height as north,
-    angle_inc*sat_height as res,
+    g.resolution as res,
     g.srid
     from abi_fixed_image i
          join abi g using (goes_id)
    where b.fixed_image_id=i.fixed_image_id
 )
-select
-st_setsrid(
-  st_makebox2d(
-    st_makepoint(west,south),st_makepoint(east,north)),srid) as boundary
-    from n;
-$$;
+  select
+  st_setsrid(
+    st_makebox2d(
+      st_makepoint(west,south),st_makepoint(east,north)),srid) as boundary
+      from n;
+  $$;
 
 create table if not exists roi (
-  roi_id text primary key,
-  srid integer references spatial_ref_sys,
-  unaligned_box box2d,
-  box box2d,
-  boundary geometry('Polygon')
+roi_id text primary key,
+srid integer references spatial_ref_sys,
+res_500m float,
+unaligned_box box2d,
+box box2d,
+boundary geometry('Polygon')
 );
 
 create or replace function alignedTo (
-  in roi roi, in cnt integer default 10,
-  out box box2d, out boundary geometry('Polygon')
-)
+in roi roi,
+in sz int,
+out box box2d, out boundary geometry('Polygon'))
 LANGUAGE SQL AS $$
-  with n as (select
-  (st_xmin(roi.unaligned_box)/500/cnt) as xn,
-  (st_ymin(roi.unaligned_box)/500/cnt) as yn,
-  (st_xmax(roi.unaligned_box)/500/cnt) as xx,
-  (st_ymax(roi.unaligned_box)/500/cnt) as yx
-  ),
-  nx as (
-  select
-  st_makebox2d(
-  st_makepoint(case when(xn<0) then floor(xn)*500*cnt else ceil(xn)*500*cnt end,
-  case when(yn<0) then floor(yn)*500*cnt else ceil(yn)*500*cnt end),
-  st_makepoint(case when(xx<0) then floor(xx)*500*cnt else ceil(xx)*500*cnt end,
-    case when(yx<0) then floor(yx)*500*cnt else ceil(yx)*500*cnt end)) as box
-  from n
-  )
-  select box,st_setsrid(box,roi.srid) as boundary
-  from nx;
+with n as (select
+(st_xmin(roi.unaligned_box)/(roi.res_500m*sz)) as xn,
+(st_ymin(roi.unaligned_box)/(roi.res_500m*sz)) as yn,
+(st_xmax(roi.unaligned_box)/(roi.res_500m*sz)) as xx,
+(st_ymax(roi.unaligned_box)/(roi.res_500m*sz)) as yx
+),
+nx as (
+select
+st_makebox2d(
+ st_makepoint(case when(xn<0) then floor(xn)*(roi.res_500m*sz) else ceil(xn)*(roi.res_500m*sz) end,
+ case when(yn<0) then floor(yn)*(roi.res_500m*sz) else ceil(yn)*(roi.res_500m*sz) end),
+ st_makepoint(case when(xx<0) then floor(xx)*(roi.res_500m*sz) else ceil(xx)*(roi.res_500m*sz) end,
+  case when(yx<0) then floor(yx)*(roi.res_500m*sz) else ceil(yx)*(roi.res_500m*sz) end)) as box
+from n
+)
+select box,st_setsrid(box,roi.srid) as boundary
+from nx;
 $$;
 
-with b(roi_id,srid,unaligned_box) as (
- values ('ca',3310,'BOX(-410000 -660000,610000 460000)'::BOX2D)
+with b(roi_id,srid,res_500m,unaligned_box) as (
+ values ('ca',3310,500,'BOX(-410000 -660000,610000 460000)'::BOX2D)
 )
 insert into roi (roi_id,srid,unaligned_box)
 select roi_id,srid,unaligned_box
 from b;
 -- And now update these ROIs to be an aligned region
-update roi set boundary=(alignedTo(roi)).boundary, box=(alignedTo(roi)).box;
+update roi set boundary=(alignedTo(roi,10)).boundary, box=(alignedTo(roi,10)).box;
+
+with w as (
+    select *,abi.resolution from abi where goes_id='west'
+  ),
+    roi_w as (
+      select goes_id,format('%s-goes-%s',roi_id,goes_id) as roi_id,
+             st_transform(boundary,w.srid) as bound
+        from roi,w
+    )
+      insert into roi(roi_id,srid,res_500m,unaligned_box)
+  select
+    roi_id,w.srid,w.resolution,bound
+    from w join roi_w using (goes_id);
+  -- update ROIs to aligned region
+update roi
+   set boundary=(alignedTo(roi,10)).boundary,
+       box=(alignedTo(roi,10)).box
+       from abi where
+                   roi.srid=abi.srid;
 
 create or replace function empty_raster (
   in roi roi, in in_size integer default 1,
@@ -262,28 +280,26 @@ create or replace function empty_raster (
   select
         st_setsrid(
           st_makeEmptyRaster(
-            ((st_xmax(roi.boundary)-st_xmin(roi.boundary))/(in_size*500))::integer,
-            ((st_ymax(roi.boundary)-st_ymin(roi.boundary))/(in_size*500))::integer,
+            ((st_xmax(roi.boundary)-st_xmin(roi.boundary))/(in_size*roi.res_500m))::integer,
+            ((st_ymax(roi.boundary)-st_ymin(roi.boundary))/(in_size*roi.res_500m))::integer,
             st_xmin(roi.boundary),
-            st_ymax(roi.boundary),in_size*500),roi.srid)
+            st_ymax(roi.boundary),in_size*roi.res_500m),roi.srid)
 $$;
 
 create materialized view roi_x_fixed_image_block as
   select roi_id,fixed_image_block_id
-  from abi g join abi_fixed_image fi using (goes_id)
-  join abi_fixed_image_block b using (fixed_image_id)
-  join roi r on st_intersects(b.wsen,st_transform(r.boundary,g.srid)
-);
+    from abi g join abi_fixed_image fi using (goes_id)
+         join abi_fixed_image_block b using (fixed_image_id)
+         join roi r on st_intersects(b.wsen,st_transform(r.boundary,g.srid));
 
 create or replace function fixed_image_block_id (
-  in block blocks_ring_buffer,
-  out text
-)
+in block blocks_ring_buffer,
+out text)
 LANGUAGE SQL AS $$
-select format('%s-%s-%s-%s',block.satellite,block.product,block.x*size,block.y*size)
-  from abibands join abiresolution res using (resolution)
-  where abibands.band=block.band
-$$;
+  select format('%s-%s-%s-%s',block.satellite,block.product,block.x*size,block.y*size)
+      from abibands join abiresolution res using (resolution)
+     where abibands.band=block.band
+  $$;
 
 create or replace function resolution (
   in block blocks_ring_buffer,
@@ -297,7 +313,7 @@ create or replace function resolution (
   where block.satellite::goes_id=abi.goes_id
   and block.band=b.band
   and i.image_id=block.product::image_id
-$$;
+  $$;
 
 create or replace function wsen (
 in block blocks_ring_buffer,
@@ -325,9 +341,8 @@ LANGUAGE SQL AS $$
 $$;
 
 create or replace function image (
-  in block blocks_ring_buffer,
-  out raster
-)
+in block blocks_ring_buffer,
+out raster)
 LANGUAGE SQL AS $$
   select st_setsrid(
     st_setGeoReference(block.rast,
@@ -336,12 +351,12 @@ LANGUAGE SQL AS $$
                        block.resolution,
                        -block.resolution,0,0),
                        st_srid(block.wsen))
-$$;
+  $$;
 
 create table products (
   product_id text primary key,
   description text
-);
+  );
 
 insert into products(product_id,description)
 values
@@ -390,7 +405,7 @@ st_clip(
   roi.boundary) as rast
   from
   blocks_in
-$$;
+  $$;
 
 create or replace function blocks_to_roi (
   in in_date timestamp,
@@ -418,4 +433,4 @@ st_clip(
   (select boundary from roi where roi_id=in_roi_id)) as rast
   from
   blocks_in
-$$;
+  $$;
