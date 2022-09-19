@@ -1,0 +1,44 @@
+* Land Cover
+#+PROPERTY: header-args:sql :engine postgresql :cmdline "service=casita" :tangle 006-landcover.sql
+
+I'm pretty sure that we can run *.sh scripts in a normal postgres init, so we'll
+assume maybe you can do something similar in this setup.
+
+** Landcover Schema Development
+
+   We are using 1:10m scale image of landcover from [[https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-land/][NaturalEarth]].
+
+
+   #+begin_src sql
+     create schema if not exists landcover;
+   #+end_src
+
+#+begin_src bash
+  d=$(mktemp -d)
+  pushd $d
+  file='ne_10m_land'
+  zip="https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/physical/${file}.zip"
+  curl -L -o ${file}.zip ${zip}
+  unzip ${file}.zip
+  ogr2ogr -nlt PROMOTE_TO_MULTI -lco schema=landcover -f "PostgreSQL" PG:"service=casita" ne_10m_land.shp
+  popd $d
+  rm -rf $d
+#+end_src
+
+#+RESULTS:
+
+#+begin_src sql
+  with p as (
+    select srid,(st_pixelasPolygons(st_addband(empty_raster(r,4),'8BUI'::text,1,0))).*
+      from roi r where roi_id='ca' limit 1000
+  )
+  select
+    x,y,st_area(st_intersection(geom,st_transform(l.wkb_geometry,p.srid)))
+    from p
+         join landcover.ne_10m_land l
+   on st_intersects(geom,st_transform(l.wkb_geometry,p.srid))
+                limit 100;
+#+end_src
+
+#+RESULTS:
+|---|
