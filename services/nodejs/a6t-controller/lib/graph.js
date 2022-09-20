@@ -108,7 +108,7 @@ const dag = {
         module : 'ca-projection/hourly-max-stats.js',
           args : {
             kafkaExternal : true,
-            roi_buffer_id : roi_buffer_ids['ca-goes']
+            roi_buffer_id : roi_buffer_ids[config.roi.products.californiaGoes.id]
           }
         }, 
         {task, msgs}
