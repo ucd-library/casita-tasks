@@ -143,6 +143,8 @@ create table if not exists abi_fixed_image_block (
   box box2d
 );
 
+DO $$ BEGIN
+
 with ul(fixed_image_id,row,w,h,cols) as (
      values
 ('west-fulldisk',0,1808,604,'{7232,9040,10848,12656}'),
@@ -187,7 +189,12 @@ u as (
    select format('%s-%s-%s',fixed_image_id,col,row) as fixed_image_block_id,
           fixed_image_id::fixed_image_id,
           st_makebox2d(st_makepoint(col,row),st_makepoint(col+w,row+h)) as box
-     from u
+     from u;
+
+EXCEPTION
+  WHEN UNIQUE_VIOLATION then null;
+END $$;
+  
 
 create or replace function wsen (
 in b abi_fixed_image_block,
@@ -199,7 +206,7 @@ with n as (
     (st_ymax(i.angles)-st_ymax(b.box)*angle_inc)*sat_height as south,
     (st_xmin(i.angles)+st_xmax(b.box)*angle_inc)*sat_height as east,
     (st_ymax(i.angles)-st_ymin(b.box)*angle_inc)*sat_height as north,
-    g.resolution as res,
+    -- g.resolution as res,
     g.srid
     from abi_fixed_image i
          join abi g using (goes_id)
@@ -222,50 +229,79 @@ boundary geometry('Polygon')
 );
 
 create or replace function alignedTo (
-in roi roi,
-in sz int,
-out box box2d, out boundary geometry('Polygon'))
-LANGUAGE SQL AS $$
-with n as (select
-(st_xmin(roi.unaligned_box)/(roi.res_500m*sz)) as xn,
-(st_ymin(roi.unaligned_box)/(roi.res_500m*sz)) as yn,
-(st_xmax(roi.unaligned_box)/(roi.res_500m*sz)) as xx,
-(st_ymax(roi.unaligned_box)/(roi.res_500m*sz)) as yx
-),
-nx as (
-select
-st_makebox2d(
- st_makepoint(case when(xn<0) then floor(xn)*(roi.res_500m*sz) else ceil(xn)*(roi.res_500m*sz) end,
- case when(yn<0) then floor(yn)*(roi.res_500m*sz) else ceil(yn)*(roi.res_500m*sz) end),
- st_makepoint(case when(xx<0) then floor(xx)*(roi.res_500m*sz) else ceil(xx)*(roi.res_500m*sz) end,
-  case when(yx<0) then floor(yx)*(roi.res_500m*sz) else ceil(yx)*(roi.res_500m*sz) end)) as box
-from n
+  in roi roi,
+  in sz int,
+  out box box2d, 
+  out boundary geometry('Polygon')
 )
+LANGUAGE SQL AS $$
+
+  with n as (
+    select
+      (st_xmin(roi.unaligned_box)/(roi.res_500m*sz)) as xn,
+      (st_ymin(roi.unaligned_box)/(roi.res_500m*sz)) as yn,
+      (st_xmax(roi.unaligned_box)/(roi.res_500m*sz)) as xx,
+      (st_ymax(roi.unaligned_box)/(roi.res_500m*sz)) as yx
+  ),
+  nx as (
+    select
+    st_makebox2d(
+      st_makepoint(case when(xn<0) then floor(xn)*(roi.res_500m*sz) else ceil(xn)*(roi.res_500m*sz) end,
+      case when(yn<0) then floor(yn)*(roi.res_500m*sz) else ceil(yn)*(roi.res_500m*sz) end),
+      st_makepoint(case when(xx<0) then floor(xx)*(roi.res_500m*sz) else ceil(xx)*(roi.res_500m*sz) end,
+      case when(yx<0) then floor(yx)*(roi.res_500m*sz) else ceil(yx)*(roi.res_500m*sz) end)
+    ) as box
+    from n
+  )
 select box,st_setsrid(box,roi.srid) as boundary
 from nx;
 $$;
 
+DO $$ BEGIN
+
 with b(roi_id,srid,res_500m,unaligned_box) as (
  values ('ca',3310,500,'BOX(-410000 -660000,610000 460000)'::BOX2D)
 )
-insert into roi (roi_id,srid,unaligned_box)
-select roi_id,srid,unaligned_box
+insert into roi (roi_id,srid,res_500m,unaligned_box)
+select roi_id,srid,res_500m,unaligned_box
 from b;
+
+EXCEPTION
+  WHEN UNIQUE_VIOLATION then null;
+END $$;
+
 -- And now update these ROIs to be an aligned region
 update roi set boundary=(alignedTo(roi,10)).boundary, box=(alignedTo(roi,10)).box;
 
-with w as (
+create or replace function resolution (
+        in abi abi,
+        out float)
+        LANGUAGE SQL AS $$
+        select
+        abi.angle_inc*abi.sat_height as resolution
+        $$;
+
+DO $$ BEGIN
+
+  with w as (
     select *,abi.resolution from abi where goes_id='west'
   ),
-    roi_w as (
-      select goes_id,format('%s-goes-%s',roi_id,goes_id) as roi_id,
-             st_transform(boundary,w.srid) as bound
-        from roi,w
-    )
-      insert into roi(roi_id,srid,res_500m,unaligned_box)
+  roi_w as (
+    select 
+      goes_id, 
+      format('%s-goes-%s',roi_id,goes_id) as roi_id,
+      st_transform(boundary,w.srid) as bound
+      from roi,w
+  )
+  insert into roi(roi_id,srid,res_500m,unaligned_box)
   select
-    roi_id,w.srid,w.resolution,bound
+    roi_id, w.srid, w.resolution, bound
     from w join roi_w using (goes_id);
+
+EXCEPTION
+  WHEN UNIQUE_VIOLATION then null;
+END $$;
+
   -- update ROIs to aligned region
 update roi
    set boundary=(alignedTo(roi,10)).boundary,
@@ -286,11 +322,17 @@ create or replace function empty_raster (
             st_ymax(roi.boundary),in_size*roi.res_500m),roi.srid)
 $$;
 
+DO $$ BEGIN
 create materialized view roi_x_fixed_image_block as
   select roi_id,fixed_image_block_id
     from abi g join abi_fixed_image fi using (goes_id)
          join abi_fixed_image_block b using (fixed_image_id)
          join roi r on st_intersects(b.wsen,st_transform(r.boundary,g.srid));
+EXCEPTION
+  WHEN OTHERS then null;
+END $$;
+
+REFRESH MATERIALIZED VIEW roi_x_fixed_image_block;
 
 create or replace function fixed_image_block_id (
 in block blocks_ring_buffer,
@@ -353,11 +395,12 @@ LANGUAGE SQL AS $$
                        st_srid(block.wsen))
   $$;
 
-create table products (
+create table if not exists products (
   product_id text primary key,
   description text
-  );
+);
 
+DO $$ BEGIN
 insert into products(product_id,description)
 values
 ('conus','Per band CONUS image product'),
@@ -369,7 +412,12 @@ values
 ('ca-hourly-max-10d-stddev','10 day running stddev of ca-hourly-max')
 ;
 
-create table roi_buffer (
+EXCEPTION
+  WHEN UNIQUE_VIOLATION then null;
+END $$;
+
+
+create table if not exists roi_buffer (
   roi_buffer_id serial primary key,
   roi_id text references roi(roi_id),
   product_id text references products(product_id),

@@ -1,3 +1,5 @@
+set search_path=public,roi;
+
 CREATE TABLE IF NOT EXISTS thermal_anomaly_event (
   thermal_anomaly_event_id SERIAL PRIMARY KEY,
   created timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -17,8 +19,9 @@ CREATE TABLE IF NOT EXISTS thermal_anomaly_event_start_px (
   date timestamp NOT NULL,
   x INTEGER NOT NULL,
   y INTEGER NOT NULL,
-  prior_10d_hmax_average INTEGER[] NOT NULL,
-  prior_10d_hmax_stddev INTEGER[] NOT NULL,
+  classifier FLOAT NOT NULL,
+  prior_10d_hmax_average FLOAT[] NOT NULL,
+  prior_10d_hmax_stddev FLOAT[] NOT NULL,
   prior_10d_hmax INTEGER[] NOT NULL,
   value INTEGER NOT NULL,
   UNIQUE(thermal_anomaly_event_id, date, x, y)
@@ -31,23 +34,19 @@ CREATE TABLE IF NOT EXISTS thermal_anomaly_event_px (
   thermal_anomaly_event_px_id SERIAL PRIMARY KEY,
   thermal_anomaly_event_start_px_id INTEGER REFERENCES thermal_anomaly_event_start_px NOT NULL,
   date timestamp NOT NULL,
-  classifier INTEGER NOT NULL,
+  classifier FLOAT NOT NULL,
   value INTEGER NOT NULL,
-  UNIQUE(thermal_anomaly_event_start_px, date, classifier)
+  UNIQUE(thermal_anomaly_event_start_px_id, date, classifier)
 );
-CREATE INDEX IF NOT EXISTS thermal_anomaly_event_start_px_id_idx ON thermal_anomaly_event_start_px_id (thermal_anomaly_event_start_px_id);
+CREATE INDEX IF NOT EXISTS thermal_anomaly_event_start_px_id_idx ON thermal_anomaly_event_px (thermal_anomaly_event_start_px_id);
 CREATE INDEX IF NOT EXISTS thermal_anomaly_event_px_date_idx ON thermal_anomaly_event_px (date);
-CREATE INDEX IF NOT EXISTS thermal_anomaly_event_px_x_idx ON thermal_anomaly_event_px (x);
-CREATE INDEX IF NOT EXISTS thermal_anomaly_event_px_y_idx ON thermal_anomaly_event_px (y);
 
 CREATE OR REPLACE VIEW active_thermal_anomaly_events AS
   SELECT
     te.thermal_anomaly_event_id,
     te.created as event_start,
-    te.satellite,
     te.product,
     te.roi,
-    te.apid,
     te.band,
     te.active,
     tep.x,
@@ -63,7 +62,7 @@ AS $$
 
   WITH image AS (
     SELECT 
-      rast, date, product_id, roi_id
+      rast, date, product_id, roi_id,
       date_trunc('hour', date - interval '1 hour') as prior_hour
     FROM roi_buffer WHERE 
       roi_buffer_id = roi_buffer_id_in
@@ -72,16 +71,14 @@ AS $$
     SELECT 
       br.rast
     FROM roi_buffer br, image WHERE
-      br.product = image.roi_id || '-hourly-max-10d-average' AND 
+      br.product_id = image.roi_id || '-hourly-max-10d-average' AND 
       br.date = prior_hour
   ),
   stddev as (
     SELECT 
       br.rast
     FROM roi_buffer br, image WHERE
-      br.x = image.x AND
-      br.y = image.y AND
-      br.product = image.roi_id || '-hourly-max-10d-stddev' AND 
+      br.product_id = image.roi_id || '-hourly-max-10d-stddev' AND 
       br.date = prior_hour
   ),
   avgDiff AS (
@@ -126,11 +123,11 @@ CREATE OR REPLACE FUNCTION all_thermal_anomaly_px_values (
     roi_buffer 
   WHERE
     ( 
-      product = roi_in || '-hourly-max-10d-stddev' OR
-      product = roi_in || '-hourly-max-10d-average' OR
-      product = roi_in || '-hourly-max-10d-min' OR
-      product = roi_in || '-hourly-max-10d-max' OR
-      product = roi_in || '-hourly-max'
+      product_id = roi_in || '-hourly-max-10d-stddev' OR
+      product_id = roi_in || '-hourly-max-10d-average' OR
+      product_id = roi_in || '-hourly-max-10d-min' OR
+      product_id = roi_in || '-hourly-max-10d-max' OR
+      product_id = roi_in || '-hourly-max'
     )
   ORDER BY date;
 
@@ -161,7 +158,7 @@ CREATE OR REPLACE FUNCTION prior_px_values (
   FROM 
     roi_buffer 
   WHERE
-    product = roi_in AND
+    product_id = roi_in AND
     date >= now() - interval '6 hours'
   ORDER BY date;
 

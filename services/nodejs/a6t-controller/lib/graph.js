@@ -102,13 +102,13 @@ const dag = {
     },
     sink : (key, msgs) => {
       let task = TOPICS.caProjectionHourlyStats;
-      let {roi_buffer_id} = msgs[0].data;
+      let {roi_buffer_ids} = msgs[0].data;
 
       return rabbitMqWorker.exec({
         module : 'ca-projection/hourly-max-stats.js',
           args : {
             kafkaExternal : true,
-            roi_buffer_id
+            roi_buffer_id : roi_buffer_ids['ca-goes']
           }
         }, 
         {task, msgs}
@@ -123,13 +123,13 @@ const dag = {
     where :  msg => msg.data.band+'' === '7',
     sink : (key, msgs) => {
       let task = TOPICS.thermalAnomaly;
-      let {blocks_ring_buffer_id} = msgs[0].data;
+      let {roi_buffer_id} = msgs[0].data;
 
       return rabbitMqWorker.exec({
         module : 'thermal-anomaly/detection.js',
           args : {
             kafkaExternal : true,
-            id: blocks_ring_buffer_id
+            id: roi_buffer_id
           }
         }, 
         {task, msgs}

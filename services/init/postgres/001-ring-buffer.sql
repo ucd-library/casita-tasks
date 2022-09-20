@@ -26,6 +26,6 @@ CREATE TABLE IF NOT EXISTS derived_stats_metadata (
   roi TEXT NOT NULL,
   band INTEGER NOT NULL
 );
-CREATE INDEX IF NOT EXISTS derived_blocks_metadata_date_idx ON derived_blocks_metadata (date);
-CREATE INDEX IF NOT EXISTS derived_blocks_metadata_product_idx ON derived_blocks_metadata (product);
-CREATE INDEX IF NOT EXISTS derived_blocks_metadata_parent_block_id_idx ON derived_blocks_metadata (parent_id);
+CREATE INDEX IF NOT EXISTS derived_stats_metadata_date_idx ON derived_stats_metadata (date);
+CREATE INDEX IF NOT EXISTS derived_stats_metadata_product_idx ON derived_stats_metadata (product);
+CREATE INDEX IF NOT EXISTS derived_stats_metadata_parent_block_id_idx ON derived_stats_metadata (parent_id);

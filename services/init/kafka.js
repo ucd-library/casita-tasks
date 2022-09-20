@@ -42,7 +42,17 @@ const topics = [
     name : 'ring-buffer-ext',
     partitions : 1
   },
-  
+
+
+  {
+    name : 'thermal-anomaly',
+    partitions : DEFAULT_PARTITIONS
+  },
+  {
+    name : 'thermal-anomaly-ext',
+    partitions : 1
+  },
+
   {
     name : 'ca-projection-hourly-stats',
     partitions : DEFAULT_PARTITIONS
@@ -53,14 +63,6 @@ const topics = [
   },
 
   {
-    name : 'thermal-anomaly',
-    partitions : DEFAULT_PARTITIONS
-  },
-  {
-    name : 'thermal-anomaly-ext',
-    partitions : 1
-  },
-  {
     name : 'ca-projection',
     partitions : DEFAULT_PARTITIONS
   },
@@ -68,6 +70,7 @@ const topics = [
     name : 'ca-projection-ext',
     partitions : 1
   },
+  
   {
     name : 'lightning',
     partitions : DEFAULT_PARTITIONS

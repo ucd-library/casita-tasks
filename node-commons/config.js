@@ -114,6 +114,18 @@ let config = {
 
     roi : {
       bufferTable : 'roi.roi_buffer',
+      products : {
+        california3310 : {
+          id : 'ca',
+          product : 'california',
+          apid : 'imagery'
+        },
+        californiaGoes : {
+          id : 'ca-goes-west',
+          product : 'california',
+          apid : 'imagery'
+        } 
+      }
     }
   },
 

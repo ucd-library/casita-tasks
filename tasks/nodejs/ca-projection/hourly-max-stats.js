@@ -51,20 +51,23 @@ async function insert(roi_buffer_id) {
   meta.files = [];
 
   // write files to disk
-  let png = '', tiff = '', shortProductName = 0;
+  let png = '', tiff = '', wld = '', shortProductName = 0;
   for( let row of idsResp.rows ) {
 
-    shortProductName = row.product.replace(meta.roi+'-', '');
-    meta.roi_buffer_ids[shortProductName] = row.roi_buffer_id;
-    png = path.resolve(diskPath, shortProductName+'.png');
-    tiff = path.resolve(diskPath, shortProductName+'.tiff');
+    meta.roi_buffer_ids[row.product] = row.roi_buffer_id;
+    png = path.resolve(diskPath, 'wsg84-'+row.product+'.png');
+    wld = path.resolve(diskPath, 'wsg84-'+row.product+'.wld');
+    tiff = path.resolve(diskPath, row.product+'.tiff');
+    
     meta.files.push(png);
+    meta.files.push(wld);
     meta.files.push(tiff);
     
     let pngResp = await pg.query(`
       SELECT
-        ST_asPNG(rast) as png,
-        ST_AsTIFF(rast, 'LZW') as tiff
+        ST_Astiff(rast, 'LZW') as tiff,
+        ST_AsPng(ST_Transform(rast, 3857)) as png,
+        ST_GeoReference(ST_Transform(rast, 3857, 'ESRI')) as wld
       FROM
         ${TABLE}
       WHERE
@@ -72,6 +75,7 @@ async function insert(roi_buffer_id) {
     `);
     
     await fs.writeFile(png, pngResp.rows[0].png);
+    await fs.writeFile(png, pngResp.rows[0].wld);
     await fs.writeFile(tiff, pngResp.rows[0].tiff);
   }
   
