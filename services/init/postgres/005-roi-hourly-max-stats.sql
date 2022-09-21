@@ -36,25 +36,25 @@ BEGIN
     FROM roi_buffer
     WHERE 
     date = date_in
-    AND product = roi_in || '-10d-average';
+    AND product_id = roi_in || '-hourly-max-10d-average';
 
   SELECT roi_buffer_id INTO max_id 
     FROM roi_buffer
     WHERE
     date = date_in
-    AND product = roi_in || '-10d-max';
+    AND product_id = roi_in || '-hourly-max-10d-max';
 
   SELECT roi_buffer_id INTO min_id 
     FROM roi_buffer
     WHERE
     date = date_in
-    AND product = roi_in || '-10d-min';
+    AND product_id = roi_in || '-hourly-max-10d-min';
 
   SELECT roi_buffer_id INTO stddev_id 
     FROM roi_buffer
     WHERE
     date = date_in
-    AND product = roi_in || '-10d-stddev';
+    AND product_id = roi_in || '-hourly-max-10d-stddev';
 
   -- AVERAGE
   IF( average_id IS NOT NULL ) THEN
@@ -68,10 +68,10 @@ BEGIN
     rasters as (
       SELECT rast FROM get_rasters_for_hmax_stats(roi_buffer_id_in)
     )
-    INSERT INTO roi_buffer (date, satellite, product_id, roi_id, band, expire, rast)
+    INSERT INTO roi_buffer (date, product_id, roi_id, band, expire, rast)
       SELECT 
         hdate as date,
-        roi_in || '-10d-average' as product_id,
+        roi_in || '-hourly-max-10d-average' as product_id,
         i.roi_id as roi_id,
         i.band as band,
         i.expire as expire,
@@ -84,7 +84,7 @@ BEGIN
       GROUP BY hdate, i.product_id, i.roi_id, i.band, i.expire
     RETURNING roi_buffer_id INTO average_id;
 
-    INSERT INTO derived_blocks_metadata (roi_buffer_id, parent_block_id, date, product, roi, band)
+    INSERT INTO derived_stats_metadata (roi_buffer_id, parent_id, date, product, roi, band)
     SELECT
       average_id as roi_buffer_id,
       roi_buffer_id as parent_id,
@@ -109,7 +109,7 @@ BEGIN
     INSERT INTO roi_buffer (date, product_id, roi_id, band, expire, rast)
       SELECT 
         hdate as date,
-        roi_in || '-10d-max',
+        roi_in || '-hourly-max-10d-max',
         i.roi_id as roi_id,
         i.band as band,
         i.expire as expire,
@@ -118,11 +118,11 @@ BEGIN
       GROUP BY hdate, i.product_id, i.roi_id, i.band, i.expire
     RETURNING roi_buffer_id INTO max_id;
 
-    INSERT INTO derived_blocks_metadata (roi_buffer_id, parent_id, date, product_id, roi_id, band)
+    INSERT INTO derived_stats_metadata (roi_buffer_id, parent_id, date, product, roi, band)
     SELECT
       max_id as roi_buffer_id,
       roi_buffer_id as parent_id,
-      date, product_id, roi_id, band
+      date, product, roi, band
     FROM get_rasters_for_hmax_stats(roi_buffer_id_in);
   END IF;
 
@@ -142,7 +142,7 @@ BEGIN
     INSERT INTO roi_buffer (date, product_id, roi_id, band, expire, rast)
       SELECT 
         hdate as date,
-        roi_in || '-10d-min',
+        roi_in || '-hourly-max-10d-min',
         i.roi_id as roi_id,
         i.band as band,
         i.expire as expire,
@@ -151,11 +151,11 @@ BEGIN
       GROUP BY hdate, i.product_id, i.roi_id, i.band, i.expire
     RETURNING roi_buffer_id INTO min_id;
 
-    INSERT INTO derived_blocks_metadata (roi_buffer_id, parent_id, date, product_id, roi_id, band)
+    INSERT INTO derived_stats_metadata (roi_buffer_id, parent_id, date, product, roi, band)
     SELECT
       min_id as roi_buffer_id,
       roi_buffer_id as parent_id,
-      date, product_id, roi_id, band
+      date, product, roi, band
     FROM get_rasters_for_hmax_stats(roi_buffer_id_in);
   END IF;
 
@@ -183,7 +183,7 @@ BEGIN
     avg as (
       SELECT bg.* FROM roi_buffer bg, input
       WHERE bg.date = input.hdate
-      AND bg.product = input.roi_id || '-10d-average'
+      AND bg.product_id = input.roi_id || '-hourly-max-10d-average'
     ),
     difference AS (
       SELECT 
@@ -199,10 +199,10 @@ BEGIN
         ST_Union(d.rast, 'SUM') AS rast 
       FROM difference d
     )
-    INSERT INTO roi_buffer (date, product, roi_id, band, expire, rast)
+    INSERT INTO roi_buffer (date, product_id, roi_id, band, expire, rast)
       SELECT 
         hdate as date,
-        roi_in || '-10d-stddev',
+        roi_in || '-hourly-max-10d-stddev',
         i.roi_id as roi_id,
         i.band as band,
         i.expire as expire,
@@ -213,7 +213,7 @@ BEGIN
       FROM sum s, total t, input i
     RETURNING roi_buffer_id INTO stddev_id;
 
-    INSERT INTO derived_blocks_metadata (roi_buffer_id, parent_id, date, product, roi, band)
+    INSERT INTO derived_stats_metadata (roi_buffer_id, parent_id, date, product, roi, band)
     SELECT
       stddev_id as roi_buffer_id,
       roi_buffer_id as parent_block_id,
@@ -240,7 +240,7 @@ CREATE OR REPLACE FUNCTION get_rasters_for_hmax_stats (
 ) AS $$
   WITH time_range AS (
     SELECT 
-      date, product_id, roi_id, band,
+      date, roi_id || '-hourly-max' as product_id, roi_id, band,
       extract(hour from date) + 2 as end, 
       extract(hour from date) - 2 as start
     FROM roi_buffer WHERE 

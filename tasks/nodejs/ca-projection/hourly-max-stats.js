@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import { config, logger, pg, exec, utils } from '@ucd-lib/casita-worker';
-import {v4} from 'uuid';
+import {v4, validate} from 'uuid';
 
 const TABLE = config.pg.roi.bufferTable;
 
@@ -15,7 +15,7 @@ async function insert(roi_buffer_id) {
   if( typeof meta.date === 'string' ) {
     meta.date = new Date(meta.date);
   }
-
+  // SELECT create_hourly_max_stats(11001) as timestamp;
   // generate all hourly max products and stats product for last hour
   resp = await pg.query(`SELECT create_hourly_max_stats(${roi_buffer_id}) as timestamp;`);  
   if( !resp.rows.length ) return meta;
@@ -35,15 +35,18 @@ async function insert(roi_buffer_id) {
       date = $1 AND
       band = $2 AND
       (
-        product = '${meta.roi}-hourly-max' OR
-        product = '${meta.roi}-hourly-max-10d-average' OR
-        product = '${meta.roi}-hourly-max-10d-min' OR
-        product = '${meta.roi}-hourly-max-10d-max' OR
-        product = '${meta.roi}-hourly-max-10d-stddev'
+        product_id = '${meta.roi}-hourly-max' OR
+        product_id = '${meta.roi}-hourly-max-10d-average' OR
+        product_id = '${meta.roi}-hourly-max-10d-min' OR
+        product_id = '${meta.roi}-hourly-max-10d-max' OR
+        product_id = '${meta.roi}-hourly-max-10d-stddev'
       ) 
   `, [timestamp, meta.band]);
 
   meta.date = timestamp;
+  meta.satellite = config.satellite;
+  meta.apid = 'imagery';
+  meta.product = 'california';
   let diskPath = path.resolve(config.fs.nfsRoot, utils.getPathFromData(meta));
   await fs.mkdirp(diskPath);
 
@@ -75,7 +78,7 @@ async function insert(roi_buffer_id) {
     `);
     
     await fs.writeFile(png, pngResp.rows[0].png);
-    await fs.writeFile(png, pngResp.rows[0].wld);
+    await fs.writeFile(wld, pngResp.rows[0].wld);
     await fs.writeFile(tiff, pngResp.rows[0].tiff);
   }
   

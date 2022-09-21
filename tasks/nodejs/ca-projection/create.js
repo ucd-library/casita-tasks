@@ -63,7 +63,7 @@ async function run() {
   };
 
   let p = utils.getPathFromData({
-    satellite : 'west',
+    satellite : config.satellite,
     product : PRODUCTS.californiaGoes.product,
     date: config.datetime,
     band: config.band,
@@ -87,7 +87,7 @@ async function run() {
   await fs.writeFile(wldFile, resp.rows[0].wld);
 
   return {
-    satellite : 'west',
+    satellite : config.satellite,
     product : PRODUCTS.californiaGoes.product,
     date: config.datetime,
     band: config.band,

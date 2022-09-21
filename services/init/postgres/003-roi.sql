@@ -410,6 +410,11 @@ values
 ('ca-hourly-max-10d-max','10 day running max of ca-hourly-max'),
 ('ca-hourly-max-10d-min','10 day running min of ca-hourly-max'),
 ('ca-hourly-max-10d-stddev','10 day running stddev of ca-hourly-max')
+('ca-goes-west-hourly-max','Per band hourly max value'),
+('ca-goes-west-hourly-max-10d-average','10 day running average of ca-goes-west-hourly-max'),
+('ca-goes-west-hourly-max-10d-max','10 day running max of ca-goes-west-hourly-max'),
+('ca-goes-west-hourly-max-10d-min','10 day running min of ca-goes-west-hourly-max'),
+('ca-goes-west-hourly-max-10d-stddev','10 day running stddev of ca-goes-west-hourly-max')
 ;
 
 EXCEPTION
