@@ -82,11 +82,8 @@ async function run() {
   `);
 
   await fs.mkdirp(path.join(config.fs.nfsRoot, p));
-  console.log(tiffFile);
   await fs.writeFile(tiffFile, resp.rows[0].tiff);
-  console.log(pngFile);
   await fs.writeFile(pngFile, resp.rows[0].png);
-  console.log(pngFile);
   await fs.writeFile(wldFile, resp.rows[0].wld);
 
   return {
