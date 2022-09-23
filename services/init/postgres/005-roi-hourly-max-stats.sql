@@ -19,16 +19,17 @@ DECLARE
 BEGIN
 
   SELECT 
-    br.band, roi_id INTO band_in, roi_in
+    br.band, roi_id, date_trunc('hour', date) - interval '1 hour' 
+    INTO band_in, roi_in, date_in
     FROM roi_buffer br
     WHERE br.roi_buffer_id = roi_buffer_id_in;
 
   SELECT create_all_hourly_max(roi_in, band_in) INTO lastest_hmax_id;  
 
-  SELECT 
-    br.date, br.roi_buffer_id INTO date_in, roi_buffer_id_in
-    FROM roi_buffer br
-    WHERE br.roi_buffer_id = lastest_hmax_id;
+  -- SELECT 
+  --   br.date, br.roi_buffer_id INTO date_in, roi_buffer_id_in
+  --   FROM roi_buffer br
+  --   WHERE br.roi_buffer_id = lastest_hmax_id;
   
   RAISE INFO 'Creating stats for % %', roi_in, date_in;
 

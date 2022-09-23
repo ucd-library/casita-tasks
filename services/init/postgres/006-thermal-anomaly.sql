@@ -49,8 +49,6 @@ CREATE OR REPLACE VIEW active_thermal_anomaly_events AS
     te.roi,
     te.band,
     te.active,
-    tep.x,
-    tep.y,
     tep.date as pixel_start
   FROM thermal_anomaly_event te 
   LEFT JOIN thermal_anomaly_event_start_px tep ON te.thermal_anomaly_event_id = tep.thermal_anomaly_event_id
@@ -59,6 +57,20 @@ CREATE OR REPLACE VIEW active_thermal_anomaly_events AS
 CREATE OR REPLACE FUNCTION classify_thermal_anomaly( roi_buffer_id_in INTEGER, stddev_ratio INTEGER ) 
 RETURNS RASTER
 AS $$
+  -- DECLARE
+  --   date_used TIMESTAMP;
+  --   product_used TEXT;
+  --   roi_used TEXT;
+  -- BEGIN
+
+  -- SELECT 
+  --     product_id, roi_id,
+  --     date_trunc('hour', date - interval '1 hour') as prior_hour
+  --   INTO date_used, product_used, roi_used 
+  --   FROM roi_buffer WHERE 
+  --     roi_buffer_id = roi_buffer_id_in
+
+  -- RAISE INFO 'Checking % against % % %', roi_buffer_id_in, date_used, product_used, roi_used
 
   WITH image AS (
     SELECT 

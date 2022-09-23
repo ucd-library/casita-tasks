@@ -114,12 +114,12 @@ CREATE OR REPLACE FUNCTION create_all_hourly_max (
     band = band_in;
 
   index := 0;
-  WHILE index < hours LOOP
+  WHILE index < hours-1 LOOP
     select create_hourly_max(roi_in, band_in, min_date + interval '1 hour' * index ) into hid;
     index := index + 1;
   END LOOP;
 
-  RAISE INFO 'Created Max product for roi_buffer %, % hours: %', roi_in, band_in, hours;
+  RAISE INFO 'Created all max products for roi %:% hours: %', roi_in, band_in, hours;
 
   SELECT roi_in || '-hourly-max' into  hmax_product_name;
 
