@@ -59,6 +59,7 @@ class BlockRingBuffer {
       logger.warn('Sanity check failed for', meta);
       try {
         await pg.query(`drop table ${preloadTable}`);
+        await pg.query(`DELETE from ${PRELOAD_TABLE_LIST} WHERE table_name = $1`, [preloadTable]);
       } catch(e) {}
       if( config.pg.disconnectAfterExec === true ) {
         await pg.end();
