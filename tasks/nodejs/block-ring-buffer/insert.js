@@ -6,6 +6,7 @@ const PRELOAD_TABLE_PREFIX = config.pg.ringBuffer.preloadTablePrefix;
 const BUFFER_SIZE = config.pg.ringBuffer.sizes;
 const DEFAULT_BUFFER_SIZE = config.pg.ringBuffer.defaultSize;
 const TABLE = config.pg.ringBuffer.table;
+const PRELOAD_TABLE_LIST = 'blocks_ring_buffer_preload_tables';
 
 class BlockRingBuffer {
 
@@ -51,6 +52,8 @@ class BlockRingBuffer {
     let {stdout} = await exec(`raster2pgsql ${file} ${preloadTable}`);
     let resp = await pg.query(stdout);
     logger.debug(resp);
+
+    await pg.query(`INSERT INTO ${PRELOAD_TABLE_LIST} (table_name) VALUES ($1)`, [preloadTable])
 
     if( !(await this.sanityCheck(preloadTable, meta)) ) {
       logger.warn('Sanity check failed for', meta);
@@ -109,6 +112,7 @@ class BlockRingBuffer {
     
     try {
       await pg.query(`drop table ${preloadTable}`);
+      await pg.query(`DELETE from ${PRELOAD_TABLE_LIST} WHERE table_name = $1`, [preloadTable])
     } catch(e) {
       logger.error(e);
     }

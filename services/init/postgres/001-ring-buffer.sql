@@ -29,3 +29,9 @@ CREATE TABLE IF NOT EXISTS derived_stats_metadata (
 CREATE INDEX IF NOT EXISTS derived_stats_metadata_date_idx ON derived_stats_metadata (date);
 CREATE INDEX IF NOT EXISTS derived_stats_metadata_product_idx ON derived_stats_metadata (product);
 CREATE INDEX IF NOT EXISTS derived_stats_metadata_parent_block_id_idx ON derived_stats_metadata (parent_id);
+
+CREATE TABLE IF NOT EXISTS blocks_ring_buffer_preload_tables (
+  blocks_ring_buffer_preload_tables_id SERIAL PRIMARY KEY,
+  date timestamp DEFAULT now(),
+  table_name text
+);

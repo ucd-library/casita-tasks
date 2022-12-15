@@ -32,6 +32,13 @@ async function run() {
     [PRODUCTS.californiaGoes.id] : ''
   }
 
+  // Delete 1 month old data here
+  try {
+    await pg.query(`select count(*), min(date), max(date) from roi.roi_buffer where date < now() - interval '1 month'`);
+  } catch(e) {
+    logger.warn('Failed to cleanup old roi.roi_buffer rows')
+  }
+
   try {
     resp = await create(PRODUCTS.california3310.id);
     ids[PRODUCTS.california3310.id] = resp.rows[0].roi_buffer_id;
