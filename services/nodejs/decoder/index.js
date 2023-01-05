@@ -19,6 +19,7 @@ monitor.registerMetric(metrics.find(item => item.type === PACKET_RATE_METRIC_TYP
 
 let processor = new BinaryStreamProcessor({
   name : process.env.GRB_FILE,
+  H_SPACECRAFT_ID : process.env.H_SPACECRAFT_ID || 228,
   consoleLogStatus : (process.env.LOG_STATUS === 'true'),
   onStreamClosed : () => logger.warn(`${process.env.GRB_FILE} grb tail stream closed`),
   kafka : kafkaSetup,
