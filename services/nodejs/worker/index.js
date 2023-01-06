@@ -119,7 +119,9 @@ async function sendFromModule(module, data, args, topic) {
       if( cmd.module ) {
 
         try {
+          logger.debug('worker running module', cmd);
           let data = await moduleRunner.run(cmd.module, cmd.args);
+          logger.debug('worker run module', cmd, data);
           await sendFromModule(cmd.module, data, cmd.args, msg.content.data.task);
         } catch(e) {
           logger.error('failed to run', msg.content.data, e);
@@ -127,7 +129,9 @@ async function sendFromModule(module, data, args, topic) {
         }
 
       } else {
+        logger.debug('worker running exec', cmd);
         let response = await exec(cmd);
+        logger.debug('worker run exec finished', cmd, response);
         await findAndSendMessage(response.stdout, msg.content.data.task);
         exitCode = response.exitCode;
       }
