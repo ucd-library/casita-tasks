@@ -38,6 +38,8 @@ let kafkaPort = handlePortEnv(env.KAFKA_PORT);
 let rabbitMqPort = handlePortEnv(env.RABBITMQ_PORT);
 let redisPort = handlePortEnv(env.REDIS_PORT);
 
+let DEFAULT_CA_EXPIRE = 24 * 30; // 30 days
+
 let config = {
   instance : env.INSTANCE_ENV || 'sandbox',
   satellite : process.env.SATELLITE || 'west',
@@ -161,12 +163,12 @@ let config = {
     },
     custom : {
       california : {
-        expireTime : 24 * 365 * 10,
+        expireTime : parseInt(env.CA_PRODUCT_EXPIRE || DEFAULT_CA_EXPIRE),
         regex : /\/west\/california\//,
         maxDepth : 3
       },
       thermalAnomaly : {
-        expireTime : 24 * 365 * 10,
+        expireTime : parseInt(env.CA_PRODUCT_EXPIRE || DEFAULT_CA_EXPIRE),
         regex : /\/west\/thermal-anomaly\//,
         maxDepth : 3
       }
